@@ -75,170 +75,220 @@ Senior candidates are expected to **architect** state, not just use a library. E
 
 ## Part B — Interview Questions and Answers
 
+Every answer below has four parts: **Short answer** (say this first), **Explanation** (add if asked for more), **Example** (code or a real situation) and **Say it like this** (a sample spoken answer).
+
 ## 🟢 Level 1 — Basics
 
 **Q1. What is state in a frontend app, and what types are there?**
 
-**Short answer:** State is data that changes over time and affects the UI. There are five types:
+**Short answer:** Data that changes over time and affects the UI: local UI state, shared client state, server state, URL state and form state.
 
-- **Local UI state:** whether a modal is open, an input's text. Lives in `useState`.
-- **Shared client state:** the current user, theme, call controls. Lives in context or a store.
-- **Server state:** backend data cached on the client (calls, scores).
-- **URL state:** filters, page, selected tab. Lives in search params.
-- **Form state:** values, errors, dirty and touched flags.
+**Explanation:** Each type has a best home: `useState`, a store or context, a query cache, the router, and a form library respectively. Choosing the right home removes most state bugs.
 
-**Say it like this:** "The first question I ask is what *kind* of state something is. Server data goes in a query cache, filters go in the URL, form data in a form library, and only truly shared client state goes in a store. Choosing the right home removes most state bugs before they happen."
+**Example:** In BpoBox: a dropdown's `isOpen` (local), the current user (shared client), the call list (server), `?status=flagged` (URL), the scorecard draft (form).
+
+**Say it like this:** "The first question I ask is what kind of state something is. Server data goes in a query cache, filters in the URL, forms in a form library, and only truly shared client state in a store."
 
 ---
 
 **Q2. What is Redux?**
 
-**Short answer:** A predictable state container. There's one store, the state changes only when you dispatch actions, and pure reducer functions compute the new state.
+**Short answer:** A predictable state container: one store, state changed only by dispatching actions, and pure reducers computing the next state.
+
+**Explanation:** The strict flow makes every change visible and replayable in DevTools, which helps debug complex flows.
+
+**Example:** Clicking Mute dispatches `{ type: 'call/toggleMute' }`, and the reducer flips `muted`.
+
+**Say it like this:** "Redux makes state changes explicit events. That predictability is why I used it for InterpretIQ's call session state."
 
 ---
 
 **Q3. What are the three principles of Redux?**
 
-**Short answer:** A single source of truth (one store). State is read-only, so you change it only by dispatching actions. Changes are made with pure functions (reducers).
+**Short answer:** A single source of truth, state is read-only, and changes are made by pure functions.
+
+**Explanation:** Read-only means you change it only by dispatching actions; pure reducers make changes predictable and testable.
+
+**Example:** You never write `store.getState().call.muted = true`; you dispatch `toggleMute()`.
+
+**Say it like this:** "One store, changes only through actions, computed by pure reducers. That's what gives Redux its debuggability."
 
 ---
 
 **Q4. What are actions, reducers, the store, dispatch and selectors?**
 
-**Short answer:**
+**Short answer:** An action describes what happened, a reducer computes the next state, the store holds state, dispatch sends actions, and selectors read state.
 
-- **Action:** a plain object describing *what happened*: `{ type: 'call/muted', payload: true }`.
-- **Reducer:** `(state, action) => newState`. A pure function that computes the next state.
-- **Store:** holds the state and exposes `dispatch`, `getState` and `subscribe`.
-- **Dispatch:** sends an action to the store.
-- **Selector:** a function that reads a piece of state: `(state) => state.call.muted`.
+**Explanation:** Selectors decouple components from the state's shape, so you can refactor the store without touching components.
+
+**Example:**
+
+```ts
+const action = { type: 'call/muted', payload: true };
+const reducer = (state, action) => (action.type === 'call/muted' ? { ...state, muted: action.payload } : state);
+const selectMuted = (state) => state.call.muted;
+```
+
+**Say it like this:** "Actions are facts, reducers are rules, selectors are read access, and dispatch connects UI events to the store."
 
 ---
 
 **Q5. Describe the Redux data flow.**
 
-**Short answer:** A UI event calls `dispatch(action)`. The action passes through middleware to the reducer, which produces a new state. Subscribed components re-render, but only if *their selected data* changed.
+**Short answer:** A UI event dispatches an action, middleware processes it, the reducer produces new state, and components whose selected data changed re-render.
 
-**Say it like this:** "It's one-way and predictable. Every change is an action I can see in DevTools, so when something goes wrong I can replay exactly what happened."
+**Explanation:** It's strictly one-way, so you can trace any change back to an action.
+
+**Example:**
+
+```text
+click Mute → dispatch(toggleMute()) → middleware (logging) → reducer → new state → MuteButton re-renders
+```
+
+**Say it like this:** "It's one-way and predictable: every change is an action I can see and replay in DevTools."
 
 ---
 
 **Q6. Why must reducers be pure?**
 
-**Short answer:** For predictability, time-travel debugging and easy testing, and because Redux detects changes *by reference*. Reducers must not make API calls, generate random values or IDs, or mutate state (except through Immer's draft).
+**Short answer:** For predictability, time-travel debugging and testability, and because Redux detects changes by reference.
+
+**Explanation:** No API calls, random values or mutation (except through Immer). Side effects belong in thunks, listeners or RTK Query.
+
+**Example:**
+
+```ts
+// ❌ impure
+addCall: (s, a) => { s.items.push({ ...a.payload, id: crypto.randomUUID() }); }
+// ✅ generate the ID in the action creator (prepare callback) instead
+```
+
+**Say it like this:** "Reducers are pure calculations; anything random or async happens before the action is dispatched."
 
 ---
 
 **Q7. What is Redux Toolkit, and why is it recommended?**
 
-**Short answer:** The official, modern way to write Redux. It removes most of the boilerplate:
+**Short answer:** The official modern way to write Redux, with `configureStore`, `createSlice`, `createAsyncThunk`, entity adapters and RTK Query.
 
-- `configureStore`: good defaults, DevTools, thunk, and checks for mutation and serializability in development.
-- `createSlice`: generates action creators and the reducer together.
-- `createAsyncThunk`: standard async action handling.
-- `createEntityAdapter`: normalised collections.
-- **RTK Query:** data fetching and caching.
+**Explanation:** It removes boilerplate, adds dev checks for mutation and serialisability, and uses Immer for safe "mutating" syntax.
 
-It uses **Immer**, so you can write `state.muted = true` safely.
+**Example:** A slice with three actions is about ten lines with `createSlice`, versus constants, action creators and a switch in classic Redux.
 
-**Say it like this:** "Classic Redux needed action-type constants, action creators, switch statements and immutable spread updates. RTK's `createSlice` does all of that in about ten lines, so there's no reason to write classic Redux today."
+**Say it like this:** "There's no reason to write classic Redux today; RTK gives the same model with a fraction of the code."
 
 ---
 
 **Q8. Show a `createSlice` example.**
 
-```ts
-type CallControls = { muted: boolean; cameraOn: boolean; layout: 'grid' | 'speaker' };
-const initialState: CallControls = { muted: false, cameraOn: true, layout: 'grid' };
+**Short answer:** `createSlice` takes a name, initial state and reducers, and generates action creators and the reducer.
 
+**Explanation:** Action types are generated (`callControls/toggleMute`), and Immer lets you write mutating code safely.
+
+**Example:**
+
+```ts
+type CallControls = { muted: boolean; layout: 'grid' | 'speaker' };
+const initialState: CallControls = { muted: false, layout: 'grid' };
 const callSlice = createSlice({
   name: 'callControls',
   initialState,
   reducers: {
-    toggleMute: (state) => { state.muted = !state.muted; },          // Immer makes this safe
-    setLayout: (state, action: PayloadAction<CallControls['layout']>) => {
-      state.layout = action.payload;
-    },
-    reset: () => initialState,                                          // return a new value
+    toggleMute: (s) => { s.muted = !s.muted; },
+    setLayout: (s, a: PayloadAction<CallControls['layout']>) => { s.layout = a.payload; },
+    reset: () => initialState,
   },
 });
-
 export const { toggleMute, setLayout, reset } = callSlice.actions;
-export default callSlice.reducer;
 ```
 
-**Explanation:** The action types are generated automatically (`callControls/toggleMute`), and the action creators are exported for components to dispatch.
+**Say it like this:** "A slice bundles state, reducers and generated actions for one feature."
 
 ---
 
 **Q9. What does `configureStore` look like?**
 
+**Short answer:** It combines slice reducers and middleware with good defaults, including DevTools and thunk.
+
+**Explanation:** RTK Query needs its reducer and middleware added.
+
+**Example:**
+
 ```ts
 export const store = configureStore({
-  reducer: {
-    callControls: callSlice.reducer,
-    [api.reducerPath]: api.reducer,
-  },
+  reducer: { callControls: callSlice.reducer, [api.reducerPath]: api.reducer },
   middleware: (getDefault) => getDefault().concat(api.middleware),
 });
 ```
+
+**Say it like this:** "`configureStore` sets up DevTools and safety checks for free; I just plug in slices and RTK Query."
 
 ---
 
 **Q10. How do you connect React with `useSelector` and `useDispatch`?**
 
+**Short answer:** `useSelector` reads a slice of state and re-renders only when it changes; `useDispatch` returns the dispatch function.
+
+**Explanation:** Use typed versions (`useAppSelector`, `useAppDispatch`) so selectors and actions are type-checked.
+
+**Example:**
+
 ```tsx
 function MuteButton() {
   const muted = useAppSelector((s) => s.callControls.muted);
   const dispatch = useAppDispatch();
-  return (
-    <button aria-pressed={muted} onClick={() => dispatch(toggleMute())}>
-      {muted ? 'Unmute' : 'Mute'}
-    </button>
-  );
+  return <button aria-pressed={muted} onClick={() => dispatch(toggleMute())}>{muted ? 'Unmute' : 'Mute'}</button>;
 }
 ```
 
-**Short answer:** `useSelector` reads a slice of state and re-renders the component only when *that value* changes. `useDispatch` returns the dispatch function.
+**Say it like this:** "Each component selects only what it needs, so a change elsewhere in the store doesn't re-render it."
 
 ---
 
 **Q11. How does Immer let you "mutate" state?**
 
-**Short answer:** Immer gives your reducer a **draft**, a Proxy. Immer records the changes you make to it, then produces a brand-new immutable object. Unchanged parts keep their old references (*structural sharing*), so change detection stays cheap.
+**Short answer:** Your reducer edits a draft proxy; Immer records the changes and produces a new immutable object with structural sharing.
 
-**Rule:** either mutate the draft **or** return a new value. Never both.
+**Explanation:** Unchanged parts keep their references, so change detection stays cheap. Either mutate the draft or return a new value, never both.
+
+**Example:**
 
 ```ts
-// ✅ mutate
-addCall: (state, a) => { state.items.push(a.payload); }
-// ✅ return new
-clear: () => ({ items: [] })
-// ❌ both
-bad: (state, a) => { state.items.push(a.payload); return { ...state }; }
+addCall: (s, a) => { s.items.push(a.payload); }   // ✅ mutate draft
+clear: () => ({ items: [] })                      // ✅ return new
 ```
+
+**Say it like this:** "Immer gives readable mutating syntax while still producing immutable updates."
 
 ---
 
 **Q12. Context API vs Redux?**
 
-**Short answer:** Context is *dependency injection*: it passes a value down the tree. It has no selectors, so **every consumer re-renders when the value changes**. Redux and Zustand let components subscribe to *specific slices*, and they add middleware, DevTools and patterns for complex logic.
+**Short answer:** Context passes values down the tree and re-renders every consumer on change; Redux and Zustand let components subscribe to specific slices and add middleware and DevTools.
+
+**Explanation:**
 
 | | Context | Redux Toolkit / Zustand |
 |---|---|---|
-| Purpose | pass values down the tree | manage shared state |
-| Re-render granularity | all consumers | only components whose selected slice changed |
-| DevTools / time travel | no | yes (Redux) |
-| Middleware | no | yes |
-| Best for | theme, auth user, tenant config (rarely changing) | frequently updated shared state |
+| Purpose | pass values | manage shared state |
+| Re-renders | all consumers | only changed selections |
+| DevTools | no | yes |
 
-**Say it like this:** "I use context for things that rarely change, like the theme or tenant config. For frequently changing shared state, I use a store with selectors, so a change to one field doesn't re-render half the app."
+**Example:** Theme and tenant config in context; live call state in Redux.
+
+**Say it like this:** "Context for rarely changing values, a store with selectors for frequently changing shared state."
 
 ---
 
 **Q13. When don't you need Redux?**
 
-**Short answer:** In small apps, in apps where most data is server data (use a query library), or when state is used only by one subtree (`useState` or `useReducer` plus context).
+**Short answer:** In small apps, apps whose data is mostly server state, or when state is used by only one subtree.
+
+**Explanation:** A query library plus local state and a little context often covers everything.
+
+**Example:** An internal admin tool with CRUD screens needs TanStack Query and `useState`, not Redux.
+
+**Say it like this:** "Once server data lives in a query cache, many apps have very little global state left, so Redux may not be needed."
 
 ---
 
@@ -246,24 +296,32 @@ bad: (state, a) => { state.items.push(a.payload); return { ...state }; }
 
 **Q14. What is middleware, and what's it used for?**
 
-**Short answer:** Functions that wrap `dispatch` and can see every action before it reaches the reducer:
+**Short answer:** Functions wrapping `dispatch` that see every action before the reducer.
+
+**Explanation:** Uses include async logic, logging, analytics, crash reporting, global auth handling and WebSocket bridges.
+
+**Example:**
 
 ```ts
 const logger: Middleware = (store) => (next) => (action) => {
   console.log('dispatching', action);
-  const result = next(action);       // pass to next middleware / reducer
+  const result = next(action);
   console.log('next state', store.getState());
   return result;
 };
 ```
 
-**Uses:** async logic (thunk), logging, analytics, crash reporting, handling expired auth globally, and WebSocket bridges.
+**Say it like this:** "Middleware is the interception point for cross-cutting concerns like logging or handling expired sessions."
 
 ---
 
 **Q15. What are thunks?**
 
-**Short answer:** Functions you dispatch instead of plain objects. They receive `dispatch` and `getState`, so they can run async logic and dispatch actions when it finishes.
+**Short answer:** Functions you dispatch instead of plain objects, receiving `dispatch` and `getState` to run async logic.
+
+**Explanation:** They're the simplest way to do side effects in Redux and are included by default in RTK.
+
+**Example:**
 
 ```ts
 export const leaveCall = (): AppThunk => async (dispatch, getState) => {
@@ -272,280 +330,369 @@ export const leaveCall = (): AppThunk => async (dispatch, getState) => {
 };
 ```
 
+**Say it like this:** "Thunks hold async workflows that end in dispatching plain actions."
+
 ---
 
 **Q16. How does `createAsyncThunk` work?**
 
-```ts
-export const fetchTenant = createAsyncThunk(
-  'tenant/fetch',
-  async (id: string, { rejectWithValue, signal }) => {
-    const res = await fetch(`/api/tenants/${id}`, { signal });
-    if (!res.ok) return rejectWithValue(await res.json());
-    return (await res.json()) as Tenant;
-  },
-);
+**Short answer:** It generates `pending`, `fulfilled` and `rejected` actions around an async function.
 
-// in the slice:
-extraReducers: (builder) => {
-  builder
-    .addCase(fetchTenant.pending, (s) => { s.status = 'loading'; })
-    .addCase(fetchTenant.fulfilled, (s, a) => { s.status = 'idle'; s.data = a.payload; })
-    .addCase(fetchTenant.rejected, (s, a) => { s.status = 'error'; s.error = a.payload; });
-}
+**Explanation:** Handle them in `extraReducers`. For plain data fetching, RTK Query is usually better because it adds caching.
+
+**Example:**
+
+```ts
+export const fetchTenant = createAsyncThunk('tenant/fetch', async (id: string, { rejectWithValue, signal }) => {
+  const res = await fetch(`/api/tenants/${id}`, { signal });
+  if (!res.ok) return rejectWithValue(await res.json());
+  return (await res.json()) as Tenant;
+});
 ```
 
-**Short answer:** It generates `pending`, `fulfilled` and `rejected` actions for an async function automatically. For plain data fetching, though, RTK Query is usually better, because it adds caching on top.
+**Say it like this:** "`createAsyncThunk` standardises loading and error actions, though for fetching I'd normally use RTK Query."
 
 ---
 
 **Q17. Thunk vs saga vs listener middleware?**
 
-| | Thunk | Redux-Saga | Listener middleware (RTK) |
-|---|---|---|---|
-| Style | async functions | generator functions and effects | callbacks that react to actions |
-| Complexity | low | high | low–medium |
-| Good for | simple async | complex orchestration, cancellation, races | side effects such as syncing storage, analytics, cross-slice logic |
+**Short answer:** Thunks for simple async, sagas for complex orchestration with generators, listener middleware for reacting to actions with lightweight side effects.
 
-**Say it like this:** "For side effects that react to actions, like clearing caches and broadcasting to other tabs on logout, I use RTK's listener middleware. It's lightweight. Sagas are powerful but add a whole generator-based paradigm that most teams don't need."
+**Explanation:** Sagas are powerful (cancellation, races) but add a generator-based paradigm most teams don't need.
+
+**Example:** On logout, a listener clears API caches and broadcasts to other tabs.
+
+**Say it like this:** "For side effects that react to actions, RTK's listener middleware is my default; sagas only for genuinely complex orchestration."
 
 ---
 
 **Q18. Give a listener middleware example.**
 
+**Short answer:** `startListening` runs an effect whenever a matching action is dispatched.
+
+**Explanation:** It's ideal for cross-slice logic, syncing storage and analytics, without putting side effects in reducers.
+
+**Example:**
+
 ```ts
 const listener = createListenerMiddleware();
-
 listener.startListening({
   actionCreator: logout,
   effect: async (_action, api) => {
-    api.dispatch(apiSlice.util.resetApiState());   // clear all cached server data
-    broadcast.postMessage('logout');               // log out other tabs
+    api.dispatch(apiSlice.util.resetApiState());
+    broadcast.postMessage('logout');
   },
 });
 ```
+
+**Say it like this:** "Logout cleanup lives in one listener: reset caches and log out other tabs."
 
 ---
 
 **Q19. What are selectors, and how does `createSelector` memoize them?**
 
-```ts
-const selectCalls = (s: RootState) => s.calls.items;
-const selectFilter = (s: RootState) => s.calls.filter;
+**Short answer:** Selectors read state; `createSelector` recomputes only when its inputs change and otherwise returns the same reference.
 
+**Explanation:** That avoids repeated expensive work and unnecessary re-renders from new arrays.
+
+**Example:**
+
+```ts
 export const selectFlaggedCalls = createSelector(
-  [selectCalls, selectFilter],
+  [(s: RootState) => s.calls.items, (s: RootState) => s.calls.filter],
   (calls, filter) => calls.filter((c) => c.flagged && c.agent.includes(filter)),
 );
 ```
 
-**Short answer:** `createSelector` (from Reselect) recomputes only when its inputs change. Otherwise it returns the **same reference** as last time. That avoids both repeated expensive work and unnecessary re-renders.
+**Say it like this:** "Memoised selectors return the same array until inputs change, so components don't re-render for nothing."
 
 ---
 
 **Q20. Why does `useSelector((s) => s.list.filter(...))` re-render every time?**
 
-**Short answer:** `useSelector` compares the result with `===`, and `filter` returns a **new array** on every call. So the component re-renders after *every* dispatch, even unrelated ones. Fix it with a memoized selector (`createSelector`), or pass `shallowEqual` as the comparison function.
+**Short answer:** `filter` returns a new array each call, and `useSelector` compares with `===`, so it sees a change after every dispatch.
+
+**Explanation:** Use a memoised selector or `shallowEqual`.
+
+**Example:**
+
+```ts
+const flagged = useAppSelector(selectFlaggedCalls);           // memoised
+const ids = useAppSelector((s) => s.calls.ids, shallowEqual); // shallow compare
+```
+
+**Say it like this:** "Deriving arrays inline in `useSelector` re-renders on every action; I move that into `createSelector`."
 
 ---
 
 **Q21. What is normalised state, and what does `createEntityAdapter` do?**
 
+**Short answer:** Storing items by ID in a lookup table instead of nested arrays; the entity adapter gives CRUD reducers and selectors for that shape.
+
+**Explanation:** Lookups and updates are O(1), and an item is never duplicated across lists.
+
+**Example:**
+
 ```ts
 const callsAdapter = createEntityAdapter<Call>();
-// state shape: { ids: ['1', '2'], entities: { '1': {...}, '2': {...} } }
-
 const callsSlice = createSlice({
   name: 'calls',
   initialState: callsAdapter.getInitialState(),
   reducers: { callsReceived: callsAdapter.upsertMany, callUpdated: callsAdapter.updateOne },
 });
-
 export const { selectAll, selectById } = callsAdapter.getSelectors((s: RootState) => s.calls);
 ```
 
-**Short answer:** Normalising means storing items in a lookup table keyed by ID, like a database table, instead of nested arrays. You get O(1) lookups and updates, and the same item is never duplicated in several lists.
+**Say it like this:** "Normalising means one copy of each call; updating its score fixes it everywhere it's shown."
 
 ---
 
 **Q22. Why separate server state from client state?**
 
-**Short answer:** Server state is a **cache** of data the backend owns. It can be stale, and it needs fetching, deduplication, background refresh, invalidation, pagination and retries. Client state is synchronous and owned by the UI. Putting server data into hand-written reducers means re-implementing a cache, badly.
+**Short answer:** Server state is a cache that can go stale and needs fetching, deduplication, refresh and invalidation; client state is synchronous and owned by the UI.
 
-**Say it like this:** "Most of the Redux code I've seen in older projects was hand-written caching: `isLoading` flags, `lastFetched` timestamps, manual refetching. Moving server data to RTK Query or TanStack Query deleted that code and fixed a whole class of stale-data bugs."
+**Explanation:** Hand-written caching in reducers (loading flags, timestamps, manual refetch) is buggy and verbose.
+
+**Example:** Moving the call list from a Redux slice with `isLoading`/`lastFetched` into RTK Query deleted ~150 lines and fixed stale-data bugs.
+
+**Say it like this:** "Most old Redux code I've seen was hand-written caching; moving server data to a query library deleted it and its bugs."
 
 ---
 
 **Q23. What are the fundamentals of RTK Query?**
 
+**Short answer:** Define endpoints once and get generated hooks with caching, deduplication, polling, loading flags and tag-based invalidation.
+
+**Explanation:** When a mutation invalidates a tag, every query providing that tag refetches automatically.
+
+**Example:**
+
 ```ts
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: '/api', credentials: 'include' }),
-  tagTypes: ['Call', 'Score'],
-  endpoints: (build) => ({
-    getCalls: build.query<Call[], { tenantId: string; page: number }>({
-      query: ({ tenantId, page }) => `tenants/${tenantId}/calls?page=${page}`,
-      providesTags: (res, _err, { tenantId }) => [
-        ...(res ?? []).map((c) => ({ type: 'Call' as const, id: c.id })),
-        { type: 'Call', id: `LIST-${tenantId}` },
-      ],
+  tagTypes: ['Call'],
+  endpoints: (b) => ({
+    getCalls: b.query<Call[], { tenantId: string }>({
+      query: ({ tenantId }) => `tenants/${tenantId}/calls`,
+      providesTags: (r) => (r ?? []).map((c) => ({ type: 'Call' as const, id: c.id })),
     }),
-    submitScore: build.mutation<Score, ScoreInput>({
+    submitScore: b.mutation<Score, ScoreInput>({
       query: (body) => ({ url: 'scores', method: 'POST', body }),
-      invalidatesTags: (_res, _err, arg) => [{ type: 'Call', id: arg.callId }],
+      invalidatesTags: (_r, _e, arg) => [{ type: 'Call', id: arg.callId }],
     }),
   }),
 });
-
-export const { useGetCallsQuery, useSubmitScoreMutation } = api;
-
-// In a component:
-const { data, isLoading, error } = useGetCallsQuery({ tenantId, page });
 ```
 
-**Short answer:** You define endpoints once and get generated hooks with caching, request deduplication, polling, loading and error flags, and **tag-based invalidation**. When a mutation invalidates a tag, every query that provides that tag refetches automatically.
+**Say it like this:** "Endpoints declare what data they provide and invalidate, and RTK Query keeps the UI in sync automatically."
 
 ---
 
 **Q24. Which RTK Query options are useful?**
 
-**Short answer:**
+**Short answer:** `pollingInterval`, `skip`, `refetchOnFocus`, `refetchOnReconnect`, `keepUnusedDataFor`, `selectFromResult` and `transformResponse`.
 
-- `pollingInterval`: refetch every N ms.
-- `skip`: don't run the query yet (for example, while there's no ID).
-- `refetchOnFocus` and `refetchOnReconnect`.
-- `keepUnusedDataFor`: how long to keep the cache after the last subscriber goes away.
-- `selectFromResult`: subscribe to only part of the result.
-- `transformResponse`: reshape the data.
+**Explanation:** `skip` waits for required arguments; `selectFromResult` subscribes to part of the result to limit re-renders.
+
+**Example:**
+
+```ts
+const { data } = useGetCallQuery(callId!, { skip: !callId, pollingInterval: 10_000 });
+```
+
+**Say it like this:** "I use `skip` until an ID exists and polling for job status, like waiting for AI scoring to finish."
 
 ---
 
 **Q25. What are the fundamentals of TanStack Query?**
 
+**Short answer:** `useQuery` caches data by `queryKey`; `staleTime` controls freshness; stale data refetches on mount, focus and reconnect; mutations invalidate keys.
+
+**Explanation:** `gcTime` controls how long unused data stays in memory; `useInfiniteQuery` handles cursor pagination.
+
+**Example:**
+
 ```tsx
-const { data, isPending, error } = useQuery({
+const { data, isPending } = useQuery({
   queryKey: ['tenant', tenantId, 'calls', { page, status }],
   queryFn: () => getCalls({ tenantId, page, status }),
   staleTime: 30_000,
-  placeholderData: keepPreviousData,   // smooth pagination
+  placeholderData: keepPreviousData,
 });
 ```
 
-**Short answer:**
-
-- `queryKey` identifies the cached data.
-- `staleTime` is how long data counts as fresh. While it's fresh, there's no refetch. The default is 0.
-- `gcTime` is how long unused data stays in memory.
-- Stale data is refetched automatically on mount, on window focus and on reconnect.
-- After a mutation, call `invalidateQueries`.
-- `useInfiniteQuery` handles infinite scrolling and cursor pagination.
+**Say it like this:** "TanStack Query treats server data as a cache with clear freshness rules, so I stop writing loading flags by hand."
 
 ---
 
 **Q26. How should you design query keys?**
 
-**Short answer:** Use hierarchical arrays from general to specific: `['tenant', tenantId, 'calls', { page, filters }]`. Then you can invalidate broadly (`['tenant', tenantId, 'calls']` refreshes every calls page) or precisely. **Always include the tenant or user scope** so caches never mix between accounts.
+**Short answer:** Hierarchical arrays from general to specific, always including tenant or user scope.
+
+**Explanation:** You can then invalidate broadly or precisely, and caches never mix between accounts.
+
+**Example:** `['tenant', tenantId, 'calls', { page, filters }]`; invalidating `['tenant', tenantId, 'calls']` refreshes every page.
+
+**Say it like this:** "Keys go general to specific and always start with the tenant, which makes invalidation easy and leaks impossible."
 
 ---
 
 **Q27. How do you do optimistic updates with rollback in TanStack Query?**
 
-```ts
-const qc = useQueryClient();
+**Short answer:** In `onMutate`, cancel queries, snapshot, and set the new data; in `onError`, restore the snapshot; in `onSettled`, invalidate.
 
+**Explanation:** The UI updates instantly, rolls back if the server rejects, and resyncs either way.
+
+**Example:**
+
+```ts
 useMutation({
   mutationFn: updateScore,
   onMutate: async (next: Score) => {
-    await qc.cancelQueries({ queryKey: ['score', next.id] });   // stop in-flight refetches
-    const previous = qc.getQueryData<Score>(['score', next.id]); // snapshot
-    qc.setQueryData(['score', next.id], next);                   // update UI immediately
+    await qc.cancelQueries({ queryKey: ['score', next.id] });
+    const previous = qc.getQueryData<Score>(['score', next.id]);
+    qc.setQueryData(['score', next.id], next);
     return { previous };
   },
-  onError: (_err, next, ctx) => {
-    if (ctx?.previous) qc.setQueryData(['score', next.id], ctx.previous); // roll back
-  },
-  onSettled: (_data, _err, next) => qc.invalidateQueries({ queryKey: ['score', next.id] }), // sync
+  onError: (_e, next, ctx) => ctx?.previous && qc.setQueryData(['score', next.id], ctx.previous),
+  onSettled: (_d, _e, next) => qc.invalidateQueries({ queryKey: ['score', next.id] }),
 });
 ```
 
-**Explanation:** The UI updates instantly. If the server rejects the change, it rolls back, and either way you refetch to sync with the truth.
+**Say it like this:** "Snapshot, update, roll back on error, then refetch to sync with the truth."
 
 ---
 
 **Q28. RTK Query vs TanStack Query?**
 
-**Short answer:** RTK Query is integrated with the Redux store and DevTools, defines endpoints in one central place, and uses tag invalidation. TanStack Query is framework-agnostic, has very flexible keys and excellent devtools, and doesn't need Redux. Both solve server state well, so pick one per app.
+**Short answer:** RTK Query integrates with Redux and centralises endpoints with tags; TanStack Query is framework-agnostic with flexible keys and great devtools.
 
-**Say it like this:** "If the app already uses Redux, RTK Query fits naturally. If there's no Redux, I'd pick TanStack Query rather than adding Redux just for fetching."
+**Explanation:** Both solve server state well; pick one per app.
+
+**Example:** InterpretIQ already used Redux, so RTK Query fit; a new app without Redux would use TanStack Query.
+
+**Say it like this:** "If Redux is already there, RTK Query; otherwise TanStack Query rather than adding Redux just for fetching."
 
 ---
 
 **Q29. What is Zustand, and why use it?**
 
-```ts
-type CallUI = { muted: boolean; toggleMute: () => void };
+**Short answer:** A tiny store with no provider and selector-based subscriptions.
 
-export const useCallUI = create<CallUI>()((set) => ({
+**Explanation:** It has middleware for persist, devtools and immer, and less ceremony than Redux, but less enforced structure for large teams.
+
+**Example:**
+
+```ts
+export const useCallUI = create<{ muted: boolean; toggleMute: () => void }>()((set) => ({
   muted: false,
   toggleMute: () => set((s) => ({ muted: !s.muted })),
 }));
-
-const muted = useCallUI((s) => s.muted);   // subscribes ONLY to `muted`
+const muted = useCallUI((s) => s.muted);
 ```
 
-**Short answer:** A tiny store (about 1 KB) with no provider. Selector subscriptions give fine-grained re-renders, and middleware covers `persist`, `devtools` and `immer`. It has less ceremony than Redux, but also less enforced structure, which matters for big teams.
+**Say it like this:** "Zustand gives store-style selectors with almost no boilerplate, which suits small amounts of shared UI state."
 
 ---
 
 **Q30. What are Jotai and Recoil (atoms)?**
 
-**Short answer:** Bottom-up state: you create small *atoms* and combine them into derived atoms. That suits fine-grained, graph-like state, such as a design editor where each element's properties are independent atoms.
+**Short answer:** Bottom-up state built from small atoms combined into derived atoms.
+
+**Explanation:** Components subscribe to individual atoms, which suits fine-grained, graph-like state.
+
+**Example:** In a design editor, each shape's position is an atom, and a derived atom computes the selection bounding box.
+
+**Say it like this:** "Atoms fit apps with many independent pieces of state, like editors; for typical dashboards a store is simpler."
 
 ---
 
 **Q31. What are signals?**
 
-**Short answer:** Fine-grained reactive values (Preact Signals, SolidJS, Vue refs). When a signal changes, only the exact DOM nodes or computations that read it update, without re-running whole components.
+**Short answer:** Fine-grained reactive values; when one changes, only the code and DOM that read it update.
+
+**Explanation:** Preact Signals, SolidJS and Vue refs use this model, avoiding re-running whole components.
+
+**Example:**
+
+```ts
+const count = signal(0);
+effect(() => console.log(count.value)); // reruns only when count changes
+```
+
+**Say it like this:** "Signals update exactly what depends on a value, without component re-renders."
 
 ---
 
 **Q32. Why use the URL as state?**
 
-**Short answer:** Filters, sorting, pagination and the selected item belong in the URL. Users can share and bookmark the view, it survives a refresh, and the back button works. Sync it with `useSearchParams` or a helper library like nuqs.
+**Short answer:** Filters, sorting, pagination and the selected item in the URL are shareable, survive refresh, and work with Back.
 
-**Example:** `/calls?status=flagged&agent=asha&page=3`. A QA lead can send this exact view to a colleague.
+**Explanation:** Sync it with `useSearchParams` or a helper like nuqs.
+
+**Example:** `/calls?status=flagged&agent=asha&page=3` lets a QA lead send an exact view to a colleague.
+
+**Say it like this:** "If a user might share or refresh a view, its state belongs in the URL."
 
 ---
 
 **Q33. Which libraries handle form state?**
 
-**Short answer:** React Hook Form, Formik or TanStack Form. Transient form state (each keystroke) should stay out of global stores.
+**Short answer:** React Hook Form, Formik or TanStack Form.
+
+**Explanation:** Transient keystroke state should stay out of global stores to avoid needless re-renders.
+
+**Example:** The QA scorecard used React Hook Form with a Zod resolver; only the submitted result reached the server cache.
+
+**Say it like this:** "Form state lives in the form library; only the submitted result touches the server or store."
 
 ---
 
 **Q34. How do you persist state?**
 
-**Short answer:** Use redux-persist or Zustand's `persist` middleware for *non-sensitive preferences* like layout or theme. **Never** persist tokens, PHI or tenant data to localStorage, because any XSS can read it and it stays on shared devices.
+**Short answer:** redux-persist or Zustand's `persist`, for non-sensitive preferences only.
+
+**Explanation:** Never persist tokens, PHI or tenant data to localStorage; XSS can read it and it stays on shared devices.
+
+**Example:** Persist `{ layout: 'grid', theme: 'dark' }`, never `{ patientName }`.
+
+**Say it like this:** "I persist preferences like layout and theme, never anything sensitive, especially on shared clinic tablets."
 
 ---
 
 **Q35. How do you reset state on logout?**
 
+**Short answer:** A root reducer returning `undefined` state on logout, resetting API caches, and broadcasting to other tabs.
+
+**Explanation:** Returning `undefined` makes every slice fall back to its initial state.
+
+**Example:**
+
 ```ts
 const rootReducer = (state: RootState | undefined, action: Action) => {
-  if (logout.match(action)) state = undefined;   // every slice returns its initial state
+  if (logout.match(action)) state = undefined;
   return appReducer(state, action);
 };
 ```
 
-**Short answer:** Reset the store (a root reducer that returns `undefined` on logout), reset the API caches (`api.util.resetApiState()` or `queryClient.clear()`), and broadcast the logout to other tabs.
+**Say it like this:** "Logout resets the whole store, clears query caches and notifies other tabs, so no data survives the session."
 
 ---
 
 **Q36. Should Redux DevTools be enabled in production?**
 
-**Short answer:** Time travel and the action log are great for debugging, but in production either disable them or sanitise actions and state (`actionSanitizer`, `stateSanitizer`). Otherwise anyone who opens DevTools can see sensitive data.
+**Short answer:** Disable it, or sanitise actions and state, because anyone can open DevTools and read sensitive data.
+
+**Explanation:** `actionSanitizer` and `stateSanitizer` can mask fields if you need production debugging.
+
+**Example:**
+
+```ts
+configureStore({ reducer, devTools: process.env.NODE_ENV !== 'production' });
+```
+
+**Say it like this:** "DevTools is a dev tool; in production it's off, or at least sanitised for anything sensitive."
 
 ---
 
@@ -553,57 +700,87 @@ const rootReducer = (state: RootState | undefined, action: Action) => {
 
 **Q37. How does `useSelector` work internally?**
 
-**Short answer:** It's built on `useSyncExternalStore`. After every dispatch it runs your selector and compares the result with the previous one using `===` by default. The component re-renders only if the result changed.
+**Short answer:** It uses `useSyncExternalStore`, runs your selector after each dispatch, and re-renders only if the result changed by `===`.
+
+**Explanation:** That's why stable selector outputs matter so much for performance.
+
+**Example:** A selector returning `s.calls.items` (same reference) never re-renders on unrelated actions; one returning `.filter(...)` always does.
+
+**Say it like this:** "`useSelector` compares results by reference, so returning stable values is the key to performance."
 
 ---
 
 **Q38. How would you design the store for a large app?**
 
-**Short answer:**
+**Short answer:** Feature-based slices, normalised entities, server data in RTK Query, local UI state kept local, colocated selectors, typed hooks and lazy-loaded reducers.
 
-- Feature-based slices (`features/calls`, `features/scoring`).
-- Normalised entities.
-- Server data in RTK Query; UI state kept local.
-- Selectors co-located with their slices.
-- Typed hooks (`useAppSelector`).
-- Lazy-loaded reducers for code-split features.
+**Explanation:** This keeps each feature self-contained and the global store small.
+
+**Example:**
+
+```text
+features/calls/{callsSlice.ts, selectors.ts}
+features/scoring/{scoringSlice.ts}
+app/{store.ts, hooks.ts}  services/api.ts
+```
+
+**Say it like this:** "Organise by feature, keep the global store small, and let RTK Query own server data."
 
 ---
 
 **Q39. How do you code-split reducers?**
 
+**Short answer:** Use `combineSlices` with lazy-loaded slices and inject a feature's reducer when its chunk loads.
+
+**Explanation:** The initial bundle stays small; admin or scoring code loads only when needed.
+
+**Example:**
+
 ```ts
 const rootReducer = combineSlices(authSlice, api).withLazyLoadedSlices<LazySlices>();
-
-// inside the lazily loaded scoring feature:
-const injectedReducer = scoringSlice.injectInto(rootReducer);
+const injected = scoringSlice.injectInto(rootReducer);
 ```
 
-**Short answer:** The scoring feature's reducer is added only when that feature's code chunk loads, so the initial bundle stays small.
+**Say it like this:** "Reducers can be code-split like components, so rarely used features don't bloat the initial bundle."
 
 ---
 
 **Q40. What are the serializability rules, and why do they exist?**
 
-**Short answer:** Actions and state should be plain, serializable data (objects, arrays, strings, numbers). This keeps DevTools, persistence and time travel working, and keeps the state predictable. Don't store class instances (a LiveKit `Room`, a `MediaStream`) or `Date` objects. Store IDs and ISO strings, and keep the instances in refs or service modules.
+**Short answer:** Actions and state should be plain, serialisable data, not class instances or Date objects.
+
+**Explanation:** It keeps DevTools, persistence and time travel working. Store IDs and ISO strings; keep instances in refs or services.
+
+**Example:** Store `{ connectedAt: '2026-10-04T10:00:00Z' }`, not `{ room: Room }`.
+
+**Say it like this:** "The store holds plain facts; SDK objects like the LiveKit Room live outside it."
 
 ---
 
 **Q41. Where do you keep non-serializable objects like a WebSocket, a Room or a MediaStream?**
 
-**Short answer:** In a service module, a React ref or a context. Middleware or listeners turn their events into **serializable actions**:
+**Short answer:** In a service module, a ref or a context, with listeners turning their events into serialisable actions.
+
+**Explanation:** The store learns facts like "participant joined", while the object itself stays outside.
+
+**Example:**
 
 ```ts
 room.on(RoomEvent.ParticipantConnected, (p) =>
-  store.dispatch(participantJoined({ id: p.sid, name: p.name ?? 'Guest' })),
-);
+  store.dispatch(participantJoined({ id: p.sid, name: p.name ?? 'Guest' })));
 ```
 
-**Say it like this:** "The Room object lives outside Redux. Only plain facts about it go into the store, like who joined or the connection state. That keeps DevTools working and avoids serialization warnings."
+**Say it like this:** "The Room stays outside Redux; only plain events about it go in, which keeps DevTools working."
 
 ---
 
 **Q42. How do you handle WebSocket or SSE data with Redux?**
+
+**Short answer:** Use RTK Query's `onCacheEntryAdded` (or custom middleware) to open the stream for subscribers and close it when they leave.
+
+**Explanation:** The stream's lifetime follows the cache entry's subscribers automatically.
+
+**Example:**
 
 ```ts
 getCallEvents: build.query<CallEvent[], string>({
@@ -611,146 +788,166 @@ getCallEvents: build.query<CallEvent[], string>({
   async onCacheEntryAdded(callId, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
     await cacheDataLoaded;
     const es = new EventSource(`/api/calls/${callId}/events`, { withCredentials: true });
-    es.onmessage = (e) => updateCachedData((draft) => { draft.push(JSON.parse(e.data)); });
-    await cacheEntryRemoved;   // last subscriber unmounted
+    es.onmessage = (e) => updateCachedData((d) => { d.push(JSON.parse(e.data)); });
+    await cacheEntryRemoved;
     es.close();
   },
 }),
 ```
 
-**Short answer:** Use RTK Query's `onCacheEntryAdded` lifecycle, or custom middleware. The stream opens when the first component subscribes and closes when the last one unsubscribes.
+**Say it like this:** "Streaming updates go straight into the query cache, and the connection closes when the last component unsubscribes."
 
 ---
 
 **Q43. How do you do optimistic updates in RTK Query?**
 
+**Short answer:** In `onQueryStarted`, patch the cache with `updateQueryData`, and call `patch.undo()` if the mutation fails.
+
+**Explanation:** It's the RTK Query equivalent of TanStack's `onMutate`/`onError`.
+
+**Example:**
+
 ```ts
-updateScore: build.mutation<Score, Score>({
-  query: (s) => ({ url: `scores/${s.id}`, method: 'PUT', body: s }),
-  async onQueryStarted(score, { dispatch, queryFulfilled }) {
-    const patch = dispatch(api.util.updateQueryData('getScore', score.id, (draft) => {
-      Object.assign(draft, score);
-    }));
-    try { await queryFulfilled; } catch { patch.undo(); }
-  },
-}),
+async onQueryStarted(score, { dispatch, queryFulfilled }) {
+  const patch = dispatch(api.util.updateQueryData('getScore', score.id, (d) => { Object.assign(d, score); }));
+  try { await queryFulfilled; } catch { patch.undo(); }
+}
 ```
+
+**Say it like this:** "Patch the cache first, undo if the server says no."
 
 ---
 
 **Q44. How do you handle a 401 globally in RTK Query?**
 
-**Short answer:** Wrap `baseQuery` with re-authentication logic and a **mutex**, so only one token refresh happens even if ten requests fail at once. Then retry the original request. If the refresh fails, log out.
+**Short answer:** Wrap `baseQuery` with re-auth logic and a mutex so only one refresh runs; retry the original request; log out if refresh fails.
+
+**Explanation:** Without the mutex, ten failing requests trigger ten refreshes, and refresh-token rotation can invalidate them.
+
+**Example:**
 
 ```ts
-const mutex = new Mutex();
 const baseQueryWithReauth: BaseQueryFn = async (args, api, extra) => {
   await mutex.waitForUnlock();
   let result = await baseQuery(args, api, extra);
   if (result.error?.status === 401) {
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
-      try {
-        const refresh = await baseQuery('/auth/refresh', api, extra);
-        if (refresh.error) api.dispatch(logout());
-      } finally { release(); }
-    } else {
-      await mutex.waitForUnlock();
-    }
+      try { const r = await baseQuery('/auth/refresh', api, extra); if (r.error) api.dispatch(logout()); }
+      finally { release(); }
+    } else await mutex.waitForUnlock();
     result = await baseQuery(args, api, extra);
   }
   return result;
 };
 ```
 
+**Say it like this:** "A single-flight refresh behind a mutex, then one retry, then logout if it fails."
+
 ---
 
 **Q45. What cache invalidation strategies are there?**
 
-**Short answer:**
+**Short answer:** Tag or key invalidation after mutations, time-based staleness, server push events, and optimistic updates with reconciliation.
 
-- Tag or key invalidation after mutations.
-- Time-based staleness (`staleTime`).
-- Server push events (WebSocket or SSE) that invalidate specific keys.
-- Optimistic updates followed by reconciliation.
+**Explanation:** Choose freshness per data type: profiles can be minutes old, live call status needs real-time updates.
 
-Choose the staleness per data type. A user profile can be cached for minutes, but live call status needs real-time updates.
+**Example:** User profile `staleTime: 5 min`; scoring job status polled every 5 s until done; call list invalidated by an SSE "call.scored" event.
+
+**Say it like this:** "Each kind of data gets its own freshness rule instead of one global refetch policy."
 
 ---
 
 **Q46. Should derived state be stored or computed?**
 
-**Short answer:** Computed, with selectors or `useMemo`. Storing derived data, like "total flagged calls", duplicates the truth, and it goes stale when you forget to update it.
+**Short answer:** Computed, with selectors or `useMemo`.
+
+**Explanation:** Stored derived values duplicate the truth and go stale when someone forgets to update them.
+
+**Example:** `flaggedCount` is `selectFlaggedCalls(state).length`, never a separate field updated by hand.
+
+**Say it like this:** "Store the minimum and derive the rest, so totals can never disagree with the data."
 
 ---
 
 **Q47. When do you use state machines (XState)?**
 
-**Short answer:** For complex flows with many states and illegal transitions: a call lifecycle, a multi-step onboarding, an upload with retries. Impossible states can't happen, the logic can be visualised as a diagram, and every transition is testable.
+**Short answer:** For flows with many states and illegal transitions, like a call lifecycle, onboarding or uploads with retries.
+
+**Explanation:** Machines make impossible states impossible, can be visualised as diagrams, and every transition is testable.
+
+**Example:**
 
 ```text
-idle → checkingDevices ──(granted)──► connecting → connected ⇄ reconnecting → disconnected
-            │                              │                         │
-         (denied)                    (max retries)              (max retries)
-            ▼                              ▼                         ▼
-     permissionError                    failed ◄─────────────────────┘
+idle → checkingDevices → connecting → connected ⇄ reconnecting → disconnected
+checkingDevices → (denied) permissionError ;  connecting/reconnecting → (max retries) failed
 ```
 
-**Say it like this:** "With booleans like `isConnecting`, `isConnected` and `isReconnecting`, you can end up with two true at once. A state machine says the call is in exactly one state and lists which events can move it where. It also becomes great documentation."
+**Say it like this:** "With booleans you can be 'connecting' and 'connected' at once; a machine says exactly one state and which events move it."
 
 ---
 
 **Q48. How do you keep state consistent across browser tabs?**
 
-**Short answer:** Use BroadcastChannel to sync logout and critical preferences, use leader election so only one tab owns a socket, and refetch server state on focus.
+**Short answer:** BroadcastChannel for logout and preferences, leader election for one socket, and refetch on focus for server data.
+
+**Explanation:** Without it, tabs show conflicting data or keep sessions alive after logout.
+
+**Example:** Logging out in one tab posts `'logout'` to a BroadcastChannel; every other tab clears its caches and redirects.
+
+**Say it like this:** "Tabs sync auth through BroadcastChannel and server data through refetch-on-focus."
 
 ---
 
 **Q49. What are the common performance pitfalls in Redux apps?**
 
-**Short answer:**
+**Short answer:** Selectors returning new references, non-normalised lists, high-frequency actions through Redux, and list items selecting the whole list.
 
-- Selectors that return new references every time.
-- Huge, non-normalised lists.
-- High-frequency actions (mouse movement, audio levels) going through Redux.
-- List items that select the whole list instead of their own item by ID.
+**Explanation:** Each causes broad re-renders on every dispatch.
+
+**Example:** Rows selecting `s.calls.items` re-render on any call change; selecting `selectCallById(s, id)` re-renders only that row.
+
+**Say it like this:** "Stable selectors, normalised data and per-item subscriptions keep Redux fast."
 
 ---
 
 **Q50. How do you test state logic?**
 
-**Short answer:** Reducers and selectors are pure, so unit-test them directly. Test thunks and listeners as integration tests with a real store and MSW. Test components by rendering them with a real store created from `preloadedState`.
+**Short answer:** Unit-test reducers and selectors directly; test thunks and listeners with a real store and MSW; render components with a preloaded store.
+
+**Explanation:** Pure reducers make tests trivial and fast.
+
+**Example:**
 
 ```ts
 expect(callSlice.reducer({ muted: false } as CallControls, toggleMute()).muted).toBe(true);
 ```
 
+**Say it like this:** "Reducers are pure functions, so they're the easiest code in the app to test."
+
 ---
 
 **Q51. How do you migrate legacy Redux (switch reducers, the `connect` HOC) to RTK?**
 
-**Short answer:** Incrementally:
+**Short answer:** Switch to `configureStore`, convert one reducer at a time to `createSlice`, replace `connect` with hooks gradually, move fetching to RTK Query, and delete constants.
 
-1. Switch to `configureStore`. It works with your old reducers.
-2. Convert one reducer at a time to `createSlice`.
-3. Replace `connect` with hooks as you touch components.
-4. Move data fetching to RTK Query.
-5. Delete the action-type constants.
+**Explanation:** It's incremental: old and new reducers coexist.
+
+**Example:** Sprint 1: `configureStore` + one slice. Sprint 2–4: convert remaining slices while touching features, and move fetching to RTK Query.
+
+**Say it like this:** "No big bang: RTK works with old reducers, so we convert as we touch code."
 
 ---
 
 **Q52. How do you choose a state approach for a new app?**
 
-**Short answer:** Go through the kinds of state in order:
+**Short answer:** Server state → query library; URL state → router; forms → form library; local → `useState`; small shared state → context or Zustand; large complex shared state → Redux Toolkit plus state machines for flows.
 
-1. Server state → a query library.
-2. URL state → the router.
-3. Form state → a form library.
-4. Local UI state → `useState`.
-5. Small shared client state → context or Zustand.
-6. Large shared client state with complex flows or big teams → Redux Toolkit, plus state machines for the flows.
+**Explanation:** The library choice falls out of listing the kinds of state the app has.
 
-**Say it like this:** "I don't start by picking a library. I list the kinds of state the app has, and the library choice usually falls out of that. Often the 'global state' left after removing server data is small enough for Zustand."
+**Example:** For a new analytics dashboard: TanStack Query, URL filters, Zustand for UI preferences, no Redux needed.
+
+**Say it like this:** "I list the kinds of state first; often what's left after removing server data is small enough for Zustand."
 
 ---
 
@@ -758,53 +955,104 @@ expect(callSlice.reducer({ muted: false } as CallControls, toggleMute()).muted).
 
 **Q53. Switching tenants shows the previous tenant's calls for a moment.**
 
-**Answer:** The tenant is missing from the cache keys or tags. Include `tenantId` in every key, clear or reset the caches when the tenant switches, and remount the tenant-scoped shell with `key={tenantId}`.
+**Short answer:** Include `tenantId` in every key, reset caches on switch, and remount the tenant shell with `key={tenantId}`.
+
+**Explanation:** Without tenant-scoped keys, the old cache entry is shown until the new fetch finishes.
+
+**Example:** `['tenant', tenantId, 'calls']` instead of `['calls']`, plus `queryClient.clear()` on switch.
+
+**Say it like this:** "Tenant-scoped keys plus a reset on switch mean one tenant's data can never flash for another."
 
 ---
 
 **Q54. A list of 2,000 calls re-renders when one call's score updates.**
 
-**Answer:** Normalise the data. Each row selects *its own* entity by ID (`useAppSelector((s) => selectCallById(s, id))`). Memoize the row components, and virtualise the list.
+**Short answer:** Normalise, have each row select its own entity by ID, memoise rows, and virtualise.
+
+**Explanation:** Rows selecting the whole list re-render on any change.
+
+**Example:**
+
+```tsx
+const CallRow = memo(({ id }: { id: string }) => {
+  const call = useAppSelector((s) => selectCallById(s, id));
+  return <tr>…</tr>;
+});
+```
+
+**Say it like this:** "Each row subscribes to its own call, so one score update re-renders one row."
 
 ---
 
 **Q55. Two components show different versions of the same user.**
 
-**Answer:** The server data was copied into several slices. Have a single source of truth, one query cache entry, and derive everything else from it.
+**Short answer:** The server data was copied into several slices; keep one source of truth and derive the rest.
+
+**Explanation:** Copies drift whenever one is updated and the other isn't.
+
+**Example:** Remove `profile.user` and `header.user`; both read `useGetMeQuery().data`.
+
+**Say it like this:** "Duplicated server data always drifts; one cache entry fixes it."
 
 ---
 
 **Q56. After a mutation, the list doesn't update.**
 
-**Answer:** Either the invalidation tag is missing, or the keys don't match. For example, the optimistic patch was applied to `getCalls({ page: 1 })` while the screen shows `getCalls({ page: 1, status: 'all' })`. Align the keys and invalidate the list tag.
+**Short answer:** The invalidation tag is missing or the keys don't match.
+
+**Explanation:** For example, the optimistic patch targeted `getCalls({ page: 1 })` while the screen shows `getCalls({ page: 1, status: 'all' })`.
+
+**Example:** Add `invalidatesTags: [{ type: 'Call', id: 'LIST' }]` to the mutation and `providesTags` with `'LIST'` to the list query.
+
+**Say it like this:** "I'd check that the mutation invalidates exactly what the list provides; key mismatches are the usual cause."
 
 ---
 
 **Q57. Redux DevTools shows thousands of `audioLevelChanged` actions.**
 
-**Answer:** High-frequency data doesn't belong in Redux. Handle it locally in the tile component with refs and `requestAnimationFrame`.
+**Short answer:** High-frequency data doesn't belong in Redux; handle it locally with refs and `requestAnimationFrame`.
+
+**Explanation:** Each action runs every selector and floods DevTools.
+
+**Example:** The tile reads `participant.audioLevel` in a rAF loop and sets a CSS variable.
+
+**Say it like this:** "Audio levels are UI animation data, not app state, so they never go through the store."
 
 ---
 
 **Q58. You need offline drafts for QA scorecards.**
 
-**Answer:**
+**Short answer:** Persist drafts per call (non-PHI or encrypted, cleared on logout), queue submissions offline, sync on reconnect, and handle conflicts with versions.
 
-- Persist drafts per call ID. Store only non-PHI fields, or encrypt them and clear them on logout.
-- Queue submissions while offline and sync on reconnect.
-- Handle conflicts with server version numbers: if the server version changed, show a merge or overwrite prompt.
+**Explanation:** Version numbers let the server detect that someone else changed the scorecard, so the UI can offer merge or overwrite.
+
+**Example:** Drafts in IndexedDB keyed by `callId`; an outbox replays on `online`; 409 Conflict opens a compare dialog.
+
+**Say it like this:** "Drafts survive offline, submissions queue, and versioning prevents silently overwriting someone else's review."
 
 ---
 
 **Q59. The team argues: "Let's put everything in Redux."**
 
-**Answer:** Explain the kinds of state and point to real bugs caused by hand-written caching. Propose RTK Query for server data and local state for UI, keeping Redux for truly shared client state. Run a small pilot on one feature to show how much code it deletes.
+**Short answer:** Explain the kinds of state, show bugs caused by hand-written caching, and pilot RTK Query plus local state on one feature.
+
+**Explanation:** Data from a pilot convinces better than opinions.
+
+**Example:** Migrating the call list deleted 150 lines of loading-flag code and fixed two stale-data bugs.
+
+**Say it like this:** "I'd propose a small pilot and let the deleted code and fixed bugs make the case."
 
 ---
 
 **Q60. A stale token causes a burst of 401s and several refresh calls.**
 
-**Answer:** Make the refresh single-flight with a mutex (Q44). Queue requests while the refresh is in progress, retry each request once, and log out if the refresh fails.
+**Short answer:** Make refresh single-flight with a mutex, queue requests during refresh, retry once, and log out on failure.
+
+**Explanation:** Parallel refreshes can invalidate each other with refresh-token rotation.
+
+**Example:** See Q44's `baseQueryWithReauth`.
+
+**Say it like this:** "One refresh for everyone, then a single retry per request."
 
 ---
 
@@ -812,22 +1060,46 @@ expect(callSlice.reducer({ muted: false } as CallControls, toggleMute()).muted).
 
 **Q61. "Why Redux in InterpretIQ?"**
 
-**Say it like this:** "The session and call state was shared across many screens: the waiting room, the live call and the post-call summary. It had complex, predictable transitions. Redux gave us one place for that state and DevTools to debug complex session flows by replaying actions. Server data like history and profiles went through a query layer, not hand-written reducers. The non-serializable LiveKit objects stayed outside the store, and only plain facts went in."
+**Short answer:** Shared session and call state across many screens, predictable transitions, and DevTools for debugging complex flows.
+
+**Explanation:** Server data used a query layer; LiveKit objects stayed outside the store and only plain facts went in.
+
+**Example:** Waiting room, live call and post-call summary all read `session` and `call` slices; DevTools replays showed exactly how a failed reconnect unfolded.
+
+**Say it like this:** "Session state was shared across the whole call journey, and being able to replay actions in DevTools made complex bugs debuggable."
 
 ---
 
 **Q62. "How did you keep multi-tenant data isolated in the BpoBox client cache?"**
 
-**Say it like this:** "Four layers. The tenant ID was in every query key and tag. The API client was tenant-scoped. The cache was reset on tenant switch and on logout. And most importantly, the server enforced isolation on every request regardless of what the client did. The client-side measures prevented visual leaks, but security lived on the server."
+**Short answer:** Tenant ID in every key and tag, a tenant-scoped API client, cache resets on switch and logout, and server-side isolation regardless.
+
+**Explanation:** Client measures prevent visual leaks; security lives on the server.
+
+**Example:** `providesTags: [{ type: 'Call', id: `LIST-${tenantId}` }]` and `api.util.resetApiState()` on tenant switch.
+
+**Say it like this:** "Four layers: tenant-scoped keys, a tenant-scoped client, cache resets, and above all server enforcement."
 
 ---
 
 **Q63. "How would you model the interpretation session lifecycle?"**
 
-**Say it like this:** "As a state machine: scheduled → waiting room → interpreter matched → connecting → live, which can go back and forth with reconnecting, and finally ended or failed. Guards check permissions and token validity before transitions. LiveKit events are mapped to serializable actions that drive the transitions."
+**Short answer:** As a state machine: scheduled → waiting room → interpreter matched → connecting → live ⇄ reconnecting → ended or failed.
+
+**Explanation:** Guards check permissions and token validity; LiveKit events map to serialisable actions driving transitions.
+
+**Example:** `RoomEvent.Reconnecting` dispatches `connectionLost()`, moving `live → reconnecting`; `Reconnected` moves back.
+
+**Say it like this:** "Explicit states and transitions mean every screen handles reconnecting and failure the same way."
 
 ---
 
 **Q64. "Where did the AI scores live on the client, and how did they update?"**
 
-**Say it like this:** "Scores were server state, cached per call in the query layer. When the Celery pipeline finished scoring, the UI learned about it through polling or SSE and refetched that call's score. When a QA reviewer overrode a score, we updated the UI optimistically and rolled back if the save failed. Then we invalidated the call so the audit trail was fresh."
+**Short answer:** As server state cached per call, refreshed via polling or SSE when scoring finished, with optimistic reviewer overrides and invalidation afterwards.
+
+**Explanation:** Scores belong to the server, so they live in the query cache, not a slice.
+
+**Example:** The detail page polls the scoring job every 5 s until `status: 'done'`, then invalidates the call's score.
+
+**Say it like this:** "Scores were server state: fetched, cached and invalidated, with overrides updated optimistically and rolled back on failure."
