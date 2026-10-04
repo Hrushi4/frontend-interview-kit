@@ -7,7 +7,7 @@ Frontend DSA rounds favour arrays, strings, hash maps, two pointers, sliding win
 - **Part A — Understand the topic:** Big-O, the core data structures, and the main problem-solving patterns, explained simply.
 - **Part B — Problems with explanations:** Easy → Medium → Hard → Frontend-flavoured → Practice list.
 
-Each problem has a **Problem** statement, the **Idea** (how to think about it), **Code**, **Complexity**, and often a **Say it like this** explanation to speak while coding.
+Each problem has a **Short answer** (the approach and complexity), an **Explanation** (the idea and why it works), an **Example** (the code with a sample input) and **Say it like this** (how to talk through it while coding).
 
 ---
 
@@ -98,17 +98,21 @@ Even UI-focused companies run a coding round. Frontend versions often use **tree
 
 ## Part B — Problems with Explanations
 
+Every problem below has four parts: **Short answer** (the approach and complexity, to say first), **Explanation** (the idea and why it works), **Example** (the code, often with a sample input) and **Say it like this** (how to talk through it while coding).
+
 ## 🟢 Easy
 
-**Q1. Two Sum**
+**Q1. Two Sum — return the indexes of the two numbers that add up to a target.**
 
-**Problem:** Given an array of numbers and a target, return the indexes of the two numbers that add up to the target.
+**Short answer:** One pass with a hash map from value to index; for each number, check whether `target − num` was already seen. O(n) time, O(n) space.
 
-**Idea:** For each number, the partner we need is `target − num`. Store each number we've seen in a hash map (number → index), so checking for the partner is O(1).
+**Explanation:** The brute force checks every pair in O(n²). Storing seen numbers in a Map turns "have I seen the partner?" into an O(1) lookup.
+
+**Example:**
 
 ```js
 function twoSum(nums, target) {
-  const seen = new Map();                 // value → index
+  const seen = new Map();
   for (let i = 0; i < nums.length; i++) {
     const need = target - nums[i];
     if (seen.has(need)) return [seen.get(need), i];
@@ -119,40 +123,40 @@ function twoSum(nums, target) {
 twoSum([2, 7, 11, 15], 9); // [0, 1]
 ```
 
-**Complexity:** O(n) time, O(n) space.
-
-**Say it like this:** "The brute force checks every pair, which is O(n²). Instead, while scanning, I ask: have I already seen the number that completes this pair? A Map answers that in O(1), so the whole thing is one pass."
+**Say it like this:** "Brute force is O(n²). Instead, while scanning I ask whether I've already seen the number that completes the pair; a Map answers that in O(1), so it's one pass."
 
 ---
 
-**Q2. Valid Anagram**
+**Q2. Valid Anagram — do two strings contain the same letters with the same counts?**
 
-**Problem:** Do two strings contain exactly the same letters with the same counts? (`"listen"` and `"silent"` → true)
+**Short answer:** Count characters of the first string and decrement for the second; any count going below zero means false. O(n) time.
 
-**Idea:** Count the characters of the first string, then decrement the counts for the second. If any count would go below zero, they aren't anagrams.
+**Explanation:** Equal lengths are a quick early exit. Sorting both strings also works in O(n log n).
+
+**Example:**
 
 ```js
 function isAnagram(a, b) {
   if (a.length !== b.length) return false;
   const count = new Map();
   for (const c of a) count.set(c, (count.get(c) ?? 0) + 1);
-  for (const c of b) {
-    if (!count.get(c)) return false;
-    count.set(c, count.get(c) - 1);
-  }
+  for (const c of b) { if (!count.get(c)) return false; count.set(c, count.get(c) - 1); }
   return true;
 }
+isAnagram('listen', 'silent'); // true
 ```
 
-**Complexity:** O(n) time, O(k) space, where k is the number of distinct characters. Sorting both strings also works, at O(n log n).
+**Say it like this:** "A frequency map makes it linear; sorting is simpler to write but O(n log n)."
 
 ---
 
-**Q3. Valid Palindrome (Ignoring Non-Alphanumeric Characters)**
+**Q3. Valid Palindrome — ignoring non-alphanumeric characters and case.**
 
-**Problem:** `"A man, a plan, a canal: Panama"` → true.
+**Short answer:** Two pointers from both ends, skipping non-alphanumerics and comparing case-insensitively. O(n) time, O(1) space.
 
-**Idea:** Two pointers, one at each end. Skip characters that aren't letters or digits, and compare case-insensitively as the pointers move inwards.
+**Explanation:** Comparing in place avoids building a cleaned copy of the string.
+
+**Example:**
 
 ```js
 function isPalindrome(s) {
@@ -166,17 +170,20 @@ function isPalindrome(s) {
   }
   return true;
 }
+isPalindrome('A man, a plan, a canal: Panama'); // true
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Say it like this:** "Two pointers moving inwards, skipping punctuation, so it's linear time and constant space."
 
 ---
 
-**Q4. Valid Parentheses**
+**Q4. Valid Parentheses — is a bracket string balanced?**
 
-**Problem:** Is `"({[]})"` correctly balanced? Is `"(]"`?
+**Short answer:** Use a stack: push openers, and each closer must match the top. The stack must end empty. O(n).
 
-**Idea:** Use a **stack**. Push opening brackets. For each closing bracket, the top of the stack must be its matching opener. At the end, the stack must be empty.
+**Explanation:** The most recent unmatched opener must close first, which is exactly LIFO order.
+
+**Example:**
 
 ```js
 function isValid(s) {
@@ -188,102 +195,106 @@ function isValid(s) {
   }
   return stack.length === 0;
 }
+isValid('({[]})'); // true
+isValid('(]');     // false
 ```
 
-**Complexity:** O(n) time, O(n) space.
-
-**Frontend link:** the same idea validates HTML tag nesting.
+**Say it like this:** "Brackets close in reverse order of opening, which is a stack. The same idea validates HTML tag nesting."
 
 ---
 
-**Q5. Best Time to Buy and Sell a Stock**
+**Q5. Best Time to Buy and Sell a Stock — maximum profit from one buy then one sell.**
 
-**Problem:** Given daily prices, find the maximum profit from one buy followed by one sell.
+**Short answer:** Track the lowest price so far and the best `price − min`. O(n) time, O(1) space.
 
-**Idea:** Track the lowest price so far. At each day, the best possible profit is today's price minus that minimum.
+**Explanation:** The best sale on any day uses the cheapest earlier buy.
+
+**Example:**
 
 ```js
 function maxProfit(prices) {
   let min = Infinity, best = 0;
-  for (const p of prices) {
-    min = Math.min(min, p);
-    best = Math.max(best, p - min);
-  }
+  for (const p of prices) { min = Math.min(min, p); best = Math.max(best, p - min); }
   return best;
 }
-maxProfit([7, 1, 5, 3, 6, 4]); // 5 (buy at 1, sell at 6)
+maxProfit([7, 1, 5, 3, 6, 4]); // 5
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Say it like this:** "One pass keeping the minimum so far; each day's best profit is today minus that minimum."
 
 ---
 
-**Q6. Maximum Subarray (Kadane's Algorithm)**
+**Q6. Maximum Subarray (Kadane's Algorithm) — largest sum of a contiguous subarray.**
 
-**Problem:** Find the contiguous subarray with the largest sum.
+**Short answer:** At each element, either extend the current sum or restart from this element; track the best. O(n).
 
-**Idea:** At each element, either extend the previous subarray or start fresh from this element, whichever is larger. If the running sum goes negative, it can only hurt what comes next.
+**Explanation:** A negative running sum can only hurt what follows, so you drop it.
+
+**Example:**
 
 ```js
 function maxSubArray(nums) {
   let cur = nums[0], best = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    cur = Math.max(nums[i], cur + nums[i]);
-    best = Math.max(best, cur);
-  }
+  for (let i = 1; i < nums.length; i++) { cur = Math.max(nums[i], cur + nums[i]); best = Math.max(best, cur); }
   return best;
 }
-maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]); // 6  ([4, -1, 2, 1])
+maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]); // 6
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Say it like this:** "Kadane's: keep extending while the running sum helps, restart when it doesn't."
 
 ---
 
-**Q7. Contains Duplicate**
+**Q7. Contains Duplicate — does any value appear twice?**
+
+**Short answer:** Compare `new Set(nums).size` with `nums.length`. O(n) time and space.
+
+**Explanation:** A Set drops duplicates, so a smaller size means a duplicate existed. Early exit is possible by checking membership while adding.
+
+**Example:**
 
 ```js
 const containsDuplicate = (nums) => new Set(nums).size !== nums.length;
 ```
 
-**Idea:** A Set drops duplicates, so if its size is smaller than the array's length, there was a duplicate. O(n) time and space.
+**Say it like this:** "A Set does it in one line and linear time."
 
 ---
 
-**Q8. Reverse a Linked List**
+**Q8. Reverse a Linked List.**
 
-**Idea:** Walk the list and flip each `next` pointer to point backwards. You need three variables: `prev`, `current` and `next`.
+**Short answer:** Walk the list flipping each `next` pointer, using `prev`, `current` and `next` variables. O(n) time, O(1) space.
+
+**Explanation:** Save the next node before overwriting the pointer, or you lose the rest of the list.
+
+**Example:**
 
 ```js
 function reverseList(head) {
   let prev = null;
-  while (head) {
-    const next = head.next;  // save
-    head.next = prev;        // flip
-    prev = head;             // advance prev
-    head = next;             // advance head
-  }
+  while (head) { const next = head.next; head.next = prev; prev = head; head = next; }
   return prev;
 }
+// 1 → 2 → 3  becomes  3 → 2 → 1
 ```
 
-**Complexity:** O(n) time, O(1) space.
-
-**Dry run:** For `1 → 2 → 3`, flipping each pointer gives `null ← 1 ← 2 ← 3`, so the new head is 3.
+**Say it like this:** "Save next, flip the pointer, advance both; at the end `prev` is the new head."
 
 ---
 
-**Q9. Merge Two Sorted Lists**
+**Q9. Merge Two Sorted Lists.**
 
-**Idea:** Use a dummy head node. Repeatedly attach the smaller of the two current nodes, then attach whatever is left over.
+**Short answer:** A dummy head, repeatedly attaching the smaller current node, then the remainder. O(n + m).
+
+**Explanation:** The dummy node avoids special-casing the first node.
+
+**Example:**
 
 ```js
 function mergeTwoLists(a, b) {
-  const dummy = { next: null };
-  let tail = dummy;
+  const dummy = { next: null }; let tail = dummy;
   while (a && b) {
-    if (a.val <= b.val) { tail.next = a; a = a.next; }
-    else { tail.next = b; b = b.next; }
+    if (a.val <= b.val) { tail.next = a; a = a.next; } else { tail.next = b; b = b.next; }
     tail = tail.next;
   }
   tail.next = a ?? b;
@@ -291,39 +302,43 @@ function mergeTwoLists(a, b) {
 }
 ```
 
-**Complexity:** O(n + m) time, O(1) space.
+**Say it like this:** "Like the merge step of merge sort, with a dummy head to keep the code simple."
 
 ---
 
-**Q10. Linked List Cycle (Floyd's Tortoise and Hare)**
+**Q10. Linked List Cycle (Floyd's Tortoise and Hare).**
 
-**Idea:** A slow pointer moves 1 step and a fast pointer moves 2. If there's a cycle, the fast one eventually laps the slow one and they meet. If fast reaches the end, there's no cycle.
+**Short answer:** Slow moves 1, fast moves 2; if they meet there's a cycle. O(n) time, O(1) space.
+
+**Explanation:** In a cycle the fast pointer gains one step per move and must eventually land on the slow one.
+
+**Example:**
 
 ```js
 function hasCycle(head) {
   let slow = head, fast = head;
-  while (fast?.next) {
-    slow = slow.next;
-    fast = fast.next.next;
-    if (slow === fast) return true;
-  }
+  while (fast?.next) { slow = slow.next; fast = fast.next.next; if (slow === fast) return true; }
   return false;
 }
 ```
 
-**Complexity:** O(n) time, O(1) space. A Set of visited nodes would be O(n) space.
+**Say it like this:** "Two speeds on a loop always meet; a Set of visited nodes works too but costs O(n) space."
 
 ---
 
-**Q11. Binary Search**
+**Q11. Binary Search — find a target in a sorted array.**
 
-**Idea:** In a sorted array, compare with the middle element and discard the half that can't contain the target. Each step halves the search space.
+**Short answer:** Compare with the middle and discard the half that can't contain the target. O(log n).
+
+**Explanation:** Use `l <= r`, and move `l = m + 1` or `r = m − 1` to avoid infinite loops.
+
+**Example:**
 
 ```js
 function search(a, target) {
   let l = 0, r = a.length - 1;
   while (l <= r) {
-    const m = (l + r) >> 1;            // integer middle
+    const m = (l + r) >> 1;
     if (a[m] === target) return m;
     if (a[m] < target) l = m + 1; else r = m - 1;
   }
@@ -331,21 +346,33 @@ function search(a, target) {
 }
 ```
 
-**Complexity:** O(log n) time, O(1) space.
+**Say it like this:** "Halve the search space each step; the boundaries are where bugs hide, so I keep them consistent."
 
 ---
 
-**Q12. Maximum Depth of a Binary Tree**
+**Q12. Maximum Depth of a Binary Tree.**
+
+**Short answer:** Depth = 1 + max(depth of left, depth of right), with empty trees at 0. O(n).
+
+**Explanation:** Recursion uses O(h) stack space, where h is the height.
+
+**Example:**
 
 ```js
 const maxDepth = (node) => (node ? 1 + Math.max(maxDepth(node.left), maxDepth(node.right)) : 0);
 ```
 
-**Idea:** A tree's depth is 1 plus the deeper of its subtrees. An empty tree has depth 0. O(n) time, O(h) space for the recursion, where h is the tree's height.
+**Say it like this:** "The tree's depth is one more than its deeper subtree; a one-line recursion."
 
 ---
 
-**Q13. Invert a Binary Tree**
+**Q13. Invert a Binary Tree.**
+
+**Short answer:** Swap left and right children at every node recursively. O(n).
+
+**Explanation:** Each node is visited once; the swap can happen before or after recursing.
+
+**Example:**
 
 ```js
 function invert(node) {
@@ -355,29 +382,34 @@ function invert(node) {
 }
 ```
 
-**Idea:** Swap the left and right children at every node, recursively. O(n).
+**Say it like this:** "Swap children at each node, recursively; it's a mirror image."
 
 ---
 
-**Q14. Climbing Stairs**
+**Q14. Climbing Stairs — ways to reach step n taking 1 or 2 steps.**
 
-**Problem:** You can climb 1 or 2 steps at a time. How many distinct ways are there to reach step n?
+**Short answer:** `ways(n) = ways(n−1) + ways(n−2)`, i.e. Fibonacci, keeping only the last two values. O(n) time, O(1) space.
 
-**Idea:** To reach step n, your last move came from step n−1 or step n−2. So `ways(n) = ways(n−1) + ways(n−2)`, which is the Fibonacci sequence. Only the last two values are needed.
+**Explanation:** The last move came from n−1 or n−2, so the counts add.
+
+**Example:**
 
 ```js
-function climbStairs(n) {
-  let a = 1, b = 1;                 // ways(0), ways(1)
-  for (let i = 2; i <= n; i++) [a, b] = [b, a + b];
-  return b;
-}
+function climbStairs(n) { let a = 1, b = 1; for (let i = 2; i <= n; i++) [a, b] = [b, a + b]; return b; }
+climbStairs(5); // 8
 ```
 
-**Complexity:** O(n) time, O(1) space. This is the simplest DP problem, so explain the recurrence clearly.
+**Say it like this:** "The recurrence is Fibonacci; I only need the previous two values, so constant space."
 
 ---
 
-**Q15. First Unique Character**
+**Q15. First Unique Character — index of the first non-repeating character.**
+
+**Short answer:** Count characters, then return the first index with count 1. O(n).
+
+**Explanation:** Two passes: one to count, one to find in original order.
+
+**Example:**
 
 ```js
 function firstUniqChar(s) {
@@ -386,44 +418,49 @@ function firstUniqChar(s) {
   for (let i = 0; i < s.length; i++) if (count.get(s[i]) === 1) return i;
   return -1;
 }
+firstUniqChar('leetcode'); // 0
 ```
 
-**Idea:** Two passes: count every character, then return the index of the first one with a count of 1. O(n).
+**Say it like this:** "Count first, then scan in order for the first count of one."
 
 ---
 
-**Q16. Move Zeroes (In Place)**
+**Q16. Move Zeroes — move all zeroes to the end in place, keeping order.**
+
+**Short answer:** A write pointer for the next non-zero position while a read pointer scans; swap when non-zero. O(n), O(1) space.
+
+**Explanation:** Non-zero elements keep their relative order because they're written in scan order.
+
+**Example:**
 
 ```js
 function moveZeroes(a) {
   let write = 0;
   for (let read = 0; read < a.length; read++) {
-    if (a[read] !== 0) {
-      [a[write], a[read]] = [a[read], a[write]];
-      write++;
-    }
+    if (a[read] !== 0) { [a[write], a[read]] = [a[read], a[write]]; write++; }
   }
   return a;
 }
 moveZeroes([0, 1, 0, 3, 12]); // [1, 3, 12, 0, 0]
 ```
 
-**Idea:** Two pointers. `read` scans the array, and `write` marks where the next non-zero element belongs. O(n) time, O(1) space.
+**Say it like this:** "Read pointer scans, write pointer marks where the next non-zero goes."
 
 ---
 
 ## 🟡 Medium
 
-**Q17. Longest Substring Without Repeating Characters**
+**Q17. Longest Substring Without Repeating Characters.**
 
-**Problem:** For `"abcabcbb"` the answer is 3 (`"abc"`).
+**Short answer:** A sliding window: expand right; if the character was seen inside the window, jump left past its last index. O(n).
 
-**Idea:** A **sliding window**. Expand `r`. If `s[r]` already appeared inside the window, jump `l` past its previous position. Track the best window length.
+**Explanation:** Storing each character's last index lets the left edge jump directly instead of stepping.
+
+**Example:**
 
 ```js
 function lengthOfLongestSubstring(s) {
-  const last = new Map();   // char → last index seen
-  let l = 0, best = 0;
+  const last = new Map(); let l = 0, best = 0;
   for (let r = 0; r < s.length; r++) {
     if (last.has(s[r]) && last.get(s[r]) >= l) l = last.get(s[r]) + 1;
     last.set(s[r], r);
@@ -431,37 +468,44 @@ function lengthOfLongestSubstring(s) {
   }
   return best;
 }
+lengthOfLongestSubstring('abcabcbb'); // 3
 ```
 
-**Complexity:** O(n) time, O(k) space.
-
-**Say it like this:** "The window always holds unique characters. When I see a repeat inside the window, I move the left edge just past its previous occurrence. Each character is processed once, so it's linear."
+**Say it like this:** "The window always holds unique characters; on a repeat I move the left edge just past the previous occurrence."
 
 ---
 
-**Q18. Group Anagrams**
+**Q18. Group Anagrams.**
+
+**Short answer:** Use each word's sorted letters as a Map key. O(n · k log k).
+
+**Explanation:** Anagrams share the same sorted form. A 26-letter count key avoids sorting for lowercase input.
+
+**Example:**
 
 ```js
 function groupAnagrams(strs) {
   const groups = new Map();
   for (const s of strs) {
-    const key = [...s].sort().join('');      // "eat" → "aet"
+    const key = [...s].sort().join('');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(s);
   }
   return [...groups.values()];
 }
-groupAnagrams(['eat', 'tea', 'tan', 'ate', 'nat', 'bat']);
-// [['eat','tea','ate'], ['tan','nat'], ['bat']]
 ```
 
-**Idea:** Anagrams share the same sorted letters, so use that as the map key. O(n · k log k) time, where k is the word length.
+**Say it like this:** "Anagrams have identical sorted letters, so that's my grouping key."
 
 ---
 
-**Q19. Top K Frequent Elements**
+**Q19. Top K Frequent Elements.**
 
-**Idea:** Count frequencies, then use **bucket sort**: `buckets[count]` holds the numbers with that count. Walk the buckets from the highest count down until you have k numbers. This avoids an O(n log n) sort.
+**Short answer:** Count frequencies, bucket numbers by count, and read buckets from highest. O(n).
+
+**Explanation:** Bucket sort avoids an O(n log n) sort because counts are at most n.
+
+**Example:**
 
 ```js
 function topKFrequent(nums, k) {
@@ -475,13 +519,17 @@ function topKFrequent(nums, k) {
 }
 ```
 
-**Complexity:** O(n) time, O(n) space.
+**Say it like this:** "Counts are bounded by n, so bucket sort gives linear time instead of sorting."
 
 ---
 
-**Q20. Product of Array Except Self (Without Division)**
+**Q20. Product of Array Except Self (without division).**
 
-**Idea:** Each answer is (the product of everything to the left) × (the product of everything to the right). Compute the left products in one pass and multiply in the right products in a second pass.
+**Short answer:** Each answer is prefix product × suffix product; compute prefixes in one pass and multiply suffixes in a second. O(n).
+
+**Explanation:** Using the output array for prefixes gives O(1) extra space.
+
+**Example:**
 
 ```js
 function productExceptSelf(nums) {
@@ -495,157 +543,158 @@ function productExceptSelf(nums) {
 productExceptSelf([1, 2, 3, 4]); // [24, 12, 8, 6]
 ```
 
-**Complexity:** O(n) time, O(1) extra space (not counting the output).
+**Say it like this:** "Everything to the left times everything to the right, built in two passes."
 
 ---
 
-**Q21. 3Sum**
+**Q21. 3Sum — all unique triplets summing to zero.**
 
-**Problem:** Find all unique triplets that sum to 0.
+**Short answer:** Sort, fix one number, find pairs with two pointers, and skip duplicates. O(n²).
 
-**Idea:** Sort the array. Fix one number, then find pairs in the rest with **two pointers**. Skip duplicate values to avoid repeated triplets.
+**Explanation:** Sorting enables two pointers and makes duplicate-skipping easy.
+
+**Example:**
 
 ```js
 function threeSum(nums) {
-  nums.sort((a, b) => a - b);
-  const res = [];
+  nums.sort((a, b) => a - b); const res = [];
   for (let i = 0; i < nums.length - 2; i++) {
-    if (i && nums[i] === nums[i - 1]) continue;          // skip duplicate anchors
+    if (i && nums[i] === nums[i - 1]) continue;
     let l = i + 1, r = nums.length - 1;
     while (l < r) {
       const sum = nums[i] + nums[l] + nums[r];
-      if (sum === 0) {
-        res.push([nums[i], nums[l], nums[r]]);
-        while (nums[l] === nums[l + 1]) l++;
-        while (nums[r] === nums[r - 1]) r--;
-        l++; r--;
-      } else if (sum < 0) l++; else r--;
+      if (sum === 0) { res.push([nums[i], nums[l], nums[r]]); while (nums[l] === nums[l + 1]) l++; while (nums[r] === nums[r - 1]) r--; l++; r--; }
+      else if (sum < 0) l++; else r--;
     }
   }
   return res;
 }
 ```
 
-**Complexity:** O(n²) time, plus O(log n) to O(n) space for sorting.
+**Say it like this:** "Sort, anchor one value, then two-sum with pointers, skipping duplicates at each level."
 
 ---
 
-**Q22. Container With Most Water**
+**Q22. Container With Most Water.**
 
-**Idea:** Two pointers at the two ends. The area is limited by the *shorter* line, so move the shorter one inwards. Moving the taller one can never help.
+**Short answer:** Two pointers at the ends; compute area and move the shorter side inwards. O(n).
+
+**Explanation:** Area is limited by the shorter line, so moving the taller one can never increase it.
+
+**Example:**
 
 ```js
 function maxArea(h) {
   let l = 0, r = h.length - 1, best = 0;
-  while (l < r) {
-    best = Math.max(best, Math.min(h[l], h[r]) * (r - l));
-    if (h[l] < h[r]) l++; else r--;
-  }
+  while (l < r) { best = Math.max(best, Math.min(h[l], h[r]) * (r - l)); if (h[l] < h[r]) l++; else r--; }
   return best;
 }
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Say it like this:** "Always move the shorter wall, because it's the only move that could find a bigger area."
 
 ---
 
-**Q23. Subarray Sum Equals K**
+**Q23. Subarray Sum Equals K.**
 
-**Idea:** With **prefix sums**, a subarray `(j, i]` sums to k when `prefix[i] − prefix[j] = k`, which means `prefix[j] = prefix[i] − k`. Count how many times each prefix sum has appeared in a map.
+**Short answer:** Prefix sums with a Map of how often each sum has appeared; add `count[sum − k]` at each step. O(n).
+
+**Explanation:** A subarray sums to k when two prefix sums differ by k. Unlike a sliding window, it works with negatives.
+
+**Example:**
 
 ```js
 function subarraySum(nums, k) {
-  const seen = new Map([[0, 1]]);   // empty prefix
-  let sum = 0, count = 0;
-  for (const n of nums) {
-    sum += n;
-    count += seen.get(sum - k) ?? 0;
-    seen.set(sum, (seen.get(sum) ?? 0) + 1);
-  }
+  const seen = new Map([[0, 1]]); let sum = 0, count = 0;
+  for (const n of nums) { sum += n; count += seen.get(sum - k) ?? 0; seen.set(sum, (seen.get(sum) ?? 0) + 1); }
   return count;
 }
 ```
 
-**Complexity:** O(n) time, O(n) space. It works with negative numbers, where a sliding window wouldn't.
+**Say it like this:** "Prefix sums turn 'subarray sums to k' into 'have I seen sum minus k', which a Map answers in O(1)."
 
 ---
 
-**Q24. Merge Intervals**
+**Q24. Merge Intervals.**
 
-**Idea:** Sort by start time. If the next interval starts before the current one ends, they overlap, so extend the current end. Otherwise, start a new interval.
+**Short answer:** Sort by start; extend the last interval when the next overlaps, otherwise start a new one. O(n log n).
+
+**Explanation:** After sorting, overlaps can only happen with the most recent merged interval.
+
+**Example:**
 
 ```js
 function merge(intervals) {
-  intervals.sort((a, b) => a[0] - b[0]);
-  const out = [];
-  for (const [start, end] of intervals) {
+  intervals.sort((a, b) => a[0] - b[0]); const out = [];
+  for (const [s, e] of intervals) {
     const last = out.at(-1);
-    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
-    else out.push([start, end]);
+    if (last && s <= last[1]) last[1] = Math.max(last[1], e); else out.push([s, e]);
   }
   return out;
 }
-merge([[1, 3], [2, 6], [8, 10], [15, 18]]); // [[1,6],[8,10],[15,18]]
+merge([[1, 3], [2, 6], [8, 10]]); // [[1,6],[8,10]]
 ```
 
-**Complexity:** O(n log n) because of the sort.
-
-**Frontend link:** merging highlighted transcript segments, or calendar busy blocks.
+**Say it like this:** "Sort, then sweep and merge; it's how I'd merge highlighted transcript segments."
 
 ---
 
-**Q25. Meeting Rooms II (Minimum Rooms)**
+**Q25. Meeting Rooms II — minimum rooms needed.**
 
-**Idea:** A **sweep line**. Sort the start times and end times separately. Walk the starts: if a meeting starts before the earliest unfinished meeting ends, you need a new room. Otherwise a room frees up.
+**Short answer:** Sort starts and ends separately and sweep: a start before the earliest end needs a new room. O(n log n).
+
+**Explanation:** The number of overlapping meetings at any time is the number of rooms.
+
+**Example:**
 
 ```js
-function minMeetingRooms(intervals) {
-  const starts = intervals.map((i) => i[0]).sort((a, b) => a - b);
-  const ends = intervals.map((i) => i[1]).sort((a, b) => a - b);
+function minMeetingRooms(iv) {
+  const starts = iv.map((i) => i[0]).sort((a, b) => a - b);
+  const ends = iv.map((i) => i[1]).sort((a, b) => a - b);
   let rooms = 0, e = 0;
-  for (const s of starts) {
-    if (s < ends[e]) rooms++;
-    else e++;
-  }
+  for (const s of starts) { if (s < ends[e]) rooms++; else e++; }
   return rooms;
 }
 ```
 
-**Complexity:** O(n log n).
+**Say it like this:** "A sweep line over start and end times counts the peak overlap."
 
 ---
 
-**Q26. Daily Temperatures**
+**Q26. Daily Temperatures — days until a warmer temperature.**
 
-**Problem:** For each day, how many days until a warmer temperature?
+**Short answer:** A monotonic stack of indexes with decreasing temperatures; a warmer day pops and resolves them. O(n).
 
-**Idea:** A **monotonic stack** of indexes with decreasing temperatures. When a warmer day arrives, pop every colder day from the stack and record the gap for each.
+**Explanation:** Each index is pushed and popped once.
+
+**Example:**
 
 ```js
 function dailyTemperatures(t) {
-  const res = Array(t.length).fill(0);
-  const stack = [];                         // indexes, temps decreasing
+  const res = Array(t.length).fill(0), stack = [];
   for (let i = 0; i < t.length; i++) {
-    while (stack.length && t[i] > t[stack.at(-1)]) {
-      const j = stack.pop();
-      res[j] = i - j;
-    }
+    while (stack.length && t[i] > t[stack.at(-1)]) { const j = stack.pop(); res[j] = i - j; }
     stack.push(i);
   }
   return res;
 }
 ```
 
-**Complexity:** O(n) time, because each index is pushed and popped once.
+**Say it like this:** "'Next greater element' problems are monotonic stacks: waiting items sit on the stack until something bigger arrives."
 
 ---
 
-**Q27. Min Stack (getMin in O(1))**
+**Q27. Min Stack — getMin in O(1).**
+
+**Short answer:** Keep a parallel stack of the minimum at each depth.
+
+**Explanation:** When you pop, the previous minimum is restored automatically.
+
+**Example:**
 
 ```js
 class MinStack {
-  stack = [];
-  mins = [];                // mins[i] = min of stack[0..i]
+  stack = []; mins = [];
   push(x) { this.stack.push(x); this.mins.push(Math.min(x, this.mins.at(-1) ?? Infinity)); }
   pop() { this.stack.pop(); this.mins.pop(); }
   top() { return this.stack.at(-1); }
@@ -653,15 +702,17 @@ class MinStack {
 }
 ```
 
-**Idea:** Keep a parallel stack that records the minimum at each depth.
+**Say it like this:** "A second stack remembers the minimum at every depth, so every operation is O(1)."
 
 ---
 
-**Q28. Search in a Rotated Sorted Array**
+**Q28. Search in a Rotated Sorted Array.**
 
-**Problem:** `[4,5,6,7,0,1,2]` is a sorted array rotated at some point. Find the target in O(log n).
+**Short answer:** Binary search, deciding which half is sorted and whether the target lies within it. O(log n).
 
-**Idea:** In binary search, at least one half is always sorted. Check whether the target lies inside the sorted half's range. If it does, search there; otherwise search the other half.
+**Explanation:** At least one half is always sorted, so you can test the target against its range.
+
+**Example:**
 
 ```js
 function searchRotated(a, target) {
@@ -669,49 +720,53 @@ function searchRotated(a, target) {
   while (l <= r) {
     const m = (l + r) >> 1;
     if (a[m] === target) return m;
-    if (a[l] <= a[m]) {                                   // left half sorted
-      if (a[l] <= target && target < a[m]) r = m - 1; else l = m + 1;
-    } else {                                              // right half sorted
-      if (a[m] < target && target <= a[r]) l = m + 1; else r = m - 1;
-    }
+    if (a[l] <= a[m]) { if (a[l] <= target && target < a[m]) r = m - 1; else l = m + 1; }
+    else { if (a[m] < target && target <= a[r]) l = m + 1; else r = m - 1; }
   }
   return -1;
 }
 ```
 
+**Say it like this:** "One half is always sorted, so I check if the target is inside that half and discard the other."
+
 ---
 
-**Q29. Koko Eating Bananas (Binary Search on the Answer)**
+**Q29. Koko Eating Bananas — minimum speed to finish within h hours.**
 
-**Problem:** Find the minimum eating speed k that finishes all the piles within h hours.
+**Short answer:** Binary search the answer between 1 and the largest pile, checking feasibility at each speed. O(n log max).
 
-**Idea:** If speed k works, every faster speed works too. That's a *monotonic* condition, so binary-search the speed between 1 and the largest pile.
+**Explanation:** If a speed works, every faster speed works too: a monotonic condition.
+
+**Example:**
 
 ```js
 function minEatingSpeed(piles, h) {
   let l = 1, r = Math.max(...piles);
   while (l < r) {
     const k = (l + r) >> 1;
-    const hours = piles.reduce((sum, p) => sum + Math.ceil(p / k), 0);
+    const hours = piles.reduce((s, p) => s + Math.ceil(p / k), 0);
     if (hours <= h) r = k; else l = k + 1;
   }
   return l;
 }
 ```
 
-**Complexity:** O(n log max) time.
-
-**Say it like this:** "I'm not searching the array. I'm searching the answer space. When the answer has a yes/no condition that flips once, binary search applies."
+**Say it like this:** "I'm binary-searching the answer space, because the yes/no condition flips exactly once."
 
 ---
 
-**Q30. Binary Tree Level-Order Traversal (BFS)**
+**Q30. Binary Tree Level-Order Traversal.**
+
+**Short answer:** BFS one level at a time, building the next level array. O(n).
+
+**Explanation:** Building a new array per level avoids `shift()`, which is O(n).
+
+**Example:**
 
 ```js
 function levelOrder(root) {
   if (!root) return [];
-  const result = [];
-  let level = [root];
+  const result = []; let level = [root];
   while (level.length) {
     result.push(level.map((n) => n.val));
     level = level.flatMap((n) => [n.left, n.right].filter(Boolean));
@@ -720,11 +775,17 @@ function levelOrder(root) {
 }
 ```
 
-**Idea:** Process the tree one level at a time. Building the next level as a new array avoids `shift()`, which is O(n). O(n) time.
+**Say it like this:** "BFS processes the tree level by level; I use level arrays instead of a shifting queue."
 
 ---
 
-**Q31. Validate a Binary Search Tree**
+**Q31. Validate a Binary Search Tree.**
+
+**Short answer:** Recurse with a (low, high) range inherited from ancestors; every node must lie strictly inside it. O(n).
+
+**Explanation:** Comparing only parent and child misses violations deeper in the tree.
+
+**Example:**
 
 ```js
 function isValidBST(node, lo = -Infinity, hi = Infinity) {
@@ -734,230 +795,247 @@ function isValidBST(node, lo = -Infinity, hi = Infinity) {
 }
 ```
 
-**Idea:** Every node must lie inside a (low, high) range inherited from its ancestors. Checking only the parent and child isn't enough, which is a common mistake.
+**Say it like this:** "Each node carries bounds from all its ancestors, not just its parent."
 
 ---
 
-**Q32. Lowest Common Ancestor (Binary Tree)**
+**Q32. Lowest Common Ancestor (Binary Tree).**
+
+**Short answer:** Recurse; if p and q are found in different subtrees, the current node is the LCA, otherwise pass up whichever side found one. O(n).
+
+**Explanation:** Returning the node when it equals p or q handles the case where one is an ancestor of the other.
+
+**Example:**
 
 ```js
 function lca(root, p, q) {
   if (!root || root === p || root === q) return root;
-  const left = lca(root.left, p, q);
-  const right = lca(root.right, p, q);
+  const left = lca(root.left, p, q), right = lca(root.right, p, q);
   return left && right ? root : left ?? right;
 }
 ```
 
-**Idea:** If p and q are found in different subtrees, the current node is their LCA. Otherwise, pass up whichever side found something. O(n).
+**Say it like this:** "The first node where p and q split into different subtrees is the answer."
 
 ---
 
-**Q33. Number of Islands (DFS)**
+**Q33. Number of Islands.**
+
+**Short answer:** Scan the grid; each unvisited land cell starts a new island, and DFS sinks its connected land. O(rows × cols).
+
+**Explanation:** Marking visited cells prevents counting an island twice.
+
+**Example:**
 
 ```js
 function numIslands(grid) {
   let count = 0;
   const sink = (r, c) => {
     if (r < 0 || c < 0 || r >= grid.length || c >= grid[0].length || grid[r][c] !== '1') return;
-    grid[r][c] = '0';                       // mark visited
-    sink(r + 1, c); sink(r - 1, c); sink(r, c + 1); sink(r, c - 1);
+    grid[r][c] = '0'; sink(r + 1, c); sink(r - 1, c); sink(r, c + 1); sink(r, c - 1);
   };
-  for (let r = 0; r < grid.length; r++)
-    for (let c = 0; c < grid[0].length; c++)
-      if (grid[r][c] === '1') { count++; sink(r, c); }
+  for (let r = 0; r < grid.length; r++) for (let c = 0; c < grid[0].length; c++) if (grid[r][c] === '1') { count++; sink(r, c); }
   return count;
 }
 ```
 
-**Idea:** Each time you find unvisited land, count an island and "sink" all of its connected land with DFS. O(rows × cols).
+**Say it like this:** "Count each new piece of land, then flood-fill it so it's never counted again."
 
 ---
 
-**Q34. Rotting Oranges (Multi-Source BFS)**
+**Q34. Rotting Oranges — minutes until all oranges rot.**
+
+**Short answer:** Multi-source BFS from all rotten oranges; each BFS level is one minute. O(rows × cols).
+
+**Explanation:** Starting from every source at once gives the correct simultaneous spread.
+
+**Example:**
 
 ```js
 function orangesRotting(grid) {
   let queue = [], fresh = 0, minutes = 0;
-  grid.forEach((row, r) => row.forEach((v, c) => {
-    if (v === 2) queue.push([r, c]);
-    if (v === 1) fresh++;
-  }));
+  grid.forEach((row, r) => row.forEach((v, c) => { if (v === 2) queue.push([r, c]); if (v === 1) fresh++; }));
   const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   while (queue.length && fresh) {
     const next = [];
-    for (const [r, c] of queue) {
-      for (const [dr, dc] of dirs) {
-        const nr = r + dr, nc = c + dc;
-        if (grid[nr]?.[nc] === 1) { grid[nr][nc] = 2; fresh--; next.push([nr, nc]); }
-      }
+    for (const [r, c] of queue) for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (grid[nr]?.[nc] === 1) { grid[nr][nc] = 2; fresh--; next.push([nr, nc]); }
     }
-    queue = next;
-    minutes++;
+    queue = next; minutes++;
   }
   return fresh ? -1 : minutes;
 }
 ```
 
-**Idea:** Start BFS from *all* the rotten oranges at once. Each BFS level is one minute.
+**Say it like this:** "BFS from all sources at once, where each level is one minute."
 
 ---
 
-**Q35. Course Schedule (Topological Sort, Kahn's Algorithm)**
+**Q35. Course Schedule — can all courses be finished (is there a cycle)?**
 
-**Problem:** Can you finish all courses given prerequisite pairs? In other words, is there a cycle?
+**Short answer:** Kahn's algorithm: repeatedly take courses with in-degree 0; if all are processed, there's no cycle. O(V + E).
 
-**Idea:** Count each node's incoming edges (in-degree). Repeatedly take nodes with in-degree 0, and decrement the in-degree of their neighbours. If you can process every node, there's no cycle.
+**Explanation:** Courses stuck with remaining in-degree are part of a cycle.
+
+**Example:**
 
 ```js
 function canFinish(n, prereqs) {
-  const indeg = Array(n).fill(0);
-  const adj = Array.from({ length: n }, () => []);
+  const indeg = Array(n).fill(0), adj = Array.from({ length: n }, () => []);
   for (const [course, pre] of prereqs) { adj[pre].push(course); indeg[course]++; }
-  const queue = [];
-  indeg.forEach((d, i) => d === 0 && queue.push(i));
+  const queue = []; indeg.forEach((d, i) => d === 0 && queue.push(i));
   let done = 0;
-  for (let i = 0; i < queue.length; i++) {
-    done++;
-    for (const next of adj[queue[i]]) if (--indeg[next] === 0) queue.push(next);
-  }
+  for (let i = 0; i < queue.length; i++) { done++; for (const next of adj[queue[i]]) if (--indeg[next] === 0) queue.push(next); }
   return done === n;
 }
 ```
 
-**Frontend link:** module bundlers, build pipelines and spreadsheet formula recalculation all use topological ordering.
+**Say it like this:** "Topological sort; bundlers and spreadsheet recalculation use the same idea."
 
 ---
 
-**Q36. Permutations (Backtracking)**
+**Q36. Permutations.**
 
-**Idea:** Build the permutation one position at a time. At each step, try every unused number, recurse, then **undo** the choice. Undoing is the "backtrack".
+**Short answer:** Backtracking: choose an unused number, recurse, then undo. O(n · n!).
+
+**Explanation:** The "undo" step (backtrack) restores state so the next choice starts clean.
+
+**Example:**
 
 ```js
 function permute(nums) {
   const result = [], path = [], used = Array(nums.length).fill(false);
-  (function backtrack() {
+  (function bt() {
     if (path.length === nums.length) return result.push([...path]);
     for (let i = 0; i < nums.length; i++) {
       if (used[i]) continue;
-      used[i] = true; path.push(nums[i]);   // choose
-      backtrack();                          // explore
-      path.pop(); used[i] = false;          // un-choose
+      used[i] = true; path.push(nums[i]); bt(); path.pop(); used[i] = false;
     }
   })();
   return result;
 }
 ```
 
-**Complexity:** O(n · n!).
+**Say it like this:** "Choose, explore, un-choose: that's the backtracking template."
 
 ---
 
-**Q37. Subsets**
+**Q37. Subsets.**
+
+**Short answer:** Start with `[[]]`; each new number doubles the list by adding it to every existing subset. O(n · 2ⁿ).
+
+**Explanation:** Every element is either in or out of a subset.
+
+**Example:**
 
 ```js
 const subsets = (nums) => nums.reduce((acc, n) => acc.concat(acc.map((s) => [...s, n])), [[]]);
-subsets([1, 2, 3]); // [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]
+subsets([1, 2]); // [[], [1], [2], [1, 2]]
 ```
 
-**Idea:** Start with the empty set. Each new number doubles the list: every existing subset, with and without that number. O(n · 2ⁿ).
+**Say it like this:** "Each element doubles the set of subsets, which is why there are 2ⁿ."
 
 ---
 
-**Q38. Coin Change (Dynamic Programming)**
+**Q38. Coin Change — fewest coins to make an amount.**
 
-**Problem:** What's the fewest coins that make up `amount`? Return -1 if it's impossible.
+**Short answer:** DP where `dp[a] = min(dp[a], dp[a − coin] + 1)`, built from 0 upwards. O(amount × coins).
 
-**Idea:** `dp[a]` is the fewest coins needed for amount `a`. For each coin, `dp[a] = min(dp[a], dp[a − coin] + 1)`. Build it up from 0.
+**Explanation:** Greedy fails (coins [1, 3, 4], amount 6: greedy uses 3 coins, optimal uses 2).
+
+**Example:**
 
 ```js
 function coinChange(coins, amount) {
-  const dp = Array(amount + 1).fill(Infinity);
-  dp[0] = 0;
-  for (let a = 1; a <= amount; a++) {
-    for (const c of coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
-  }
+  const dp = Array(amount + 1).fill(Infinity); dp[0] = 0;
+  for (let a = 1; a <= amount; a++) for (const c of coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
   return dp[amount] === Infinity ? -1 : dp[amount];
 }
-coinChange([1, 2, 5], 11); // 3  (5 + 5 + 1)
+coinChange([1, 2, 5], 11); // 3
 ```
 
-**Complexity:** O(amount × coins) time, O(amount) space.
-
-**Say it like this:** "Greedy fails here. With coins [1, 3, 4] and amount 6, greedy picks 4 + 1 + 1, which is three coins, but 3 + 3 is only two. So I use DP: the best answer for each smaller amount builds the answer for the next."
+**Say it like this:** "Greedy doesn't work, so I build the best answer for every smaller amount first."
 
 ---
 
-**Q39. House Robber**
+**Q39. House Robber — maximum without robbing adjacent houses.**
+
+**Short answer:** For each house, take max(skip it, rob it + best two back), keeping two variables. O(n), O(1) space.
+
+**Explanation:** Only the previous two results matter.
+
+**Example:**
 
 ```js
-function rob(nums) {
-  let prev = 0, cur = 0;            // best up to i-2, best up to i-1
-  for (const n of nums) [prev, cur] = [cur, Math.max(cur, prev + n)];
-  return cur;
-}
+function rob(nums) { let prev = 0, cur = 0; for (const n of nums) [prev, cur] = [cur, Math.max(cur, prev + n)]; return cur; }
+rob([2, 7, 9, 3, 1]); // 12
 ```
 
-**Idea:** For each house, either skip it (keep `cur`) or rob it (`prev + n`), because you can't rob two adjacent houses. O(n) time, O(1) space.
+**Say it like this:** "Each house is rob-or-skip, and only the last two totals matter."
 
 ---
 
-**Q40. Longest Increasing Subsequence (O(n log n))**
+**Q40. Longest Increasing Subsequence in O(n log n).**
 
-**Idea:** `tails[i]` holds the smallest possible tail value of an increasing subsequence of length `i + 1`. For each number, binary-search where it fits in `tails` and replace that slot. The length of `tails` is the answer.
+**Short answer:** Keep `tails[i]` = smallest tail of an increasing subsequence of length i+1; binary-search where each number fits. Answer = `tails.length`.
+
+**Explanation:** Smaller tails leave more room to extend later.
+
+**Example:**
 
 ```js
 function lengthOfLIS(nums) {
   const tails = [];
   for (const x of nums) {
     let l = 0, r = tails.length;
-    while (l < r) {
-      const m = (l + r) >> 1;
-      if (tails[m] < x) l = m + 1; else r = m;
-    }
+    while (l < r) { const m = (l + r) >> 1; if (tails[m] < x) l = m + 1; else r = m; }
     tails[l] = x;
   }
   return tails.length;
 }
+lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18]); // 4
 ```
+
+**Say it like this:** "I keep the smallest possible tail for each length, and binary search where each number belongs."
 
 ---
 
-**Q41. Word Break**
+**Q41. Word Break — can a string be split into dictionary words?**
+
+**Short answer:** `dp[i]` is true if `s[0..i)` can be split; check every split point j where `dp[j]` is true and `s[j..i)` is a word. O(n²).
+
+**Explanation:** A Set makes word lookups O(1) (ignoring substring cost).
+
+**Example:**
 
 ```js
 function wordBreak(s, dict) {
-  const words = new Set(dict);
-  const dp = Array(s.length + 1).fill(false);
-  dp[0] = true;                          // empty prefix is breakable
-  for (let i = 1; i <= s.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (dp[j] && words.has(s.slice(j, i))) { dp[i] = true; break; }
-    }
-  }
+  const words = new Set(dict), dp = Array(s.length + 1).fill(false); dp[0] = true;
+  for (let i = 1; i <= s.length; i++) for (let j = 0; j < i; j++) if (dp[j] && words.has(s.slice(j, i))) { dp[i] = true; break; }
   return dp[s.length];
 }
 wordBreak('leetcode', ['leet', 'code']); // true
 ```
 
-**Idea:** `dp[i]` is true if `s[0..i)` can be split into dictionary words. O(n²) checks.
+**Say it like this:** "A prefix is breakable if some shorter breakable prefix plus one dictionary word makes it."
 
 ---
 
-**Q42. Kth Largest Element (Quickselect)**
+**Q42. Kth Largest Element.**
 
-**Idea:** Partition the array the way quicksort does, but recurse into only the side that contains the target index. That's O(n) on average. Alternatively, keep a min-heap of size k, which is O(n log k).
+**Short answer:** Quickselect: partition and recurse into only the side containing the target index. O(n) average; a size-k min-heap is O(n log k).
+
+**Explanation:** Unlike sorting, you only process one side after each partition.
+
+**Example:**
 
 ```js
 function findKthLargest(nums, k) {
-  const target = nums.length - k;
-  let l = 0, r = nums.length - 1;
+  const target = nums.length - k; let l = 0, r = nums.length - 1;
   while (true) {
-    const pivot = nums[r];
-    let p = l;
-    for (let i = l; i < r; i++) {
-      if (nums[i] <= pivot) { [nums[i], nums[p]] = [nums[p], nums[i]]; p++; }
-    }
+    const pivot = nums[r]; let p = l;
+    for (let i = l; i < r; i++) if (nums[i] <= pivot) { [nums[i], nums[p]] = [nums[p], nums[i]]; p++; }
     [nums[p], nums[r]] = [nums[r], nums[p]];
     if (p === target) return nums[p];
     if (p < target) l = p + 1; else r = p - 1;
@@ -965,86 +1043,71 @@ function findKthLargest(nums, k) {
 }
 ```
 
+**Say it like this:** "Quickselect is quicksort that only recurses into one side, so it's linear on average."
+
 ---
 
-**Q43. LRU Cache**
+**Q43. LRU Cache — get and put in O(1), evicting the least recently used.**
 
-**Problem:** A cache with a capacity. When it's full, evict the **least recently used** entry. Both `get` and `put` must be O(1).
+**Short answer:** A JavaScript Map keeps insertion order: re-insert on access, and evict the first key when over capacity.
 
-**Idea:** A JavaScript `Map` remembers insertion order. To mark a key as "recently used", delete it and re-insert it, which moves it to the end. The first key in the map is then always the least recently used.
+**Explanation:** In other languages this is a hash map plus a doubly linked list; Map gives the same behaviour.
+
+**Example:**
 
 ```js
 class LRUCache {
   constructor(capacity) { this.capacity = capacity; this.map = new Map(); }
-  get(key) {
-    if (!this.map.has(key)) return -1;
-    const value = this.map.get(key);
-    this.map.delete(key);
-    this.map.set(key, value);              // move to most-recent
-    return value;
-  }
+  get(key) { if (!this.map.has(key)) return -1; const v = this.map.get(key); this.map.delete(key); this.map.set(key, v); return v; }
   put(key, value) {
-    this.map.delete(key);
-    this.map.set(key, value);
-    if (this.map.size > this.capacity) this.map.delete(this.map.keys().next().value); // evict oldest
+    this.map.delete(key); this.map.set(key, value);
+    if (this.map.size > this.capacity) this.map.delete(this.map.keys().next().value);
   }
 }
 ```
 
-**Say it like this:** "In other languages you'd build a hash map plus a doubly linked list. In JavaScript, Map's insertion order gives us the same O(1) behaviour. I can implement the linked-list version if you'd like."
-
-**Frontend link:** caching API responses, images or computed results with a memory limit.
+**Say it like this:** "Map's insertion order gives O(1) LRU in JavaScript; I can write the linked-list version if you'd like."
 
 ---
 
-**Q44. Implement a Trie (for Autocomplete)**
+**Q44. Implement a Trie (for autocomplete).**
+
+**Short answer:** Nodes with a children Map and an `end` flag; insert walks or creates nodes; suggestions walk to the prefix and DFS below it.
+
+**Explanation:** Lookup cost depends on prefix length, not on the number of words.
+
+**Example:**
 
 ```js
 class Trie {
   root = { children: new Map(), end: false };
-
-  insert(word) {
-    let node = this.root;
-    for (const ch of word) {
-      if (!node.children.has(ch)) node.children.set(ch, { children: new Map(), end: false });
-      node = node.children.get(ch);
-    }
-    node.end = true;
-  }
-
+  insert(word) { let n = this.root; for (const ch of word) { if (!n.children.has(ch)) n.children.set(ch, { children: new Map(), end: false }); n = n.children.get(ch); } n.end = true; }
   suggest(prefix, limit = 5) {
-    let node = this.root;
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return [];
-    }
+    let n = this.root; for (const ch of prefix) { n = n.children.get(ch); if (!n) return []; }
     const out = [];
-    (function dfs(n, acc) {
-      if (out.length >= limit) return;
-      if (n.end) out.push(acc);
-      for (const [ch, child] of n.children) dfs(child, acc + ch);
-    })(node, prefix);
+    (function dfs(node, acc) { if (out.length >= limit) return; if (node.end) out.push(acc); for (const [ch, c] of node.children) dfs(c, acc + ch); })(n, prefix);
     return out;
   }
 }
 ```
 
-**Idea:** Each node is a character, and a path from the root spells a word. Finding all words with a prefix means walking down to the prefix node and collecting everything below it. The cost depends on the prefix length, not on the number of words.
+**Say it like this:** "A trie shares prefixes, so finding completions is walking to the prefix and collecting below it."
 
 ---
 
 ## 🔴 Hard (Senior and Product Companies)
 
-**Q45. Minimum Window Substring**
+**Q45. Minimum Window Substring — smallest substring of s containing all characters of t.**
 
-**Problem:** Find the smallest substring of `s` that contains every character of `t`, including duplicates.
+**Short answer:** Sliding window: expand right until all needed characters are covered, then shrink left while still valid, recording the best. O(|s| + |t|).
 
-**Idea:** A sliding window. Expand `r` until the window contains everything (`missing === 0`), then shrink `l` as far as possible while it stays valid, recording the best window.
+**Explanation:** A `missing` counter tracks how many required characters are still needed.
+
+**Example:**
 
 ```js
 function minWindow(s, t) {
-  const need = new Map();
-  for (const c of t) need.set(c, (need.get(c) ?? 0) + 1);
+  const need = new Map(); for (const c of t) need.set(c, (need.get(c) ?? 0) + 1);
   let missing = t.length, l = 0, start = 0, len = Infinity;
   for (let r = 0; r < s.length; r++) {
     if ((need.get(s[r]) ?? 0) > 0) missing--;
@@ -1061,33 +1124,42 @@ function minWindow(s, t) {
 minWindow('ADOBECODEBANC', 'ABC'); // "BANC"
 ```
 
-**Complexity:** O(|s| + |t|).
+**Say it like this:** "Grow until valid, shrink while valid, and record the smallest valid window."
 
 ---
 
-**Q46. Sliding Window Maximum (Monotonic Deque)**
+**Q46. Sliding Window Maximum.**
 
-**Idea:** Keep a deque of indexes whose values are in decreasing order, so the front is always the maximum of the current window. Drop smaller values from the back as new values arrive, and drop the front when it falls out of the window.
+**Short answer:** A monotonic deque of indexes with decreasing values; the front is the window max. O(n).
+
+**Explanation:** Smaller values behind a newer larger value can never be the max, so they're dropped.
+
+**Example:**
 
 ```js
 function maxSlidingWindow(nums, k) {
-  const dq = [], res = [];
-  let head = 0;                                   // index pointer instead of shift()
+  const dq = [], res = []; let head = 0;
   for (let i = 0; i < nums.length; i++) {
     while (dq.length > head && nums[dq.at(-1)] <= nums[i]) dq.pop();
     dq.push(i);
-    if (dq[head] <= i - k) head++;                // front left the window
+    if (dq[head] <= i - k) head++;
     if (i >= k - 1) res.push(nums[dq[head]]);
   }
   return res;
 }
 ```
 
-**Complexity:** O(n).
+**Say it like this:** "The deque keeps only candidates that could still be a maximum, so each element enters and leaves once."
 
 ---
 
-**Q47. Merge K Sorted Lists**
+**Q47. Merge K Sorted Lists.**
+
+**Short answer:** Merge pairs of lists in rounds, like a tournament, reusing `mergeTwoLists`. O(N log k).
+
+**Explanation:** Each round halves the number of lists; a min-heap gives the same complexity.
+
+**Example:**
 
 ```js
 function mergeKLists(lists) {
@@ -1101,13 +1173,17 @@ function mergeKLists(lists) {
 }
 ```
 
-**Idea:** Merge the lists in pairs, like a tournament. Each round halves the number of lists, so the total cost is O(N log k), where N is the total number of nodes. Reuse `mergeTwoLists` from Q9.
+**Say it like this:** "Pairwise merging gives log k rounds over N nodes."
 
 ---
 
-**Q48. Trapping Rain Water**
+**Q48. Trapping Rain Water.**
 
-**Idea:** The water above a bar is `min(highest bar to the left, highest bar to the right) − its height`. Use two pointers: always move the side with the lower maximum, because that side's water level is already settled.
+**Short answer:** Two pointers tracking left and right maxima; move the side with the lower max and add `max − height`. O(n), O(1).
+
+**Explanation:** Water above a bar is limited by the smaller of the tallest bars on each side; the lower side is already determined.
+
+**Example:**
 
 ```js
 function trap(h) {
@@ -1121,134 +1197,146 @@ function trap(h) {
 trap([0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]); // 6
 ```
 
-**Complexity:** O(n) time, O(1) space.
+**Say it like this:** "The lower side's water level is already known, so I resolve that side and move inwards."
 
 ---
 
-**Q49. Serialise and Deserialise a Binary Tree**
+**Q49. Serialise and Deserialise a Binary Tree.**
+
+**Short answer:** Pre-order traversal with `#` for nulls, and rebuild by reading values in the same order. O(n).
+
+**Explanation:** The null markers capture the exact shape.
+
+**Example:**
 
 ```js
-const serialize = (root) => {
-  const out = [];
-  (function walk(n) {
-    if (!n) return out.push('#');
-    out.push(n.val); walk(n.left); walk(n.right);
-  })(root);
-  return out.join(',');
-};
-
-const deserialize = (data) => {
-  const vals = data.split(',');
-  let i = 0;
-  return (function build() {
-    const v = vals[i++];
-    if (v === '#') return null;
-    return { val: +v, left: build(), right: build() };
-  })();
-};
+const serialize = (root) => { const out = []; (function w(n) { if (!n) return out.push('#'); out.push(n.val); w(n.left); w(n.right); })(root); return out.join(','); };
+const deserialize = (data) => { const v = data.split(','); let i = 0; return (function b() { const x = v[i++]; if (x === '#') return null; return { val: +x, left: b(), right: b() }; })(); };
 ```
 
-**Idea:** A pre-order traversal with `#` markers for nulls captures the exact shape of the tree. Rebuilding it reads the values in the same order. O(n).
+**Say it like this:** "Pre-order plus null markers is enough to rebuild the exact tree."
 
 ---
 
-**Q50. Edit Distance (Used in Diffing and Fuzzy Search)**
+**Q50. Edit Distance — minimum inserts, deletes and replaces to turn a into b.**
 
-**Problem:** Find the minimum number of inserts, deletes and replacements needed to turn string a into string b.
+**Short answer:** `dp[i][j]` = distance between prefixes; matching characters take the diagonal, otherwise 1 + min(replace, delete, insert). O(m·n).
 
-**Idea:** `dp[i][j]` is the edit distance between the first i characters of a and the first j characters of b. If the characters match, take the diagonal. Otherwise take 1 + the minimum of replace, delete and insert.
+**Explanation:** It's the basis of diffing and fuzzy search.
+
+**Example:**
 
 ```js
 function minDistance(a, b) {
   const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
   for (let j = 1; j <= b.length; j++) dp[0][j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
   return dp[a.length][b.length];
 }
 minDistance('horse', 'ros'); // 3
 ```
 
-**Complexity:** O(m·n).
+**Say it like this:** "Each cell is the cheapest of the three edits from a neighbouring subproblem."
 
 ---
 
-**Q51. Median from a Data Stream**
+**Q51. Median from a Data Stream.**
 
-**Idea:** Use two heaps: a max-heap for the lower half of the numbers and a min-heap for the upper half, kept balanced so their sizes differ by at most 1. The median is the top of the larger heap, or the average of the two tops. Adding a number is O(log n), and finding the median is O(1).
+**Short answer:** Two heaps, a max-heap for the lower half and a min-heap for the upper half, kept balanced. Add in O(log n), median in O(1).
 
-**Say it like this:** "JavaScript has no built-in heap. I can write a small binary heap class: an array plus sift-up and sift-down. Or, if you're happy with it, I'll treat the heap as a helper and focus on the two-heap logic."
+**Explanation:** The median is the top of the larger heap, or the average of both tops. JavaScript has no built-in heap, so you'd write a small one.
+
+**Example:**
+
+```text
+add 5 → low [5]           median 5
+add 2 → low [2] high [5]  median 3.5
+add 8 → low [2,5] high [8] median 5
+```
+
+**Say it like this:** "Two balanced heaps keep the middle values at the tops; I can write the heap class or treat it as a helper."
 
 ---
 
 ## 🌐 Frontend-Flavoured DSA (Very Common in UI Interviews)
 
-**Q52. Flatten a nested object to dot paths**
+**Q52. Flatten a nested object to dot paths.**
+
+**Short answer:** Recurse through plain objects, building `prefix.key` paths, and store leaf values. O(total keys).
+
+**Explanation:** Arrays and other values are treated as leaves here; adjust if the interviewer wants arrays indexed.
+
+**Example:**
 
 ```js
 function flattenObject(obj, prefix = '', out = {}) {
   for (const [key, value] of Object.entries(obj)) {
     const path = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === 'object' && !Array.isArray(value)) flattenObject(value, path, out);
-    else out[path] = value;
+    if (value && typeof value === 'object' && !Array.isArray(value)) flattenObject(value, path, out); else out[path] = value;
   }
   return out;
 }
-flattenObject({ user: { name: 'Asha', address: { city: 'Pune' } } });
-// { 'user.name': 'Asha', 'user.address.city': 'Pune' }
+flattenObject({ user: { name: 'Asha', address: { city: 'Pune' } } }); // { 'user.name': 'Asha', 'user.address.city': 'Pune' }
 ```
 
-**Use case:** form libraries, translation keys, and diffing settings objects.
+**Say it like this:** "Recursion with a path prefix; this is how form libraries and translation keys are flattened."
 
 ---
 
-**Q53. Unflatten dot paths back into a nested object**
+**Q53. Unflatten dot paths back into a nested object.**
+
+**Short answer:** Split each path and walk or create nested objects, assigning the value at the last key. O(total path segments).
+
+**Explanation:** `??=` creates intermediate objects only when missing.
+
+**Example:**
 
 ```js
 function unflatten(flat) {
   const out = {};
   for (const [path, value] of Object.entries(flat)) {
-    const keys = path.split('.');
-    let cur = out;
+    const keys = path.split('.'); let cur = out;
     keys.forEach((k, i) => { cur = cur[k] ??= i === keys.length - 1 ? value : {}; });
   }
   return out;
 }
 ```
 
+**Say it like this:** "Walk each path, creating objects as needed, and set the value at the end."
+
 ---
 
-**Q54. Convert a flat list with `parentId` into a tree (comments, org chart, file explorer)**
+**Q54. Convert a flat list with `parentId` into a tree.**
+
+**Short answer:** Index all nodes by ID in a Map, then attach each node to its parent (or the roots) in one pass. O(n).
+
+**Explanation:** A nested search for each parent would be O(n²).
+
+**Example:**
 
 ```js
 function toTree(items) {
-  const map = new Map(items.map((i) => [i.id, { ...i, children: [] }]));
-  const roots = [];
+  const map = new Map(items.map((i) => [i.id, { ...i, children: [] }])), roots = [];
   for (const node of map.values()) {
     const parent = node.parentId != null ? map.get(node.parentId) : null;
     (parent ? parent.children : roots).push(node);
   }
   return roots;
 }
-
-toTree([
-  { id: 1, parentId: null, text: 'Root comment' },
-  { id: 2, parentId: 1, text: 'Reply' },
-]);
 ```
 
-**Idea:** Two passes with a Map make this O(n). A naive version that searches for each node's parent in a nested loop is O(n²).
-
-**Say it like this:** "First I index every node by ID, then a single pass attaches each node to its parent. It's linear and handles any depth. APIs often return threaded comments flat like this."
+**Say it like this:** "Index by ID first, then attach in a single pass; APIs often return threaded comments flat like this."
 
 ---
 
-**Q55. Find all DOM nodes matching a predicate**
+**Q55. Find all DOM nodes matching a predicate.**
+
+**Short answer:** Iterative DFS with a stack, pushing children in reverse to keep document order. O(n).
+
+**Explanation:** Iteration avoids recursion limits on deep DOMs.
+
+**Example:**
 
 ```js
 function findAll(root, predicate) {
@@ -1256,34 +1344,44 @@ function findAll(root, predicate) {
   while (stack.length) {
     const node = stack.pop();
     if (predicate(node)) out.push(node);
-    for (let i = node.children.length - 1; i >= 0; i--) stack.push(node.children[i]); // keep document order
+    for (let i = node.children.length - 1; i >= 0; i--) stack.push(node.children[i]);
   }
   return out;
 }
 findAll(document.body, (el) => el.tagName === 'BUTTON' && !el.hasAttribute('aria-label'));
 ```
 
-**Idea:** An iterative DFS avoids recursion limits on very deep DOM trees.
+**Say it like this:** "The DOM is a tree, so it's a DFS; I used something like this to find unlabelled buttons in an accessibility audit."
 
 ---
 
-**Q56. Find the corresponding node in an identical DOM tree**
+**Q56. Find the corresponding node in an identical DOM tree.**
+
+**Short answer:** Record the child-index path from the node up to its root, then replay it down the other tree. O(depth × siblings).
+
+**Explanation:** Identical structure means the same index path leads to the matching node.
+
+**Example:**
 
 ```js
 function findMirror(rootA, rootB, nodeA) {
   const path = [];
-  for (let n = nodeA; n !== rootA; n = n.parentElement) {
-    path.push([...n.parentElement.children].indexOf(n));   // index among siblings
-  }
+  for (let n = nodeA; n !== rootA; n = n.parentElement) path.push([...n.parentElement.children].indexOf(n));
   return path.reverse().reduce((n, i) => n.children[i], rootB);
 }
 ```
 
-**Idea:** Record the path of child indexes from the node up to the root, then replay that path down the other tree. O(depth × siblings).
+**Say it like this:** "Record how to reach the node as child indexes, then follow the same path in the other tree."
 
 ---
 
-**Q57. Lowest common ancestor of two DOM nodes**
+**Q57. Lowest common ancestor of two DOM nodes.**
+
+**Short answer:** Collect all of a's ancestors in a Set, then walk up from b until one is found. O(depth).
+
+**Explanation:** DOM nodes have parent pointers, which makes this simpler than the binary-tree version.
+
+**Example:**
 
 ```js
 function domLCA(a, b) {
@@ -1294,121 +1392,145 @@ function domLCA(a, b) {
 }
 ```
 
-**Idea:** DOM nodes have parent pointers, so collect all of a's ancestors, then walk up from b until you hit one.
+**Say it like this:** "Parent pointers make it easy: store one path upwards and walk the other until they meet."
 
 ---
 
-**Q58. Highlight search matches in text (return segments, no `innerHTML`)**
+**Q58. Highlight search matches in text without `innerHTML`.**
+
+**Short answer:** Escape the query, split the text with a capturing regex, and return segments flagged as matches for React to render.
+
+**Explanation:** Returning segments rather than HTML keeps React's escaping and avoids XSS; escaping the query prevents regex errors.
+
+**Example:**
 
 ```js
 function highlight(text, query) {
   if (!query) return [{ text, match: false }];
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');      // escape regex chars
-  return text
-    .split(new RegExp(`(${escaped})`, 'gi'))
-    .filter(Boolean)
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.split(new RegExp(`(${escaped})`, 'gi')).filter(Boolean)
     .map((part) => ({ text: part, match: part.toLowerCase() === query.toLowerCase() }));
 }
-
-// React usage — safe, no innerHTML:
-{highlight(transcript, q).map((s, i) => (s.match ? <mark key={i}>{s.text}</mark> : <span key={i}>{s.text}</span>))}
 ```
 
-**Say it like this:** "I return segments rather than an HTML string, so React escapes everything and there's no XSS risk. I also escape the query, so a user typing `(` doesn't break the regex."
+**Say it like this:** "I return segments so React escapes everything, and I escape the query so special characters can't break the regex."
 
 ---
 
-**Q59. Pagination window with ellipsis: `1 … 4 5 [6] 7 8 … 20`**
+**Q59. Pagination window with ellipsis: `1 … 4 5 [6] 7 8 … 20`.**
+
+**Short answer:** Collect the first, last and pages within a radius of the current page, sort them, and insert "…" where gaps exist.
+
+**Explanation:** A Set avoids duplicates near the edges.
+
+**Example:**
 
 ```js
 function pageWindow(current, total, radius = 2) {
   const pages = new Set([1, total]);
   for (let p = current - radius; p <= current + radius; p++) if (p > 1 && p < total) pages.add(p);
-  const sorted = [...pages].sort((a, b) => a - b);
-  const out = [];
-  sorted.forEach((p, i) => {
-    if (i && p - sorted[i - 1] > 1) out.push('…');
-    out.push(p);
-  });
+  const sorted = [...pages].sort((a, b) => a - b), out = [];
+  sorted.forEach((p, i) => { if (i && p - sorted[i - 1] > 1) out.push('…'); out.push(p); });
   return out;
 }
 pageWindow(6, 20); // [1, '…', 4, 5, 6, 7, 8, '…', 20]
 ```
 
+**Say it like this:** "Pick the pages to show, sort them, and add an ellipsis wherever there's a gap."
+
 ---
 
-**Q60. Concurrency-limited promise pool**
+**Q60. Concurrency-limited promise pool.**
+
+**Short answer:** Start N workers that each pull the next task from a shared index until none remain.
+
+**Explanation:** Exactly N tasks run at once; results keep input order.
+
+**Example:**
 
 ```js
 async function pool(tasks, limit) {
-  const results = [];
-  let next = 0;
-  const worker = async () => {
-    while (next < tasks.length) {
-      const i = next++;
-      results[i] = await tasks[i]();
-    }
-  };
+  const results = []; let next = 0;
+  const worker = async () => { while (next < tasks.length) { const i = next++; results[i] = await tasks[i](); } };
   await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
   return results;
 }
 ```
 
-**Idea:** Start N workers. Each one pulls the next task from a shared index until none are left (see also JavaScript Q120).
+**Say it like this:** "N workers pulling from a shared index keep exactly N requests in flight."
 
 ---
 
-**Q61. Group calls by agent and compute average scores**
+**Q61. Group calls by agent and compute average scores.**
+
+**Short answer:** One pass accumulating sum and count per agent in a Map, then map to averages and sort.
+
+**Explanation:** Skipping null scores stops unscored calls dragging averages down.
+
+**Example:**
 
 ```js
 function averageScoreByAgent(calls) {
   const acc = new Map();
   for (const { agent, score } of calls) {
-    if (score == null) continue;                 // skip unscored calls
-    const a = acc.get(agent) ?? { sum: 0, n: 0 };
-    a.sum += score; a.n++;
-    acc.set(agent, a);
+    if (score == null) continue;
+    const a = acc.get(agent) ?? { sum: 0, n: 0 }; a.sum += score; a.n++; acc.set(agent, a);
   }
-  return [...acc]
-    .map(([agent, { sum, n }]) => ({ agent, avg: +(sum / n).toFixed(1) }))
-    .sort((a, b) => b.avg - a.avg);
+  return [...acc].map(([agent, { sum, n }]) => ({ agent, avg: +(sum / n).toFixed(1) })).sort((a, b) => b.avg - a.avg);
 }
 ```
 
-**Say it like this:** "One pass with a Map to accumulate the sum and count per agent, then a sort for ranking. I skip null scores explicitly, so unscored calls don't drag the averages down."
+**Say it like this:** "Group and aggregate in one pass, skipping nulls explicitly, then sort for the leaderboard."
 
 ---
 
-**Q62. Find the active transcript line for a playback time (binary search)**
+**Q62. Find the active transcript line for a playback time.**
+
+**Short answer:** Binary search the sorted lines for the last line whose start ≤ current time. O(log n).
+
+**Explanation:** `timeupdate` fires several times a second, and transcripts can be long, so linear search is wasteful.
+
+**Example:**
 
 ```js
-function activeLine(lines, t) {           // lines sorted by start time
+function activeLine(lines, t) {
   let lo = 0, hi = lines.length - 1, ans = -1;
-  while (lo <= hi) {
-    const m = (lo + hi) >> 1;
-    if (lines[m].start <= t) { ans = m; lo = m + 1; } else hi = m - 1;
-  }
-  return ans;                             // last line that started before t
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (lines[m].start <= t) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return ans;
 }
 ```
 
-**Idea:** The audio's `timeupdate` event fires about 4 times a second, and a transcript can have thousands of lines. Binary search makes each lookup O(log n) instead of O(n).
+**Say it like this:** "Each time update finds the active line in log time, which kept the transcript viewer smooth."
 
 ---
 
-**Q63. Merge overlapping time ranges of flagged compliance segments**
+**Q63. Merge overlapping time ranges of flagged compliance segments.**
 
-**Answer:** It's the same as Merge Intervals (Q24). Sort by start time and merge overlaps. Then the transcript highlights clean, non-overlapping ranges.
+**Short answer:** Same as Merge Intervals (Q24): sort by start and merge overlaps.
 
----
+**Explanation:** The transcript then highlights clean, non-overlapping ranges.
 
-**Q64. Detect circular dependencies in module imports**
-
-**Answer:** Use DFS with three colours: white (unvisited), grey (on the current path) and black (finished). Reaching a grey node means there's a cycle. Kahn's algorithm (Q35) also works.
+**Example:**
 
 ```js
-function hasCycle(graph) {          // graph: Map<module, module[]>
-  const state = new Map();          // undefined=white, 1=grey, 2=black
+merge([[12, 20], [18, 25], [40, 44]]); // [[12, 25], [40, 44]]
+```
+
+**Say it like this:** "AI flags often overlap, so I merge them before highlighting the transcript."
+
+---
+
+**Q64. Detect circular dependencies in module imports.**
+
+**Short answer:** DFS with three colours (unvisited, in progress, done); reaching an in-progress node means a cycle. O(V + E).
+
+**Explanation:** Kahn's algorithm (Q35) also works.
+
+**Example:**
+
+```js
+function hasCycle(graph) {
+  const state = new Map();
   const visit = (node) => {
     if (state.get(node) === 1) return true;
     if (state.get(node) === 2) return false;
@@ -1421,27 +1543,28 @@ function hasCycle(graph) {          // graph: Map<module, module[]>
 }
 ```
 
+**Say it like this:** "A node that's still on the current DFS path being reached again is a cycle."
+
 ---
 
-**Q65. Implement a subset of `JSON.stringify` (recursion practice)**
+**Q65. Implement a subset of `JSON.stringify`.**
+
+**Short answer:** Recurse by type: primitives as strings, escaped strings, arrays with `null` for unsupported values, and objects skipping `undefined` and functions.
+
+**Explanation:** A full version also handles cycles, `toJSON`, and `NaN`/`Infinity` (which become `null`).
+
+**Example:**
 
 ```js
 function stringify(v) {
   if (v === null || typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (typeof v === 'string') return `"${v.replace(/["\\]/g, '\\$&')}"`;
-  if (Array.isArray(v)) {
-    return `[${v.map((x) => (x === undefined || typeof x === 'function' ? 'null' : stringify(x))).join(',')}]`;
-  }
-  if (typeof v === 'object') {
-    return `{${Object.entries(v)
-      .filter(([, x]) => x !== undefined && typeof x !== 'function')
-      .map(([k, x]) => `"${k}":${stringify(x)}`)
-      .join(',')}}`;
-  }
+  if (Array.isArray(v)) return `[${v.map((x) => (x === undefined || typeof x === 'function' ? 'null' : stringify(x))).join(',')}]`;
+  if (typeof v === 'object') return `{${Object.entries(v).filter(([, x]) => x !== undefined && typeof x !== 'function').map(([k, x]) => `"${k}":${stringify(x)}`).join(',')}}`;
 }
 ```
 
-**Points to mention:** `undefined` and functions are skipped in objects but become `null` in arrays, strings need escaping, and a real implementation also handles cycles, `toJSON` and `Infinity`/`NaN` (which become `null`).
+**Say it like this:** "It's recursion by type, and the interesting details are how undefined and functions behave in objects versus arrays."
 
 ---
 
@@ -1469,4 +1592,4 @@ function stringify(v) {
 
 **Trie:** Implement Trie · Word Search II (stretch)
 
-**Study tip:** For each problem, write down the *pattern* name and a one-line idea. In the interview, recognising the pattern quickly is worth more than remembering the code.
+**Study tip:** For each problem, write down the pattern name and a one-line idea. In the interview, recognising the pattern quickly is worth more than remembering the code.
