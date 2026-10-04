@@ -1,0 +1,764 @@
+<title>Hrushikesh Chavan</title>
+<meta name="description" content="Senior software engineer in Mumbai building real-time video and AI products in React and Node.js.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #FAFAF8; --surface: #FFFFFF; --text: #15171A; --secondary: #5C626B; --border: #E5E5E0; --accent: #1F4FD1; --on-accent: #FFFFFF;
+  --sans: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1114; --surface: #16191D; --text: #E8EAED; --secondary: #9AA0A8; --border: #262A30; --accent: #7C9BFF; --on-accent: #0F1114;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0F1114; --surface: #16191D; --text: #E8EAED; --secondary: #9AA0A8; --border: #262A30; --accent: #7C9BFF; --on-accent: #0F1114;
+  color-scheme: dark; }
+
+/* type scale: 14 / 16 / 20 / 28 / 44 */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.6 var(--sans); }
+h1, h2, h3, h4 { font-weight: 600; margin: 0; line-height: 1.25; letter-spacing: -0.01em; }
+h1 { font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; }
+h2 { font-size: 28px; }
+h3 { font-size: 20px; }
+h4 { font-size: 16px; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+button { font: inherit; color: inherit; }
+[tabindex="-1"]:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.small { font-size: 14px; }
+.muted { color: var(--secondary); }
+.mono { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.lede { font-size: 20px; line-height: 1.5; max-width: 34em; }
+.measure { max-width: 68ch; }
+.skip { position: absolute; left: 16px; top: -48px; background: var(--surface); border: 1px solid var(--border); padding: 8px 12px; z-index: 10; }
+.skip:focus { top: 8px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; }
+
+/* prototype note */
+.proto { border-bottom: 1px solid var(--border); font-size: 14px; color: var(--secondary); }
+.proto .wrap { padding-block: 8px; }
+
+/* header */
+.site-header .wrap { display: flex; align-items: center; gap: 24px; padding-block: 24px; flex-wrap: wrap; }
+.site-name { font-weight: 600; color: var(--text); text-decoration: none; }
+.site-nav { display: flex; gap: 24px; margin-left: auto; font-size: 14px; }
+.site-nav a { color: var(--secondary); text-decoration: none; }
+.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--text); }
+.theme-btn { border: 1px solid var(--border); background: transparent; border-radius: 6px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; color: var(--secondary); }
+.theme-btn:hover { color: var(--text); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: border-color .15s, background-color .15s; }
+.btn:hover { border-color: var(--secondary); text-decoration: none; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { border-color: var(--accent); opacity: .92; }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+/* sections */
+.section { padding-block: 64px; border-top: 1px solid var(--border); }
+.section-head { grid-column: 1 / span 3; }
+.section-body { grid-column: 4 / span 9; }
+
+/* intro */
+.intro { padding-block: 72px 80px; }
+.intro .who { display: flex; align-items: center; gap: 24px; }
+.photo { width: 88px; height: 88px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); flex: none; overflow: hidden; display: grid; place-items: center; color: var(--secondary); }
+.photo img { width: 100%; height: 100%; object-fit: cover; }
+.intro .lede { margin-top: 32px; }
+.intro .focus { margin-top: 16px; color: var(--secondary); max-width: 60ch; }
+.contact-line { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 32px; }
+.email { font-family: var(--mono); font-size: 14px; color: var(--text); }
+.copy { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* work rows */
+.work-row { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); column-gap: 24px; padding-block: 32px; border-top: 1px solid var(--border); }
+.work-row:first-child { border-top: 0; padding-top: 0; }
+.thumb { grid-column: span 3; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); aspect-ratio: 4 / 3; display: grid; place-items: center; }
+.thumb svg { width: 80%; height: auto; }
+.work-text { grid-column: span 6; }
+.work-text .role { margin-top: 4px; }
+.work-text p.sum { margin-top: 12px; }
+.work-text ul { margin: 12px 0 0; padding-left: 18px; }
+.work-text li { margin-bottom: 4px; }
+.work-text .more { display: inline-block; margin-top: 16px; font-size: 14px; }
+
+/* experience + skills */
+.rows { margin: 0; padding: 0; list-style: none; }
+.rows li { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 24px; padding-block: 16px; border-top: 1px solid var(--border); }
+.rows li:first-child { border-top: 0; padding-top: 0; }
+.rows .when { color: var(--secondary); padding-top: 2px; }
+.rows p { color: var(--secondary); }
+dl.skills { margin: 0; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px 24px; }
+dl.skills dt { font-weight: 500; }
+dl.skills dd { margin: 0; color: var(--secondary); }
+
+.links { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; font-size: 14px; }
+.site-footer { border-top: 1px solid var(--border); padding-block: 32px 48px; font-size: 14px; color: var(--secondary); }
+.site-footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* TODO slots */
+.todo { border: 1px dashed var(--secondary); border-radius: 6px; padding: 12px 16px; font-size: 14px; color: var(--secondary); margin-block: 16px; }
+.todo b { font-family: var(--mono); font-weight: 500; color: var(--text); margin-right: 6px; }
+
+/* case study */
+.case-head { padding-block: 48px 56px; }
+.crumb { font-size: 14px; color: var(--secondary); }
+.crumb a { color: var(--secondary); }
+.case-head h1 { margin-top: 16px; }
+.case-head .lede { margin-top: 16px; }
+dl.meta { margin: 40px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+dl.meta dt { font-size: 14px; color: var(--secondary); }
+dl.meta dd { margin: 4px 0 0; font-size: 14px; }
+.case-body { padding-bottom: 64px; }
+.case-main { grid-column: 1 / span 8; }
+.case-main:first-of-type { grid-row: 1; }
+.toc-wrap { grid-row: 1; grid-column: 10 / span 3; }
+.toc { position: sticky; top: 24px; align-self: start; font-size: 14px; }
+.toc p { color: var(--secondary); margin-bottom: 8px; }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--border); }
+.toc a { display: block; padding: 4px 0 4px 12px; color: var(--secondary); text-decoration: none; margin-left: -1px; border-left: 1px solid transparent; }
+.toc a:hover { color: var(--text); }
+.toc a[aria-current="true"] { color: var(--text); border-left-color: var(--text); }
+.cs { padding-top: 48px; scroll-margin-top: 24px; }
+.cs h2 { margin-bottom: 16px; }
+.cs p + p { margin-top: 16px; }
+.cs ul { padding-left: 18px; margin: 0; }
+.cs li { margin-bottom: 8px; }
+.decision { padding-block: 24px; border-top: 1px solid var(--border); }
+.decision:first-of-type { border-top: 0; padding-top: 8px; }
+.decision dl { margin: 12px 0 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 16px; }
+.decision dt { color: var(--secondary); font-size: 14px; padding-top: 2px; }
+.decision dd { margin: 0; }
+dl.results { margin: 0; }
+dl.results > div { padding-block: 16px; border-top: 1px solid var(--border); }
+dl.results > div:first-child { border-top: 0; padding-top: 0; }
+dl.results dt { font-weight: 500; }
+dl.results dd { margin: 4px 0 0; }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.shot { margin: 0; }
+.shot .frame { aspect-ratio: 16 / 10; border: 1px dashed var(--secondary); border-radius: 6px; display: grid; place-items: center; text-align: center; padding: 16px; font-size: 14px; color: var(--secondary); }
+.shot figcaption { margin-top: 8px; font-size: 14px; color: var(--secondary); }
+.case-foot { padding-block: 32px 0; border-top: 1px solid var(--border); margin-top: 64px; font-size: 14px; }
+
+/* architecture explorer */
+.explorer { margin-top: 24px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; }
+.stage { position: relative; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); aspect-ratio: 16 / 11; overflow: hidden; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: default; }
+.stage svg.flat { position: absolute; inset: 0; width: 100%; height: 100%; }
+.stage .lbl { position: absolute; transform: translate(-50%, -100%); font-size: 14px; white-space: nowrap; padding: 2px 8px; border: 1px solid var(--border); background: var(--bg); border-radius: 4px; pointer-events: none; color: var(--text); }
+.stage .lbl.sel { border-color: var(--accent); color: var(--accent); }
+.stage .mode { position: absolute; left: 12px; bottom: 8px; font-size: 14px; color: var(--secondary); }
+.flat .node rect { fill: var(--surface); stroke: var(--secondary); stroke-width: 1; }
+.flat .node.sel rect { stroke: var(--accent); stroke-width: 2; }
+.flat .node text { fill: var(--text); font: 500 14px var(--sans); }
+.flat .node.sel text { fill: var(--accent); }
+.flat .node { cursor: pointer; }
+.flat .edge { stroke: var(--secondary); stroke-width: 1; opacity: .7; transition: opacity .6s; }
+.flat .edge.relay { stroke-dasharray: 4 4; opacity: .35; }
+.flat.dropped .edge.direct { opacity: .15; }
+.flat.relayed .edge.relay { stroke: var(--text); opacity: 1; stroke-dasharray: none; stroke-width: 1.5; }
+.side h3 { font-size: 16px; }
+.parts { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.parts button { width: 100%; text-align: left; border: 1px solid transparent; background: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 14px; color: var(--secondary); }
+.parts button:hover { color: var(--text); border-color: var(--border); }
+.parts button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+.detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.detail dl { margin: 8px 0 0; font-size: 14px; }
+.detail dt { color: var(--secondary); margin-top: 12px; }
+.detail dd { margin: 2px 0 0; }
+.sim { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sim .status { margin-top: 12px; font-size: 14px; color: var(--secondary); min-height: 3.2em; }
+
+[hidden] { display: none !important; }
+
+@media (max-width: 960px) {
+  .toc-wrap { display: none; }
+  .case-main { grid-column: 1 / -1; }
+  .explorer { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  h1 { font-size: 28px; }
+  .lede { font-size: 20px; }
+  .wrap { padding: 0 16px; }
+  .section-head, .section-body { grid-column: 1 / -1; }
+  .section-head { margin-bottom: 24px; }
+  .work-row { grid-template-columns: minmax(0, 1fr); row-gap: 16px; }
+  .thumb, .work-text { grid-column: auto; }
+  .thumb { aspect-ratio: 16 / 9; }
+  .rows li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  dl.skills { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  dl.skills dd { margin-bottom: 12px; }
+  dl.meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shots { grid-template-columns: minmax(0, 1fr); }
+  .site-nav { order: 3; width: 100%; margin-left: 0; gap: 20px; }
+  .theme-btn { margin-left: auto; }
+  .intro { padding-block: 40px 56px; }
+  .stage { aspect-ratio: 4 / 3; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<a class="skip" href="#main">Skip to content</a>
+<div class="proto"><div class="wrap">Prototype for review. Dashed boxes marked TODO are details only you can supply or confirm.</div></div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="site-name" href="#/">Hrushikesh Chavan</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#/work" data-nav="work">Work</a>
+      <a href="#/about" data-nav="about">About</a>
+      <a href="#/resume" data-nav="resume">Résumé</a>
+      <a href="#/contact" data-nav="contact">Contact</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch to dark theme">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+
+<!-- ============ HOME ============ -->
+<div data-page="home">
+  <section class="wrap intro" aria-labelledby="name">
+    <div class="who">
+      <div class="photo" role="img" aria-label="Photo placeholder">
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="15" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 36c1.8-7.2 7.5-11 14-11s12.2 3.8 14 11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </div>
+      <div>
+        <h1 id="name" tabindex="-1">Hrushikesh Chavan</h1>
+        <p class="muted" style="margin-top:8px">Senior Software Engineer · 4+ years · Mumbai, India</p>
+      </div>
+    </div>
+    <p class="lede">I build real-time video and AI products in React and Node.js, most recently for healthcare and call centres.</p>
+    <p class="focus">My work centres on frontend architecture, real-time video with LiveKit and WebRTC, AI processing pipelines, and application security.</p>
+    <div class="contact-line">
+      <a class="btn btn-primary" href="#/resume">Résumé (PDF)</a>
+      <span><span class="email">hrushikeshchavan257@gmail.com</span> · <button class="copy" type="button" data-copy>Copy email</button></span>
+    </div>
+    <div class="todo"><b>TODO</b>Add your headshot as <span class="mono">me.jpg</span>: plain background, natural light, square, at least 800 × 800 px.</div>
+  </section>
+
+  <section class="section" id="work" aria-labelledby="workH">
+    <div class="wrap grid">
+      <div class="section-head"><h2 id="workH">Selected work</h2></div>
+      <div class="section-body">
+        <article class="work-row" aria-labelledby="w1">
+          <div class="thumb" aria-hidden="true">
+            <svg viewBox="0 0 200 140" fill="none" stroke="currentColor" style="color:var(--secondary)">
+              <rect x="10" y="20" width="40" height="22" rx="3"/><rect x="10" y="60" width="40" height="22" rx="3"/><rect x="10" y="100" width="40" height="22" rx="3"/>
+              <rect x="120" y="54" width="64" height="34" rx="3" stroke="var(--text)"/>
+              <path d="M50 31 120 64M50 71h70M50 111l70-33"/>
+              <rect x="70" y="4" width="34" height="16" rx="3" stroke-dasharray="3 3"/>
+              <path d="M87 20v14" stroke-dasharray="3 3"/>
+            </svg>
+          </div>
+          <div class="work-text">
+            <h3 id="w1">InterpretIQ</h3>
+            <p class="small muted role">Frontend architecture lead · Arcitech · 2026</p>
+            <p class="sum">An access-gated, WCAG-compliant PWA that connects patients and providers with medical interpreters over live video.</p>
+            <ul>
+              <li>150 concurrent sessions with 99% reconnect success.</li>
+              <li>Calls join in under 5 seconds.</li>
+            </ul>
+            <a class="more" href="#/work/interpretiq">Read the case study</a>
+          </div>
+        </article>
+
+        <article class="work-row" aria-labelledby="w2">
+          <div class="thumb" aria-hidden="true">
+            <svg viewBox="0 0 200 140" fill="none" stroke="currentColor" style="color:var(--secondary)">
+              <rect x="6" y="56" width="30" height="28" rx="3"/><rect x="46" y="56" width="30" height="28" rx="3"/><rect x="86" y="56" width="30" height="28" rx="3" stroke="var(--text)"/><rect x="126" y="56" width="30" height="28" rx="3"/><rect x="166" y="56" width="28" height="28" rx="3"/>
+              <path d="M36 70h10M76 70h10M116 70h10M156 70h10"/>
+              <path d="M101 56V30h65v26" stroke-dasharray="3 3"/>
+            </svg>
+          </div>
+          <div class="work-text">
+            <h3 id="w2">BpoBox: AI scoring for call-centre quality</h3>
+            <p class="small muted role">Frontend architecture owner · Arcitech · 2026</p>
+            <p class="sum">A multi-tenant QA platform for 5 tenants and 1,500 users, with role-based portals, scorecards and AI scoring of recorded calls.</p>
+            <ul>
+              <li>QA review time down 60%.</li>
+              <li>40,000+ calls scored a month at 5× throughput.</li>
+            </ul>
+            <span class="more muted">Case study in progress</span>
+          </div>
+        </article>
+
+        <article class="work-row" aria-labelledby="w3">
+          <div class="thumb" aria-hidden="true">
+            <svg viewBox="0 0 200 140" fill="none" stroke="currentColor" style="color:var(--secondary)">
+              <g>
+                <rect x="40" y="22" width="26" height="22" rx="2"/><rect x="74" y="22" width="26" height="22" rx="2"/><rect x="108" y="22" width="26" height="22" rx="2" stroke="var(--text)"/><rect x="142" y="22" width="26" height="22" rx="2"/>
+                <rect x="40" y="52" width="26" height="22" rx="2"/><rect x="74" y="52" width="26" height="22" rx="2" stroke="var(--text)"/><rect x="108" y="52" width="26" height="22" rx="2"/><rect x="142" y="52" width="26" height="22" rx="2"/>
+                <rect x="40" y="82" width="26" height="22" rx="2"/><rect x="74" y="82" width="26" height="22" rx="2"/><rect x="108" y="82" width="26" height="22" rx="2"/><rect x="142" y="82" width="26" height="22" rx="2" stroke="var(--text)"/>
+              </g>
+              <path d="M12 33h20M12 63h20M12 93h20"/>
+            </svg>
+          </div>
+          <div class="work-text">
+            <h3 id="w3">Security and infrastructure audit</h3>
+            <p class="small muted role">Led the audit and the fixes · Arcitech · 2026</p>
+            <p class="sum">A reliability and security review across React and FastAPI for a healthcare product, plus a design for self-hosted video infrastructure on AWS.</p>
+            <ul>
+              <li>8 critical issues found; open findings down 85%.</li>
+              <li>Projected 40% lower video costs and 10× traffic capacity.</li>
+            </ul>
+            <span class="more muted">Case study in progress</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="experience" aria-labelledby="expH">
+    <div class="wrap grid">
+      <div class="section-head"><h2 id="expH">Experience</h2></div>
+      <div class="section-body">
+        <ol class="rows">
+          <li><span class="when mono">2026 – now</span><div><h4>Senior Software Engineer, Arcitech</h4><p>Frontend architecture for InterpretIQ and BpoBox, the security audit, and AI call scoring.</p></div></li>
+          <li><span class="when mono">2023 – 2025</span><div><h4>Software Engineer, Arcitech</h4><p>AI interview platform, frontend lead on a Revit design-compliance checker, and an AI education platform.</p></div></li>
+          <li><span class="when mono">2022 – 2023</span><div><h4>Software Engineer, LTIMindtree</h4><p>Account, booking and profile features, plus headless widgets, for a major North American airline.</p></div></li>
+          <li><span class="when mono">2022</span><div><h4>Full-Stack Developer, Slaylink</h4><p>A creator and brand community app in Next.js, NestJS, GraphQL and MongoDB.</p></div></li>
+          <li><span class="when mono">2018 – 2022</span><div><h4>B.E. Information Technology</h4><p>Dr. D Y Patil College of Engineering, Pune.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="skills" aria-labelledby="skH">
+    <div class="wrap grid">
+      <div class="section-head"><h2 id="skH">Skills</h2></div>
+      <div class="section-body">
+        <dl class="skills">
+          <dt>Frontend</dt><dd>React, Next.js, TypeScript, Redux, React Query, Zustand, Tailwind CSS, Radix UI, React Testing Library</dd>
+          <dt>Real-time</dt><dd>LiveKit and WebRTC, WebSocket, SSE</dd>
+          <dt>Backend</dt><dd>Node.js, NestJS, Express, FastAPI, GraphQL, REST</dd>
+          <dt>Data and infrastructure</dt><dd>PostgreSQL, Redis, MongoDB, AWS, Docker, GitHub Actions, Sentry, Grafana, Prometheus</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="about" aria-labelledby="abH">
+    <div class="wrap grid">
+      <div class="section-head"><h2 id="abH">About</h2></div>
+      <div class="section-body measure">
+        <p>I've spent the last four years building web products, from airline booking flows at LTIMindtree to real-time healthcare video at Arcitech. Most of my work sits where the frontend meets the backend: video calls, streaming, queues and access control. I set the frontend testing standards for my team and mentor 15 developers. I also build small full-stack projects, such as a blood bank app and a quiz platform.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact" aria-labelledby="ctH">
+    <div class="wrap grid">
+      <div class="section-head"><h2 id="ctH">Contact</h2></div>
+      <div class="section-body">
+        <p>Email is the best way to reach me.</p>
+        <p style="margin-top:12px"><span class="email">hrushikeshchavan257@gmail.com</span> · <button class="copy" type="button" data-copy>Copy email</button></p>
+        <div class="links"><a href="https://github.com/Hrushi4" rel="noopener" target="_blank">GitHub</a><a href="https://linkedin.com/in/hrushikeshchavan" rel="noopener" target="_blank">LinkedIn</a><a href="#/resume">Résumé</a></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ CASE STUDY ============ -->
+<div data-page="interpretiq" hidden>
+  <header class="wrap case-head">
+    <p class="crumb"><a href="#/work">Work</a> / InterpretIQ</p>
+    <h1 tabindex="-1">InterpretIQ</h1>
+    <p class="lede">An access-gated, WCAG-compliant PWA that connects patients and providers with medical interpreters over live video.</p>
+    <dl class="meta">
+      <div><dt>Role</dt><dd>Frontend architecture lead</dd></div>
+      <div><dt>Company</dt><dd>Arcitech</dd></div>
+      <div><dt>Period</dt><dd>2026 – present</dd></div>
+      <div><dt>Stack</dt><dd>React 19, TypeScript, Redux, LiveKit, FastAPI, AWS</dd></div>
+    </dl>
+  </header>
+
+  <div class="wrap grid case-body">
+    <article class="case-main">
+      <section class="cs" id="context" aria-labelledby="h-context">
+        <h2 id="h-context">Context</h2>
+        <p class="measure">InterpretIQ lets patients and healthcare providers talk through a medical interpreter on a live video call. If a call drops, a consultation stops until everyone is back, so reliability matters more than features.</p>
+        <p class="measure">The app is access-gated, runs as a PWA, and must meet WCAG accessibility requirements.</p>
+        <div class="todo"><b>TODO</b>Add one sentence on who uses it (for example, which kinds of clinics) and roughly how many calls it handles, if you can share that.</div>
+      </section>
+
+      <section class="cs" id="role" aria-labelledby="h-role">
+        <h2 id="h-role">My role</h2>
+        <p class="measure">I drove the frontend architecture: the application structure in React 19, TypeScript and Redux, the real-time video layer on LiveKit, and accessibility. I also designed the self-hosted LiveKit infrastructure on AWS.</p>
+        <div class="todo"><b>TODO</b>Say what the rest of the team owned (backend, design, QA) and the team size, so it's clear what was yours.</div>
+      </section>
+
+      <section class="cs" id="constraints" aria-labelledby="h-constraints">
+        <h2 id="h-constraints">Constraints</h2>
+        <ul class="measure">
+          <li><b>Networks.</b> Calls run on hospital and clinic networks, which can be slow, change mid-call, or block UDP traffic.</li>
+          <li><b>Accessibility.</b> The app has to be WCAG-compliant. Call controls must work with a keyboard and screen readers.</li>
+          <li><b>Privacy.</b> Access is gated, and patient health information must be protected in storage, logs and tokens.</li>
+          <li><b>Scale.</b> Up to 150 concurrent sessions.</li>
+        </ul>
+      </section>
+
+      <section class="cs" id="decisions" aria-labelledby="h-decisions">
+        <h2 id="h-decisions">Key decisions</h2>
+        <div class="todo"><b>TODO</b>These three are drafted from your résumé and common LiveKit practice. Confirm each one, or replace it with what you actually decided.</div>
+        <div class="decision">
+          <h3>1. Keep the video room out of React state</h3>
+          <dl>
+            <dt>Options</dt><dd>Store the LiveKit room in Redux; keep it in a component ref; or wrap it in a small call service and store only plain call state in Redux.</dd>
+            <dt>Choice</dt><dd>A call service owns the room. Redux holds plain, serialisable state (status, participants, mute) for the UI.</dd>
+            <dt>Trade-off</dt><dd>Two places to keep in sync, so every room event goes through one handler that updates Redux.</dd>
+          </dl>
+        </div>
+        <div class="decision">
+          <h3>2. Resume first, then rejoin</h3>
+          <dl>
+            <dt>Options</dt><dd>Rely on the SDK defaults; always do a full rejoin; or try to resume the session and fall back to a full rejoin with a fresh token.</dd>
+            <dt>Choice</dt><dd>Resume first and rejoin second, and allow a TURN relay over TLS on port 443 for networks that block UDP.</dd>
+            <dt>Trade-off</dt><dd>More states to design and test (reconnecting, relayed, failed), and relayed calls cost more bandwidth.</dd>
+          </dl>
+        </div>
+        <div class="decision">
+          <h3>3. Self-host LiveKit on AWS</h3>
+          <dl>
+            <dt>Options</dt><dd>A managed video service, or self-hosted LiveKit on AWS.</dd>
+            <dt>Choice</dt><dd>Designed a self-hosted setup with Docker, CI/CD, caching, a CDN and monitoring. It is projected to cut video costs by 40% and handle 10× the traffic.</dd>
+            <dt>Trade-off</dt><dd>The team takes on operations: scaling, upgrades, certificates and on-call.</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="cs" id="architecture" aria-labelledby="h-arch">
+        <h2 id="h-arch">Architecture</h2>
+        <p class="measure">Select a component to see what it does, why it was chosen and its trade-off. Use "Simulate network drop" to see how media is rerouted when a network blocks the direct path.</p>
+      </section>
+    </article>
+
+    <div class="toc-wrap"><nav class="toc" aria-label="On this page">
+      <p>On this page</p>
+      <ol>
+        <li><a href="#context">Context</a></li>
+        <li><a href="#role">My role</a></li>
+        <li><a href="#constraints">Constraints</a></li>
+        <li><a href="#decisions">Key decisions</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#results">Results</a></li>
+        <li><a href="#differently">What I'd do differently</a></li>
+        <li><a href="#screens">Screens</a></li>
+      </ol>
+    </nav></div>
+
+    <div style="grid-column:1/-1">
+      <div class="explorer" id="explorer">
+        <div class="stage" id="stage">
+          <svg class="flat" id="flat" viewBox="0 0 720 440" role="img" aria-label="Architecture diagram: Browser connects to the LiveKit SFU directly, or through a TURN relay. The SFU uses Redis. The browser also calls FastAPI, which uses PostgreSQL."></svg>
+          <span class="mode" id="mode">2D diagram</span>
+        </div>
+        <div class="side">
+          <h3 id="partsH">Components</h3>
+          <ul class="parts" id="parts" aria-labelledby="partsH"></ul>
+          <div class="detail" id="detail" aria-live="polite"></div>
+          <div class="sim">
+            <button class="btn" type="button" id="dropBtn">Simulate network drop</button>
+            <p class="status" id="simStatus" aria-live="polite">Media flows directly between the browser and the SFU over UDP.</p>
+          </div>
+        </div>
+      </div>
+      <div class="todo"><b>TODO</b>Component descriptions are drafts. Check each one against the real system, and add anything missing, such as a CDN or monitoring.</div>
+    </div>
+
+    <article class="case-main">
+      <section class="cs" id="results" aria-labelledby="h-results">
+        <h2 id="h-results">Results</h2>
+        <dl class="results measure">
+          <div><dt>150 concurrent sessions</dt><dd class="small muted">Measured: <span class="todo-inline">TODO: production peak or load test, which tool, over what period.</span></dd></div>
+          <div><dt>99% reconnect success</dt><dd class="small muted">Measured: <span class="todo-inline">TODO: how a successful reconnect is defined, and over what period.</span></dd></div>
+          <div><dt>Under 5 seconds to join a call</dt><dd class="small muted">Measured: <span class="todo-inline">TODO: from which click to which event; median or p95.</span></dd></div>
+          <div><dt>Projected 40% lower video cost and 10× traffic capacity</dt><dd class="small muted">These are projections, not measurements. Basis: <span class="todo-inline">TODO: what the projection compares.</span></dd></div>
+        </dl>
+      </section>
+
+      <section class="cs" id="differently" aria-labelledby="h-diff">
+        <h2 id="h-diff">What I'd do differently</h2>
+        <div class="todo"><b>TODO</b>Write two or three honest points in your own words. For example: what you would test earlier, what you would measure from the first day, or a decision you would revisit.</div>
+      </section>
+
+      <section class="cs" id="screens" aria-labelledby="h-screens">
+        <h2 id="h-screens">Screens</h2>
+        <div class="shots">
+          <figure class="shot"><div class="frame">TODO: pre-join screen with device check</div><figcaption>Pre-join screen. Patient details blurred.</figcaption></figure>
+          <figure class="shot"><div class="frame">TODO: in-call view during reconnection</div><figcaption>In-call view with the reconnecting notice. Patient details blurred.</figcaption></figure>
+        </div>
+      </section>
+
+      <p class="case-foot"><a href="#/work">Back to all work</a></p>
+    </article>
+  </div>
+</div>
+
+<!-- ============ RESUME ============ -->
+<div data-page="resume" hidden>
+  <section class="wrap" style="padding-block:48px 80px">
+    <h1 tabindex="-1">Résumé</h1>
+    <p class="lede" style="margin-top:16px">Senior Software Engineer with 4+ years of experience in React, Next.js, Node.js and NestJS.</p>
+    <p style="margin-top:24px"><a class="btn btn-primary" href="#/resume" aria-disabled="true">Download PDF</a></p>
+    <div class="todo"><b>TODO</b>Add <span class="mono">resume.pdf</span> without your phone number. The final site will also embed it here.</div>
+  </section>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap"><span>© 2026 Hrushikesh Chavan</span><span>Built with Astro and Three.js</span></div>
+</footer>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+  /* theme */
+  const root = document.documentElement;
+  const saved = store.get('theme'); if (saved) root.dataset.theme = saved;
+  const isDark = () => (root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+  const syncThemeLabel = () => $('#themeBtn').setAttribute('aria-label', isDark() ? 'Switch to light theme' : 'Switch to dark theme');
+  syncThemeLabel();
+  $('#themeBtn').addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; store.set('theme', root.dataset.theme); syncThemeLabel(); });
+
+  /* copy email */
+  $$('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+    const done = () => { const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1600); };
+    const text = 'hrushikeshchavan257@gmail.com';
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => { b.textContent = 'Select the address to copy'; });
+    else b.textContent = 'Select the address to copy';
+  }));
+
+  /* hash routes: #/ home, #/<section> home section, #/work/interpretiq, #/resume */
+  const pages = { home: 'Hrushikesh Chavan', interpretiq: 'InterpretIQ case study · Hrushikesh Chavan', resume: 'Résumé · Hrushikesh Chavan' };
+  let first = true;
+  function route() {
+    const h = location.hash;
+    if (h && !h.startsWith('#/')) { // in-page anchors (table of contents, skip link)
+      const el = document.getElementById(h.slice(1)); if (el) el.scrollIntoView(); return;
+    }
+    const path = h.slice(2);
+    const page = path === 'work/interpretiq' ? 'interpretiq' : path === 'resume' ? 'resume' : 'home';
+    $$('[data-page]').forEach((p) => (p.hidden = p.dataset.page !== page));
+    document.title = pages[page];
+    $$('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === (page === 'interpretiq' ? 'work' : page === 'resume' ? 'resume' : path)));
+    $$('[data-nav]').forEach((a) => a.hasAttribute('aria-current') && a.setAttribute('aria-current', 'page'));
+    if (page === 'home' && path) { const el = document.getElementById(path); if (el) { el.scrollIntoView(); if (!first) el.querySelector('h2')?.setAttribute('tabindex', '-1'), el.querySelector('h2')?.focus({ preventScroll: true }); } }
+    else { window.scrollTo(0, 0); if (!first) $(`[data-page="${page}"] h1`)?.focus({ preventScroll: true }); }
+    if (page === 'interpretiq') window.dispatchEvent(new Event('case:shown'));
+    first = false;
+  }
+  addEventListener('hashchange', route); route();
+
+  /* table of contents highlight */
+  const tocLinks = $$('.toc a');
+  const tio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) tocLinks.forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-20% 0px -70% 0px' });
+  $$('.cs').forEach((s) => tio.observe(s));
+})();
+</script>
+
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js" } }</script>
+<script type="module">
+/* Architecture explorer: one data model drives the 2D SVG (default and fallback) and the 3D view. */
+const $ = (s, r = document) => r.querySelector(s);
+const NODES = [
+  { id: 'browser', name: 'Browser / PWA', x: -4.4, z: 0.2, w: 2.0, d: 1.2,
+    what: 'The React 19 app, installable as a PWA. It asks the API for a join token, then connects to the call with the LiveKit client SDK.',
+    why: 'One codebase for desktops and tablets, with no app-store release cycle.',
+    trade: 'A PWA has fewer device capabilities than a native app, especially on iOS.' },
+  { id: 'sfu', name: 'LiveKit SFU (AWS)', x: 1.8, z: 0.2, w: 2.4, d: 1.4,
+    what: 'A selective forwarding unit. It receives each participant’s audio and video and forwards it to the others without re-encoding.',
+    why: 'Each client uploads its media once, which keeps three-way calls light on weak connections. Self-hosting keeps media on infrastructure the team controls.',
+    trade: 'Server bandwidth grows with participants, and the team runs the servers: scaling, upgrades and monitoring.' },
+  { id: 'turn', name: 'TURN relay', x: -1.3, z: -2.5, w: 1.9, d: 1.1,
+    what: 'Relays media over TLS on port 443 when a network blocks direct UDP traffic.',
+    why: 'Hospital firewalls often block UDP, and port 443 is almost always open.',
+    trade: 'Relayed media adds latency and bandwidth cost, so it is a fallback, not the default path.' },
+  { id: 'redis', name: 'Redis', x: 4.9, z: -2.3, w: 1.6, d: 1.0,
+    what: 'Shares room state between LiveKit nodes so everyone in a room is routed to the right server.',
+    why: 'Needed to run more than one SFU node.',
+    trade: 'One more stateful service to run and monitor.' },
+  { id: 'api', name: 'FastAPI', x: -1.3, z: 2.9, w: 1.9, d: 1.1,
+    what: 'Signs users in, checks their role and issues short-lived LiveKit access tokens.',
+    why: 'Tokens are signed on the server, so the LiveKit secret never reaches the browser.',
+    trade: 'Joining a call depends on the API being available.' },
+  { id: 'pg', name: 'PostgreSQL', x: 2.6, z: 2.9, w: 1.9, d: 1.1,
+    what: 'Stores application data: users, roles and session records.',
+    why: 'Relational data with strict access rules.',
+    trade: 'Records can include health information, so it needs encryption, tight access control and audit logging.' },
+];
+const EDGES = [
+  { id: 'direct', a: 'browser', b: 'sfu', kind: 'direct' },
+  { id: 'b-turn', a: 'browser', b: 'turn', kind: 'relay' },
+  { id: 'turn-sfu', a: 'turn', b: 'sfu', kind: 'relay' },
+  { id: 'sfu-redis', a: 'sfu', b: 'redis', kind: 'plain' },
+  { id: 'b-api', a: 'browser', b: 'api', kind: 'plain' },
+  { id: 'api-pg', a: 'api', b: 'pg', kind: 'plain' },
+];
+const byId = Object.fromEntries(NODES.map((n) => [n.id, n]));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let selected = 'sfu';
+let phase = 'normal'; // normal | dropped | relayed
+const listeners = [];
+
+/* ---- side panel ---- */
+const parts = $('#parts');
+parts.innerHTML = NODES.map((n) => `<li><button type="button" data-id="${n.id}" aria-pressed="false">${n.name}</button></li>`).join('');
+parts.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) select(b.dataset.id); });
+function select(id) {
+  selected = id;
+  parts.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.id === id));
+  const n = byId[id];
+  $('#detail').innerHTML = `<h3>${n.name}</h3><dl><dt>What it does</dt><dd>${n.what}</dd><dt>Why it was chosen</dt><dd>${n.why}</dd><dt>Trade-off</dt><dd>${n.trade}</dd></dl>`;
+  listeners.forEach((f) => f());
+}
+
+/* ---- 2D SVG ---- */
+const flat = $('#flat');
+const P = (n) => ({ x: 360 + n.x * 60, y: 205 + n.z * 62 });
+const NS = 'http://www.w3.org/2000/svg';
+flat.innerHTML = EDGES.map((e) => { const a = P(byId[e.a]), b = P(byId[e.b]); return `<line class="edge ${e.kind}" data-e="${e.id}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`; }).join('') +
+  NODES.map((n) => { const p = P(n), w = n.w * 60, h = 44; return `<g class="node" data-id="${n.id}"><rect x="${p.x - w / 2}" y="${p.y - h / 2}" width="${w}" height="${h}" rx="4"/><text x="${p.x}" y="${p.y + 5}" text-anchor="middle">${n.name}</text></g>`; }).join('');
+flat.addEventListener('click', (e) => { const g = e.target.closest('.node'); if (g) select(g.dataset.id); });
+listeners.push(() => {
+  flat.querySelectorAll('.node').forEach((g) => g.classList.toggle('sel', g.dataset.id === selected));
+  flat.classList.toggle('dropped', phase !== 'normal');
+  flat.classList.toggle('relayed', phase === 'relayed');
+});
+
+/* ---- network drop simulation (slow, no flashing) ---- */
+const status = $('#simStatus'), dropBtn = $('#dropBtn');
+const STEPS = {
+  normal: 'Media flows directly between the browser and the SFU over UDP.',
+  dropped: 'The direct UDP path is lost. The client keeps the call open and tries to reconnect.',
+  relayed: 'UDP is still blocked, so media goes through the TURN relay over TLS on port 443. The call continues.',
+  restored: 'The direct path is available again. Media moves back to UDP.',
+};
+dropBtn.addEventListener('click', () => {
+  dropBtn.disabled = true;
+  setPhase('dropped');
+  setTimeout(() => setPhase('relayed'), 2500);
+  setTimeout(() => { setPhase('normal'); status.textContent = STEPS.restored; }, 9000);
+  setTimeout(() => { dropBtn.disabled = false; }, 10000);
+});
+function setPhase(p) { phase = p; status.textContent = STEPS[p]; listeners.forEach((f) => f()); }
+select('sfu');
+
+/* ---- 3D view: lazy-loaded when the explorer scrolls into view ---- */
+function webglOk() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } }
+let started = false;
+const io = new IntersectionObserver((es) => {
+  if (started || !es.some((e) => e.isIntersecting)) return;
+  if (reduce || !webglOk()) return; // keep the 2D diagram
+  started = true; io.disconnect();
+  import('three').then(start3d).catch(() => { /* keep 2D */ });
+}, { rootMargin: '200px' });
+io.observe($('#explorer'));
+
+function start3d(THREE) {
+  const stage = $('#stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.domElement.setAttribute('aria-hidden', 'true');
+  stage.prepend(renderer.domElement);
+  flat.setAttribute('hidden', ''); $('#mode').textContent = '3D view · select a component';
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+  camera.position.set(10, 8.2, 10); camera.lookAt(0.3, 0, 0.2);
+
+  const css = () => getComputedStyle(document.documentElement);
+  const col = (v) => new THREE.Color(css().getPropertyValue(v).trim());
+  const C = {};
+  const mats = { face: new THREE.MeshBasicMaterial(), side: new THREE.MeshBasicMaterial(), edge: new THREE.LineBasicMaterial(), edgeSel: new THREE.LineBasicMaterial() };
+
+  const boxes = {}, labels = {};
+  NODES.forEach((n) => {
+    const h = 0.7, g = new THREE.BoxGeometry(n.w, h, n.d);
+    const mesh = new THREE.Mesh(g, [mats.side, mats.side, mats.face, mats.side, mats.side, mats.side]);
+    mesh.position.set(n.x, h / 2, n.z); mesh.userData.id = n.id;
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g), mats.edge);
+    mesh.add(edges); scene.add(mesh);
+    boxes[n.id] = { mesh, edges, h };
+    const l = document.createElement('span'); l.className = 'lbl'; l.textContent = n.name; stage.appendChild(l); labels[n.id] = l;
+  });
+
+  const grid = new THREE.GridHelper(14, 14); grid.position.set(0.3, 0, 0.2); scene.add(grid);
+
+  const lines = {};
+  EDGES.forEach((e) => {
+    const a = byId[e.a], b = byId[e.b];
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a.x, 0.02, a.z), new THREE.Vector3(b.x, 0.02, b.z)]);
+    const m = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.6 });
+    const line = new THREE.Line(geo, m); scene.add(line); lines[e.id] = { line, m, op: 0.6 };
+  });
+
+  // media packets: small cubes moving slowly along the active media path
+  const pkGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12), pkMat = new THREE.MeshBasicMaterial({ transparent: true });
+  const packets = Array.from({ length: 8 }, (_, i) => { const m = new THREE.Mesh(pkGeo, pkMat); scene.add(m); return { m, u: i / 8, dir: i % 2 ? 1 : -1 }; });
+  const V = (n) => new THREE.Vector3(n.x, 0.18, n.z);
+  const pB = V(byId.browser), pS = V(byId.sfu), pT = V(byId.turn), tmp = new THREE.Vector3();
+
+  function readColors() {
+    Object.assign(C, { surface: col('--surface'), bg: col('--bg'), text: col('--text'), secondary: col('--secondary'), border: col('--border'), accent: col('--accent') });
+    mats.face.color.copy(C.surface); mats.side.color.copy(C.bg);
+    mats.edge.color.copy(C.secondary); mats.edgeSel.color.copy(C.accent);
+    grid.material.color = C.border; grid.material.transparent = true; grid.material.opacity = 0.35;
+    pkMat.color.copy(C.text);
+    Object.values(lines).forEach((l) => l.m.color.copy(C.secondary));
+  }
+  readColors();
+  new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+  function applySelection() { NODES.forEach((n) => { boxes[n.id].edges.material = n.id === selected ? mats.edgeSel : mats.edge; labels[n.id].classList.toggle('sel', n.id === selected); }); }
+  listeners.push(applySelection); applySelection();
+
+  // click to select
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const pick = (e) => { const r = renderer.domElement.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera); const hit = ray.intersectObjects(Object.values(boxes).map((b) => b.mesh), false)[0]; return hit && hit.object.userData.id; };
+  renderer.domElement.addEventListener('click', (e) => { const id = pick(e); if (id) select(id); });
+  renderer.domElement.addEventListener('pointermove', (e) => { renderer.domElement.style.cursor = pick(e) ? 'pointer' : 'default'; });
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+    const aspect = w / h, view = aspect < 1.2 ? 6.6 : 4.7; // world half-height
+    camera.left = -view * aspect; camera.right = view * aspect; camera.top = view; camera.bottom = -view; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  let visible = true;
+  new IntersectionObserver((es) => (visible = es[0].isIntersecting)).observe(stage);
+  const proj = new THREE.Vector3(); let last = performance.now();
+  (function loop(now) {
+    requestAnimationFrame(loop);
+    if (!visible || document.hidden) { last = now; return; }
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    const target = { direct: phase === 'normal' ? 0.6 : 0.12, relay: phase === 'relayed' ? 1 : 0.25, plain: 0.6 };
+    EDGES.forEach((e) => { const l = lines[e.id]; l.op += (target[e.kind] - l.op) * Math.min(1, dt * 2); l.m.opacity = l.op; l.m.color.copy(e.kind === 'relay' && phase === 'relayed' ? C.text : C.secondary); });
+    pkMat.opacity += ((phase === 'dropped' ? 0 : 0.9) - pkMat.opacity) * Math.min(1, dt * 2);
+    packets.forEach((p) => {
+      p.u = (p.u + dt * 0.12 * p.dir + 1) % 1;
+      if (phase === 'relayed') { if (p.u < 0.5) tmp.copy(pB).lerp(pT, p.u * 2); else tmp.copy(pT).lerp(pS, (p.u - 0.5) * 2); }
+      else tmp.copy(pB).lerp(pS, p.u);
+      p.m.position.copy(tmp);
+    });
+    const w = stage.clientWidth, h = stage.clientHeight;
+    NODES.forEach((n) => { proj.set(n.x, boxes[n.id].h + 0.25, n.z).project(camera); labels[n.id].style.left = ((proj.x + 1) / 2) * w + 'px'; labels[n.id].style.top = ((1 - proj.y) / 2) * h + 'px'; });
+    renderer.render(scene, camera);
+  })(last);
+}
+</script>
