@@ -7,7 +7,7 @@
 - **Part A — Understand the topic:** what a machine coding round is, how it's scored, and a step-by-step approach.
 - **Part B — Builds with explanations and code:** Basic → Intermediate → Advanced → Resume-inspired → Self-review checklist.
 
-Each build has its **Requirements**, the **Approach** (how to think about it), **Code** (or a code sketch), and **Say it like this** points to speak while you build.
+Each build has a **Short answer** (the approach in one breath), an **Explanation** (requirements and key points), an **Example** (the code or a code sketch) and **Say it like this** (what to say while you build).
 
 ---
 
