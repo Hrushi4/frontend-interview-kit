@@ -1849,9 +1849,12 @@ function useRoom(url: string, token: string | null) {
 
 ```tsx
 const buffer = useRef('');
+const scheduled = useRef(false);
 const onToken = (t: string) => {
   buffer.current += t;
-  requestAnimationFrame(() => setText(buffer.current));
+  if (scheduled.current) return;            // at most one flush per frame
+  scheduled.current = true;
+  requestAnimationFrame(() => { scheduled.current = false; setText(buffer.current); });
 };
 ```
 
