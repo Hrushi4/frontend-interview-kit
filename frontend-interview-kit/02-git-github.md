@@ -109,20 +109,22 @@ Senior engineers are expected to keep shared history clean and recover from mist
 
 ## Part B — Interview Questions and Answers
 
+Every answer below has four parts: **Short answer** (say this first), **Explanation** (add if asked for more), **Example** (a command, code or real situation) and **Say it like this** (a sample spoken answer).
+
 ## 🟢 Level 1 — Basics
 
 **Q1. What is Git? How is it different from GitHub?**
 
 **Short answer:** Git is a distributed version control system that runs on your machine and tracks changes to files. GitHub is a cloud platform that hosts Git repositories and adds collaboration tools such as pull requests, issues, Actions and permissions.
 
-**Explanation:** You can use Git without GitHub, for example locally or with GitLab or Bitbucket. GitHub can't work without Git, because every repository on GitHub is a Git repository.
+**Explanation:** You can use Git without GitHub, for example locally or with GitLab or Bitbucket. GitHub can't work without Git, because every repository on GitHub is a Git repository. Git is the engine; GitHub is a service built around it.
 
 **Example:**
 
 ```bash
-git init            # Git only — works offline, no GitHub needed
+git init                     # Git only — works offline, no GitHub needed
 git remote add origin https://github.com/me/app.git
-git push -u origin main   # now GitHub hosts a copy
+git push -u origin main      # now GitHub hosts a copy
 ```
 
 **Say it like this:** "Git is the version control engine. It tracks history locally and lets me branch, commit and merge. GitHub is a hosting service on top of Git. It's where our team reviews code through pull requests and runs CI with GitHub Actions."
@@ -164,6 +166,8 @@ git commit -m "fix: show error when password is empty"
 
 **Short answer:** `init` creates a brand-new empty repository. `clone` copies an existing remote repository, including its full history, and sets up `origin`.
 
+**Explanation:** After `init` there's no remote and no history; you add a remote yourself. After `clone` you have every commit and branch reference, and the remote is already configured, so `git pull` and `git push` work immediately.
+
 **Example:**
 
 ```bash
@@ -178,6 +182,8 @@ git clone git@github.com:company/web-app.git  # join an existing project
 **Q5. What does `git status` show?**
 
 **Short answer:** The current branch, staged changes, unstaged changes, untracked files, and whether you're ahead of or behind the remote branch.
+
+**Explanation:** It's a read-only command, so it's always safe. It also suggests the next commands (how to unstage or discard), and it tells you if you're mid-merge or mid-rebase.
 
 **Example:**
 
@@ -197,7 +203,7 @@ Untracked files:             src/Login.test.tsx
 
 **Short answer:** `git add .` stages changes in the current folder and below. `git add -A` stages everything in the repo, including deletions. `git add -p` lets you choose individual "hunks" (chunks of changes) interactively.
 
-**Explanation:** `-p` (patch mode) is the senior habit. It lets you review each change before staging it. That catches leftover `console.log` lines and lets you split unrelated changes into separate commits.
+**Explanation:** `-p` (patch mode) is the senior habit. It lets you review each change before staging it, which catches leftover `console.log` lines and lets you split unrelated changes into separate commits.
 
 **Example:**
 
@@ -232,18 +238,20 @@ Closes #412
 
 ---
 
-**Q8. Useful forms of `git log`?**
+**Q8. What are the useful forms of `git log`?**
 
-**Short answer:**
+**Short answer:** `git log --oneline --graph --decorate -20` for a compact visual history, `git log -p file` for one file's changes, `git log --author="Name"` to filter by author, and `git log -S "text"` to find when a string was added or removed.
 
-- `git log --oneline --graph --decorate -20` shows a compact visual history.
-- `git log -p path/to/file` shows the full change history of one file.
-- `git log --author="Name"` filters by author.
-- `git log -S "functionName"` (the "pickaxe") finds the commits where a string was added or removed.
+**Explanation:** `-S` is called the "pickaxe". It searches the *content* of changes, not the commit messages, so it finds the exact commit that introduced or deleted a piece of code even if the message doesn't mention it.
 
-**Example:** To find when someone removed `validateToken()`, run `git log -S "validateToken" --oneline`.
+**Example:**
 
-**Say it like this:** "Day to day I use `git log --oneline --graph`. When I'm debugging I use `git log -S` to find the exact commit that added or removed a piece of code."
+```bash
+git log --oneline --graph -20
+git log -S "validateToken" --oneline   # when was validateToken() added/removed?
+```
+
+**Say it like this:** "Day to day I use `git log --oneline --graph`. When I'm debugging I use `git log -S` to find the exact commit that added or removed a piece of code, then read that commit's PR for context."
 
 ---
 
@@ -269,6 +277,8 @@ git branch -d feat/patient-search   # delete after merge
 
 **Short answer:** `checkout` was overloaded: it switched branches *and* restored files. Git 2.23 split it in two. `switch` changes branches, and `restore` discards file changes or unstages them.
 
+**Explanation:** Because `checkout` does two very different things, a typo could overwrite your file changes when you meant to switch branch. The newer commands make intent explicit and are harder to misuse.
+
 **Example:**
 
 ```bash
@@ -288,6 +298,14 @@ git restore --staged src/App.tsx # unstage, keep edits
 
 **Explanation:** `HEAD~1` means one commit before HEAD and `HEAD~3` means three back. If HEAD points directly to a commit instead of a branch, you're in "detached HEAD" state (see Q35).
 
+**Example:**
+
+```bash
+cat .git/HEAD            # ref: refs/heads/main
+git reset --soft HEAD~1  # move back one commit
+git show HEAD~2          # inspect the commit two before HEAD
+```
+
 **Say it like this:** "HEAD is 'where I am'. Normally it follows my current branch, and I use `HEAD~n` to refer to earlier commits, for example `git reset --soft HEAD~1`."
 
 ---
@@ -295,6 +313,8 @@ git restore --staged src/App.tsx # unstage, keep edits
 **Q12. What is `origin`? What is `upstream`?**
 
 **Short answer:** `origin` is the default name for the remote you cloned from. `upstream` is a common name for the original repository when you work on a fork.
+
+**Explanation:** Remote names are just nicknames for URLs; Git doesn't treat them specially. With a fork, `origin` is your copy (where you push) and `upstream` is the original project (where you pull updates from).
 
 **Example:**
 
@@ -312,7 +332,17 @@ git fetch upstream && git rebase upstream/main   # keep fork updated
 
 **Short answer:** It pushes the branch to the remote and sets "upstream tracking", so later `git push` and `git pull` need no arguments.
 
-**Say it like this:** "The `-u` flag links my local branch to the remote one. After the first push I just type `git push`."
+**Explanation:** Tracking links your local branch to `origin/feat/x`. Git then also shows "ahead by 2 commits" or "behind by 1" in `git status`, because it knows which remote branch to compare against.
+
+**Example:**
+
+```bash
+git switch -c feat/x
+git push -u origin feat/x   # first push: set tracking
+git push                    # every later push: no arguments needed
+```
+
+**Say it like this:** "The `-u` flag links my local branch to the remote one. After the first push I just type `git push`, and `git status` tells me if I'm ahead or behind."
 
 ---
 
@@ -338,12 +368,13 @@ git merge origin/main                 # integrate when ready
 
 **Short answer:** A file listing patterns of files Git should not track.
 
-**Example (typical frontend project):**
+**Explanation:** It keeps generated files, dependencies, secrets and OS junk out of the repository. Patterns support wildcards, folders (trailing `/`) and exceptions (a leading `!`). It only affects files that aren't already tracked (see Q16).
+
+**Example:** a typical frontend `.gitignore`:
 
 ```gitignore
 node_modules/
 dist/
-build/
 .next/
 coverage/
 .env
@@ -361,6 +392,8 @@ coverage/
 
 **Short answer:** `.gitignore` only applies to *untracked* files. Remove the file from the index with `git rm --cached`, then commit.
 
+**Explanation:** Once a file is tracked, Git keeps tracking it regardless of ignore rules. `--cached` removes it from Git's index but leaves it on your disk. If the file held secrets, they still exist in history, so treat them as leaked.
+
 **Example:**
 
 ```bash
@@ -369,19 +402,23 @@ git rm --cached .env
 git commit -m "chore: stop tracking .env"
 ```
 
-If the file contained secrets, rotate them too (see Q59), because they're still in history.
-
-**Say it like this:** "Ignore rules don't affect files Git already tracks. I run `git rm --cached` so the file stays on disk but leaves the repo. If it held secrets, I treat them as leaked and rotate them."
+**Say it like this:** "Ignore rules don't affect files Git already tracks. I run `git rm --cached` so the file stays on disk but leaves the repo. If it held secrets, I rotate them, because they're still in the history."
 
 ---
 
-**Q17. `git diff` variants?**
+**Q17. What are the `git diff` variants?**
 
-**Short answer:**
+**Short answer:** `git diff` shows unstaged changes, `git diff --staged` shows staged changes against the last commit, and `git diff main...feat` (three dots) shows what `feat` changed since it branched from `main`.
 
-- `git diff` shows unstaged changes.
-- `git diff --staged` shows staged changes compared with the last commit.
-- `git diff main...feat` (three dots) shows what `feat` changed since it branched from `main`. This is what a PR shows.
+**Explanation:** The three-dot form compares against the *merge base*, so it ignores changes that landed on `main` after you branched. That's exactly what a pull request shows.
+
+**Example:**
+
+```bash
+git diff                     # what I haven't staged yet
+git diff --staged            # what my next commit contains
+git diff main...feat/login   # what my PR will show
+```
 
 **Say it like this:** "Before committing I run `git diff --staged` to review exactly what's going in. To see a branch's changes the way a PR shows them, I use the three-dot diff against main."
 
@@ -391,7 +428,17 @@ If the file contained secrets, rotate them too (see Q59), because they're still 
 
 **Short answer:** Run `git restore file`. If the file is staged, first run `git restore --staged file` to unstage it, then `git restore file`.
 
-**Warning:** You can't undo this for uncommitted changes, because Git never saved them.
+**Explanation:** This replaces your working copy with the last committed version. It can't be undone for uncommitted changes, because Git never saved them. If you might want them later, stash instead.
+
+**Example:**
+
+```bash
+git restore --staged src/App.tsx   # unstage
+git restore src/App.tsx            # discard edits (permanent)
+git stash push src/App.tsx         # safer: keep a copy
+```
+
+**Say it like this:** "`git restore` throws away my edits to a file. Since that's permanent for uncommitted work, if I'm not sure, I stash instead."
 
 ---
 
@@ -399,7 +446,9 @@ If the file contained secrets, rotate them too (see Q59), because they're still 
 
 **Short answer:** Two branches changed the same lines of a file (or one deleted a file the other edited), so Git can't decide automatically and asks you to resolve it.
 
-**Example of conflict markers:**
+**Explanation:** Git marks the conflicting region with `<<<<<<<`, `=======` and `>>>>>>>`. You edit the file to the correct final content, delete the markers, `git add` it, and continue the merge or rebase.
+
+**Example:**
 
 ```text
 <<<<<<< HEAD
@@ -408,8 +457,6 @@ const TIMEOUT = 5000;
 const TIMEOUT = 10000;
 >>>>>>> feat/slow-network
 ```
-
-You edit the file to the correct final content, delete the markers, then `git add` the file and continue.
 
 **Say it like this:** "A conflict means both sides edited the same region. I don't just pick a side blindly. I check what each change intended, sometimes with the other developer, then run the tests after resolving."
 
@@ -421,6 +468,8 @@ You edit the file to the correct final content, delete the markers, then `git ad
 
 **Explanation:** A good PR is small, has a clear description (what, why, how to test, screenshots for UI) and links the ticket. GitLab calls the same thing a merge request.
 
+**Example:** A PR titled "feat: add reconnecting banner to call screen" with a description, a GIF of the banner, a test plan ("toggle network offline in DevTools"), green CI and one approval before "Squash and merge".
+
 **Say it like this:** "A PR is our quality gate. CI must pass and at least one reviewer approves. I keep PRs small, ideally under about 400 lines, because large PRs get rubber-stamped instead of reviewed."
 
 ---
@@ -429,7 +478,11 @@ You edit the file to the correct final content, delete the markers, then `git ad
 
 **Short answer:** A fork is a server-side copy of a repo under your own GitHub account, used when you don't have write access. A clone is a local copy on your machine.
 
-**Example:** For an open-source contribution, you fork the project, clone your fork, push a branch to it, and then open a PR to the original repo.
+**Explanation:** You usually do both: fork on GitHub to get a copy you can push to, then clone your fork to work locally. The PR goes from your fork back to the original repository.
+
+**Example:** For an open-source contribution to LiveKit's React components: fork it, clone your fork, push a branch to it, then open a PR to the original repo.
+
+**Say it like this:** "A fork is my own copy on GitHub; a clone is a copy on my laptop. For open source I fork, clone my fork, and open a PR back to the original."
 
 ---
 
@@ -437,7 +490,15 @@ You edit the file to the correct final content, delete the markers, then `git ad
 
 **Short answer:** Named, fixed pointers to specific commits, usually marking releases such as `v1.4.0`.
 
-**Explanation:** Annotated tags (`git tag -a v1.0 -m "First release"`) store the author, date and message, and are recommended for releases. Lightweight tags are just names. Tags aren't pushed by default, so use `git push origin v1.0` or `git push --tags`.
+**Explanation:** Unlike branches, tags don't move. Annotated tags store the author, date and message and are recommended for releases; lightweight tags are just names. Tags aren't pushed by default.
+
+**Example:**
+
+```bash
+git tag -a v1.4.0 -m "Release 1.4.0"
+git push origin v1.4.0
+git switch -c hotfix/1.4.1 v1.4.0   # branch from an exact release
+```
 
 **Say it like this:** "We tag every production release with a semantic version. This makes it easy to diff releases, roll back, or create a hotfix branch from an exact version."
 
@@ -449,7 +510,9 @@ You edit the file to the correct final content, delete the markers, then `git ad
 
 **Short answer:** Merge combines two histories with a new merge commit and preserves exactly what happened. Rebase replays your commits on top of another branch to create a straight, linear history.
 
-**Explanation:**
+**Explanation:** Rebase creates *new* commits with new IDs. If someone else had the old ones, their history diverges. **Golden rule:** never rebase commits that others have already pulled.
+
+**Example:**
 
 ```text
 Before:       A---B---C  main
@@ -463,8 +526,6 @@ After merge:  A---B---C-------M  main
 After rebase: A---B---C---D'---E'  feature (new commit IDs)
 ```
 
-Rebase creates *new* commits (D', E'). If someone else had the old D and E, their history diverges. **Golden rule:** never rebase commits that others have already pulled.
-
 **Say it like this:** "I rebase my own feature branch onto main to keep it current and the history clean. I merge into shared branches, and I never rebase anything other people are working on, because rebase rewrites commit IDs."
 
 ---
@@ -473,20 +534,30 @@ Rebase creates *new* commits (D', E'). If someone else had the old D and E, thei
 
 **Short answer:** If the target branch hasn't moved since you branched, Git just moves its pointer forward to your latest commit, with no merge commit.
 
-**Explanation:** Use `--no-ff` to force a merge commit, so the feature stays visible as a group in history.
+**Explanation:** There's nothing to combine, so no new commit is needed. `--no-ff` forces a merge commit anyway, which keeps the feature visible as a group in history.
 
-**Example:** `git merge --no-ff feat/login`
+**Example:**
+
+```bash
+git switch main
+git merge feat/login          # fast-forward if main hasn't moved
+git merge --no-ff feat/login  # always create a merge commit
+```
+
+**Say it like this:** "A fast-forward just slides the branch pointer forward. Some teams prefer `--no-ff` so each feature shows up as one merge in history; with squash merges it doesn't matter."
 
 ---
 
 **Q25. `git reset --soft` vs `--mixed` vs `--hard`?**
 
-**Short answer:** All three move the branch pointer. They differ in what happens to your staged and working files.
+**Short answer:** All three move the branch pointer. Soft keeps your changes staged, mixed (the default) keeps them as unstaged edits, and hard throws them away.
+
+**Explanation:**
 
 | Mode | Branch pointer | Staging area | Working files |
 |---|---|---|---|
-| `--soft` | moved | kept (changes stay staged) | kept |
-| `--mixed` (default) | moved | reset (changes unstaged) | kept |
+| `--soft` | moved | kept | kept |
+| `--mixed` | moved | reset | kept |
 | `--hard` | moved | reset | **reset — changes are lost** |
 
 **Example:**
@@ -503,7 +574,9 @@ git reset --hard HEAD~1   # undo commit AND delete the changes
 
 **Q26. `reset` vs `revert`?**
 
-**Short answer:** `reset` moves the branch backwards and rewrites history, so use it only on local or unshared commits. `revert` creates a *new* commit that undoes an earlier one. It's safe for shared branches like `main`.
+**Short answer:** `reset` moves the branch backwards and rewrites history, so use it only on unshared commits. `revert` creates a *new* commit that undoes an earlier one, so it's safe on shared branches like `main`.
+
+**Explanation:** Rewriting a shared branch breaks everyone who already pulled it, and needs a force push. Revert just adds history, so nobody's local copy is affected.
 
 **Example:**
 
@@ -520,20 +593,35 @@ git push               # no force needed, history preserved
 
 **Short answer:** `git reset --soft HEAD~1`. The commit disappears and the changes stay staged.
 
+**Explanation:** This is useful when you committed too early, with the wrong message, or on the wrong branch. If the commit was already pushed, you'd need a force push afterwards, so do it only on your own branch.
+
+**Example:**
+
+```bash
+git reset --soft HEAD~1
+git switch -c feat/right-branch   # optionally move the work elsewhere
+git commit -m "feat: correct message"
+```
+
+**Say it like this:** "`git reset --soft HEAD~1` un-commits but keeps everything staged, so I can fix the message, split the commit or move it to another branch."
+
 ---
 
 **Q28. How do you fix the last commit message or add a forgotten file?**
 
 **Short answer:** Stage the file and run `git commit --amend`. Add `--no-edit` to keep the message.
 
+**Explanation:** Amend replaces the last commit with a new one. If you've already pushed it, you need `git push --force-with-lease`, so only amend on your own branch.
+
 **Example:**
 
 ```bash
 git add src/forgotten.ts
 git commit --amend --no-edit
+git commit --amend -m "fix: correct typo in message"
 ```
 
-**Caution:** Amend rewrites the commit. If you've already pushed it, you need `git push --force-with-lease`, so only do this on your own branch.
+**Say it like this:** "For a forgotten file or a typo in the message I amend the last commit. If it's already pushed to my own branch, I follow up with `--force-with-lease`."
 
 ---
 
@@ -541,19 +629,19 @@ git commit --amend --no-edit
 
 **Short answer:** Stash temporarily shelves uncommitted changes so you can switch context, then reapplies them later.
 
+**Explanation:** `pop` applies and removes the stash; `apply` keeps it in the list. `-u` includes untracked files, and `-m` adds a message so you can find it later. Stashes are easy to forget, so for long interruptions a WIP commit or a worktree is safer.
+
 **Example:**
 
 ```bash
-git stash push -u -m "wip: login validation"   # -u includes untracked files
-git switch main                                 # fix something urgent
+git stash push -u -m "wip: login validation"
+git switch main                 # fix something urgent
 git switch feat/login
 git stash list
-git stash pop            # apply the latest stash and remove it
-git stash apply stash@{1}  # apply a specific one but keep it in the list
-git stash show -p stash@{0} # inspect before applying
+git stash pop
 ```
 
-**Say it like this:** "When I'm pulled onto an urgent bug mid-feature, I stash with a message, fix the bug, then pop the stash. For longer interruptions I prefer a WIP commit or a `git worktree`, because stashes are easy to forget."
+**Say it like this:** "When I'm pulled onto an urgent bug mid-feature, I stash with a message, fix the bug, then pop the stash. For longer interruptions I prefer a WIP commit or a `git worktree`."
 
 ---
 
@@ -561,15 +649,17 @@ git stash show -p stash@{0} # inspect before applying
 
 **Short answer:** It applies the changes from one specific commit onto your current branch, creating a new commit.
 
-**Example (backport a fix to a release branch):**
+**Explanation:** It's mainly used to backport a fix to a release branch without bringing along unrelated commits. The `-x` flag records the original commit ID in the message for traceability.
+
+**Example:**
 
 ```bash
 git switch release/2.3
-git cherry-pick -x 9f8e7d6   # -x adds "(cherry picked from commit ...)"
+git cherry-pick -x 9f8e7d6
 git push
 ```
 
-**Say it like this:** "I use cherry-pick to backport a hotfix to a release branch without bringing along unrelated commits. The `-x` flag records where the commit came from."
+**Say it like this:** "I use cherry-pick to backport a hotfix to a release branch without the rest of develop. The `-x` flag records where the commit came from."
 
 ---
 
@@ -577,20 +667,18 @@ git push
 
 **Short answer:** Rewriting your recent commits before review: squashing, rewording, reordering, editing or dropping them.
 
+**Explanation:** `pick` keeps a commit, `squash` merges it into the previous one and combines messages, `fixup` merges it and discards the message, `reword` changes the message, and `drop` removes it. Only do this on commits nobody else has.
+
 **Example:**
 
-```bash
-git rebase -i HEAD~4
-```
-
 ```text
+git rebase -i HEAD~4
+
 pick   a1 feat: add search input
 fixup  b2 fix typo
 squash c3 add debounce to search
 reword d4 add tests
 ```
-
-`pick` keeps the commit, `squash` merges it into the previous one and combines the messages, `fixup` merges it and discards the message, `reword` changes the message, and `drop` removes the commit.
 
 **Say it like this:** "Before opening a PR I run an interactive rebase to squash 'fix typo' and 'wip' commits into logical commits, so reviewers read a clean story."
 
@@ -598,23 +686,36 @@ reword d4 add tests
 
 **Q32. How do `--fixup` and `--autosquash` work?**
 
-**Short answer:** `git commit --fixup <sha>` creates a commit marked as a fix for an earlier one. Running `git rebase -i --autosquash main` then moves it into place and squashes it automatically.
+**Short answer:** `git commit --fixup <sha>` creates a commit marked as a fix for an earlier one. `git rebase -i --autosquash` then moves it into place and squashes it automatically.
 
-**Example:** A reviewer finds a bug in commit `a1b2`. Run `git commit --fixup a1b2`, push, and after approval run `git rebase -i --autosquash origin/main`.
+**Explanation:** It saves you from manually reordering lines in the rebase editor. It's ideal for review feedback: push fixup commits so reviewers see exactly what changed, then autosquash before merging.
+
+**Example:**
+
+```bash
+git commit --fixup a1b2c3d
+git rebase -i --autosquash origin/main
+```
+
+**Say it like this:** "When a reviewer finds an issue in an earlier commit, I push a fixup commit so the change is easy to re-review, then autosquash it before merge."
 
 ---
 
 **Q33. How do you resolve a conflict step by step?**
 
-**Short answer:**
+**Short answer:** List the conflicted files, edit each to the correct final code, `git add` them, continue the merge or rebase, then run the tests.
 
-1. Run `git status` to see the conflicted files.
-2. Open each file, decide the correct final code, and remove the `<<<<<<<`, `=======` and `>>>>>>>` markers.
-3. Run `git add <file>` to mark it resolved.
-4. Run `git merge --continue` (or `git rebase --continue`).
-5. Run the tests and lint before pushing.
+**Explanation:**
+
+1. `git status` lists the conflicted files.
+2. Decide the correct final code and remove the markers.
+3. `git add <file>` marks it resolved.
+4. `git merge --continue` or `git rebase --continue`.
+5. Run tests and lint, because a clean merge can still be logically broken.
 
 You can always back out with `git merge --abort` or `git rebase --abort`.
+
+**Example:** Both branches changed `TIMEOUT`. You check with the other developer that their 10 s value was for slow hospital Wi-Fi, keep 10 s, remove the markers, add, continue, and run the call tests.
 
 **Say it like this:** "I resolve each file intentionally. If I don't understand the other change, I ask its author. After resolving I always run the tests, because a conflict-free merge can still be logically broken."
 
@@ -622,9 +723,11 @@ You can always back out with `git merge --abort` or `git rebase --abort`.
 
 **Q34. What do "ours" and "theirs" mean, and why do they flip during a rebase?**
 
-**Short answer:** In a merge, *ours* is your current branch and *theirs* is the branch being merged in. In a rebase, Git checks out the base branch and replays your commits onto it, so *ours* is the base branch and *theirs* is your commit.
+**Short answer:** In a merge, *ours* is your current branch and *theirs* is the branch being merged in. In a rebase, *ours* is the base branch and *theirs* is your commit.
 
-**Example:** During `git rebase main` on `feature`, `git checkout --theirs file.ts` keeps *your feature's* version.
+**Explanation:** During a rebase, Git checks out the base branch and replays your commits onto it, so from Git's point of view the base is "ours". Mixing this up with `--ours`/`--theirs` in bulk can silently discard your own work.
+
+**Example:** During `git rebase main` on `feature`, `git checkout --theirs file.ts` keeps *your feature's* version of the file.
 
 **Say it like this:** "During a rebase the meanings flip, because Git is replaying my commits onto main. So 'ours' is main. I double-check before using `--ours` or `--theirs` in bulk."
 
@@ -632,9 +735,19 @@ You can always back out with `git merge --abort` or `git rebase --abort`.
 
 **Q35. What is a detached HEAD, and how do you save work made there?**
 
-**Short answer:** HEAD points directly to a commit instead of a branch. This happens when you check out a tag or a commit ID. Any commits you make aren't on a branch and can be lost when you switch away.
+**Short answer:** HEAD points directly to a commit instead of a branch. Commits made there aren't on any branch and can be lost when you switch away. Save them with `git switch -c rescue-branch`.
 
-**Fix:** `git switch -c rescue-branch` creates a branch at your current position.
+**Explanation:** It happens when you check out a tag or a commit ID, for example to test an old release. It's fine for looking around; just create a branch before making commits you want to keep.
+
+**Example:**
+
+```bash
+git switch --detach v1.2.0   # inspect an old release
+# ...made a fix here...
+git switch -c hotfix/1.2.1   # now the commits are safe on a branch
+```
+
+**Say it like this:** "Detached HEAD just means I'm on a commit, not a branch. If I make commits there, I immediately create a branch so they're not lost."
 
 ---
 
@@ -642,12 +755,14 @@ You can always back out with `git merge --abort` or `git rebase --abort`.
 
 **Short answer:** A local log of every position HEAD and your branches have pointed to, kept for about 90 days. It's your undo history for Git itself.
 
-**Example (recover from a bad reset):**
+**Explanation:** Even after a bad reset or rebase, the old commits still exist for a while; the reflog shows their IDs so you can get back to them.
+
+**Example:**
 
 ```bash
 git reset --hard HEAD~3        # oops, lost 3 commits
 git reflog
-# a1b2c3d HEAD@{1}: commit: feat: add filters   <- the lost commit
+# a1b2c3d HEAD@{1}: commit: feat: add filters
 git reset --hard a1b2c3d       # or: git branch recovered a1b2c3d
 ```
 
@@ -659,22 +774,17 @@ git reset --hard a1b2c3d       # or: git branch recovered a1b2c3d
 
 **Short answer:** A binary search through history to find the exact commit that introduced a bug.
 
+**Explanation:** You mark one known good and one known bad commit, and Git checks out the middle each time. With 1,000 commits it needs only about 10 steps. `git bisect run` automates it with a script that exits 0 for good and non-zero for bad.
+
 **Example:**
 
 ```bash
 git bisect start
 git bisect bad                 # current commit is broken
 git bisect good v1.4.0         # this release was fine
-# Git checks out a middle commit; test it, then:
-git bisect good   # or: git bisect bad
-# ...repeat until Git prints "<sha> is the first bad commit"
-git bisect reset
-
-# Fully automatic: the script exits 0 for good, non-zero for bad
 git bisect run npm test -- src/cart.test.ts
+git bisect reset
 ```
-
-With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 
 **Say it like this:** "When something broke and nobody knows when, I use `git bisect run` with a failing test. It finds the bad commit among hundreds in a few minutes."
 
@@ -682,7 +792,16 @@ With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 
 **Q38. Useful `git blame` flags?**
 
-**Short answer:** `git blame -w -C -C file`. `-w` ignores whitespace changes and `-C` follows lines moved or copied from other files. Add formatting-only commits to `.git-blame-ignore-revs` so blame skips them.
+**Short answer:** `git blame -w -C -C file`. `-w` ignores whitespace changes and `-C` follows lines moved or copied from other files.
+
+**Explanation:** Without these, a formatting commit or a file move makes blame point at the wrong person. A `.git-blame-ignore-revs` file lists formatting-only commits for blame to skip.
+
+**Example:**
+
+```bash
+git blame -w -C -C src/hooks/useRoom.ts
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 **Say it like this:** "I use blame to find *why* a line exists, not *who* to blame. It leads me to the commit message and PR discussion."
 
@@ -690,25 +809,29 @@ With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 
 **Q39. Compare the main branching strategies.**
 
-**Short answer:**
+**Short answer:** Git Flow uses long-lived develop and release branches. GitHub Flow uses short feature branches merged to main. Trunk-based development uses very short branches plus feature flags and continuous deployment.
+
+**Explanation:**
 
 | Strategy | How it works | Best for |
 |---|---|---|
-| Git Flow | `main`, `develop`, `feature/*`, `release/*`, `hotfix/*` | Versioned releases (mobile apps, packages) |
-| GitHub Flow | `main` + short-lived feature branches + PRs; deploy from main | Most web apps |
-| Trunk-based | Very short branches (hours or days), feature flags hide unfinished work, continuous deploy | Teams with strong CI/CD |
+| Git Flow | `main`, `develop`, `feature/*`, `release/*`, `hotfix/*` | versioned releases (mobile apps, packages) |
+| GitHub Flow | `main` + short-lived branches + PRs; deploy from main | most web apps |
+| Trunk-based | branches live hours or days; flags hide unfinished work | teams with strong CI/CD |
 
-**Say it like this:** "For web products I prefer GitHub Flow or trunk-based development with feature flags. Short-lived branches mean fewer conflicts and faster feedback. Git Flow makes sense when you ship versioned releases, like a mobile app."
+**Example:** A web dashboard like BpoBox deploys from `main` several times a week (GitHub Flow), while an npm component library cuts versioned releases.
+
+**Say it like this:** "For web products I prefer GitHub Flow or trunk-based development with feature flags. Short-lived branches mean fewer conflicts and faster feedback. Git Flow makes sense for versioned releases, like a mobile app."
 
 ---
 
 **Q40. Merge commit vs squash merge vs rebase merge on GitHub?**
 
-**Short answer:**
+**Short answer:** A merge commit keeps every commit plus a merge commit. Squash turns the whole PR into one commit on `main`. Rebase-and-merge replays each commit onto `main` linearly.
 
-- **Merge commit:** keeps every commit plus a merge commit. Full history, but noisy.
-- **Squash and merge:** the whole PR becomes one commit on `main`. Clean and easy to revert, but you lose the granular commits.
-- **Rebase and merge:** each commit is replayed onto `main` in a linear history.
+**Explanation:** Squash gives a clean, revertable history (one PR = one commit) but loses the granular commits. Merge commits keep everything but get noisy. Rebase merge is linear but keeps every small commit.
+
+**Example:** With squash merging, reverting the "reconnect banner" feature is a single `git revert` of one commit.
 
 **Say it like this:** "We used squash merges. One PR becomes one commit on main, which made reverts and changelogs simple."
 
@@ -716,15 +839,21 @@ With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 
 **Q41. What are branch protection rules?**
 
-**Short answer:** Settings that stop bad changes from reaching important branches. They can require PR reviews (including CODEOWNERS), passing status checks and an up-to-date branch. They can also require linear history and signed commits, and block force pushes and branch deletion.
+**Short answer:** Settings that stop bad changes reaching important branches: required reviews, passing status checks, up-to-date branches, and blocking force pushes and deletion.
 
-**Say it like this:** "On main we required one approval, green CI (lint, typecheck, tests, build) and no force pushes. Even admins went through the same rules."
+**Explanation:** They can also require CODEOWNERS approval, linear history and signed commits. Newer GitHub "rulesets" apply the same rules across many repos.
+
+**Example:** `main` requires one approval, green lint/typecheck/test/build checks, and no force pushes; admins are included.
+
+**Say it like this:** "On main we required one approval, green CI and no force pushes. Even admins went through the same rules, so nothing reached production unreviewed."
 
 ---
 
 **Q42. What is CODEOWNERS?**
 
-**Short answer:** A file (`.github/CODEOWNERS`) that maps paths to the people or teams automatically requested for review. Combined with branch protection, their approval becomes mandatory.
+**Short answer:** A file (`.github/CODEOWNERS`) that maps paths to the people or teams automatically requested for review. With branch protection, their approval becomes mandatory.
+
+**Explanation:** It routes reviews to the experts for sensitive areas like auth or the design system, without anyone having to remember to add them.
 
 **Example:**
 
@@ -734,31 +863,41 @@ With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 *.yml                 @company/devops
 ```
 
+**Say it like this:** "CODEOWNERS made sure any change to auth or our shared components was reviewed by someone who knew that area."
+
 ---
 
 **Q43. What is semantic versioning?**
 
-**Short answer:** Versions use the format `MAJOR.MINOR.PATCH`. MAJOR means breaking changes, MINOR means new backwards-compatible features, and PATCH means bug fixes. Pre-releases look like `2.0.0-beta.1`.
+**Short answer:** Versions use `MAJOR.MINOR.PATCH`: MAJOR for breaking changes, MINOR for new backwards-compatible features, PATCH for bug fixes.
+
+**Explanation:** It's a promise to consumers: upgrading a minor or patch version shouldn't break them. Pre-releases look like `2.0.0-beta.1`. In `package.json`, `^1.4.2` accepts any 1.x.x at or above 1.4.2.
 
 **Example:** `1.4.2 → 1.4.3` (bug fix), `1.4.3 → 1.5.0` (new feature), `1.5.0 → 2.0.0` (breaking API change).
+
+**Say it like this:** "Semver tells consumers how risky an upgrade is. For our shared component library, a major bump meant breaking changes with migration notes."
 
 ---
 
 **Q44. What are Conventional Commits?**
 
-**Short answer:** A commit message convention: `type(scope): description`. Types include `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf` and `ci`. A `!` or a `BREAKING CHANGE:` footer marks a major change.
+**Short answer:** A commit message convention: `type(scope): description`, with types like `feat`, `fix`, `docs`, `refactor`, `test` and `chore`. A `!` marks a breaking change.
+
+**Explanation:** Because the type is machine-readable, tools like semantic-release and Changesets can bump versions and generate changelogs automatically. commitlint enforces the format.
 
 **Example:** `feat(call): show reconnecting banner`, `fix!: change token response shape`.
 
-**Why it matters:** tools like semantic-release and Changesets read the commit types to bump versions and generate changelogs automatically.
+**Say it like this:** "We used Conventional Commits so the changelog and version bumps were automatic. `feat` means a minor bump, `fix` a patch, and `!` a major."
 
 ---
 
 **Q45. What are Husky and lint-staged?**
 
-**Short answer:** Husky manages Git hooks inside the repo, so every developer gets them. lint-staged runs linters only on staged files, which keeps hooks fast.
+**Short answer:** Husky manages Git hooks inside the repo so every developer gets them. lint-staged runs linters only on staged files, which keeps hooks fast.
 
-**Example (`package.json`):**
+**Explanation:** A pre-commit hook runs ESLint and Prettier on changed files; a commit-msg hook runs commitlint. Hooks can be skipped with `--no-verify`, so CI must run the same checks.
+
+**Example:**
 
 ```json
 {
@@ -770,15 +909,24 @@ With 1,000 commits, bisect needs only about 10 steps (log₂ 1000).
 }
 ```
 
-Add `.husky/pre-commit` containing `npx lint-staged`, and `.husky/commit-msg` running commitlint.
-
 **Say it like this:** "Hooks give fast local feedback, but they can be skipped with `--no-verify`, so CI runs the same checks as the real gate."
 
 ---
 
 **Q46. What does `git clean` do?**
 
-**Short answer:** It deletes untracked files. Always dry-run first: `git clean -nd` previews, `git clean -fd` deletes, and `-x` also removes ignored files such as `node_modules`.
+**Short answer:** It deletes untracked files. Dry-run first with `git clean -nd`, then delete with `git clean -fd`; `-x` also removes ignored files.
+
+**Explanation:** It's useful when build artefacts or generated files pile up, or to get a pristine checkout. Because deleted untracked files can't be recovered from Git, always preview first.
+
+**Example:**
+
+```bash
+git clean -nd     # preview what would be deleted
+git clean -fdx    # delete untracked + ignored (node_modules, dist)
+```
+
+**Say it like this:** "I use `git clean` to reset to a pristine checkout, always with `-n` first, because there's no undo for untracked files."
 
 ---
 
@@ -786,24 +934,19 @@ Add `.husky/pre-commit` containing `npx lint-staged`, and `.husky/commit-msg` ru
 
 **Q47. How does Git store data internally?**
 
-**Short answer:** Git is a content-addressed object database with four object types:
+**Short answer:** Git is a content-addressed object database of blobs (file contents), trees (directories), commits (snapshot + parents + metadata) and tags, each named by the hash of its content.
 
-- **Blob:** a file's contents.
-- **Tree:** a directory listing that points to blobs and other trees.
-- **Commit:** points to one tree (the snapshot), its parent commit(s), the author and the message.
-- **Tag:** an annotated, named pointer to a commit.
-
-Each object is named by the hash of its content. Branches are small files in `.git/refs/heads/` containing a commit hash.
+**Explanation:** Identical content is stored once, and changing anything changes the hash, so history can't be silently altered. Branches are small files in `.git/refs/heads/` that contain a commit hash.
 
 **Example:**
 
 ```bash
-git cat-file -p HEAD          # see the commit object: tree, parent, author
-git cat-file -p HEAD^{tree}   # see the directory listing
-cat .git/refs/heads/main      # a branch is literally just a hash
+git cat-file -p HEAD          # tree, parent, author, message
+git cat-file -p HEAD^{tree}   # directory listing
+cat .git/refs/heads/main      # a branch is literally a hash
 ```
 
-**Say it like this:** "Git is a key-value store where the key is a hash of the content. Identical files are stored once, history can't be silently altered, and a branch is just a file holding a commit hash."
+**Say it like this:** "Git is a key-value store where the key is a hash of the content. Identical files are stored once, history is tamper-evident, and a branch is just a file holding a commit hash."
 
 ---
 
@@ -811,19 +954,39 @@ cat .git/refs/heads/main      # a branch is literally just a hash
 
 **Short answer:** A branch is a tiny file containing a 40-character commit hash. Creating one copies no files.
 
+**Explanation:** Older systems copied the whole directory to branch, which was slow. In Git, switching branches only updates the files that differ between the two snapshots.
+
+**Example:** `git switch -c feat/x` finishes instantly even in a large monorepo; `.git/refs/heads/feat/x` is a 41-byte file.
+
+**Say it like this:** "Since a branch is just a pointer, I create one for every small task. There's no cost, so there's no reason to work directly on main."
+
 ---
 
 **Q49. What is a three-way merge?**
 
-**Short answer:** Git compares three versions: your branch tip, the other branch tip, and their *merge base* (common ancestor). If only one side changed a region compared with the base, Git takes that side. If both sides changed it differently, that's a conflict.
+**Short answer:** Git compares three versions: your branch tip, the other branch tip and their common ancestor (merge base).
 
-**Example:** Base has `timeout = 5`, you changed it to `10`, and the other branch didn't touch it, so the result is `10` with no conflict. If the other branch changed it to `7`, you get a conflict.
+**Explanation:** If only one side changed a region compared with the base, Git takes that side. If both changed it differently, that's a conflict. The base is what lets Git tell "I changed it" from "you changed it".
+
+**Example:** Base has `timeout = 5`, you changed it to `10`, the other branch didn't touch it → result is `10`. If the other branch changed it to `7` → conflict.
+
+**Say it like this:** "Git doesn't just diff the two branches; it compares both to their common ancestor. That's how it knows which side made each change."
 
 ---
 
 **Q50. What merge strategies exist?**
 
-**Short answer:** `ort` is the default since Git 2.34 and is faster than the older `recursive`. `octopus` merges many branches at once, and `ours` records a merge but keeps your tree entirely. Strategy *options* such as `-X ours` and `-X theirs` automatically resolve only the conflicting hunks in favour of one side.
+**Short answer:** `ort` is the default since Git 2.34; `recursive` is the older default; `octopus` merges many branches; `ours` keeps your tree entirely. Options like `-X ours` and `-X theirs` resolve only conflicting hunks.
+
+**Explanation:** `-s ours` (strategy) ignores the other branch completely, while `-X ours` (option) still merges non-conflicting changes and only prefers your side in conflicts. Confusing the two is a classic mistake.
+
+**Example:**
+
+```bash
+git merge -X theirs feature/config   # prefer their side in conflicts only
+```
+
+**Say it like this:** "Normally the default `ort` strategy is right. I'd use `-X theirs` carefully, for something like regenerated files, and never confuse it with `-s ours`."
 
 ---
 
@@ -831,18 +994,31 @@ cat .git/refs/heads/main      # a branch is literally just a hash
 
 **Short answer:** It moves a range of commits onto a new base.
 
-**Example:** `feature` was branched from `old-feature`, which was abandoned, and you want only `feature`'s own commits on `main`:
+**Explanation:** The form `git rebase --onto newBase oldBase branch` takes the commits that are on `branch` but not on `oldBase`, and replays them onto `newBase`. It's useful when your branch was started from another feature branch that's been abandoned or squash-merged.
+
+**Example:**
 
 ```bash
+# feature was branched from old-feature; move only feature's commits onto main
 git rebase --onto main old-feature feature
-# take commits in (old-feature, feature] and replay them onto main
 ```
+
+**Say it like this:** "When my branch was stacked on a teammate's branch that got squash-merged, I use `rebase --onto` to move just my commits onto main."
 
 ---
 
 **Q52. `git push --force` vs `--force-with-lease`?**
 
-**Short answer:** `--force` overwrites the remote branch no matter what. `--force-with-lease` refuses if someone else pushed since your last fetch, so it can't silently delete a teammate's commits.
+**Short answer:** `--force` overwrites the remote branch no matter what. `--force-with-lease` refuses if someone else pushed since your last fetch.
+
+**Explanation:** With plain force, you can silently delete a teammate's commits. The lease checks that the remote is still where you last saw it.
+
+**Example:**
+
+```bash
+git rebase -i origin/main
+git push --force-with-lease
+```
 
 **Say it like this:** "I never use plain `--force`. After rebasing my own branch I use `--force-with-lease`, and on main force pushes are blocked by branch protection anyway."
 
@@ -850,17 +1026,34 @@ git rebase --onto main old-feature feature
 
 **Q53. What is `git rerere`?**
 
-**Short answer:** "Reuse recorded resolution". Git remembers how you resolved a conflict and reapplies that resolution automatically if the same conflict appears again. It's useful for long-running branches that you rebase repeatedly. Enable it with `git config --global rerere.enabled true`.
+**Short answer:** "Reuse recorded resolution": Git remembers how you resolved a conflict and reapplies it automatically if the same conflict appears again.
+
+**Explanation:** It's valuable for long-running branches that you rebase repeatedly, where the same conflict would otherwise come back each time.
+
+**Example:**
+
+```bash
+git config --global rerere.enabled true
+```
+
+**Say it like this:** "On a long refactor branch I enable rerere, so I resolve each conflict once instead of every time I rebase."
 
 ---
 
 **Q54. Submodules vs subtrees vs monorepo?**
 
-**Short answer:**
+**Short answer:** A submodule is a pointer to a commit in another repo; a subtree copies another repo's code into a folder with history; a monorepo keeps all apps and packages in one repo.
 
-- **Submodule:** the parent repo stores a pointer to a specific commit of another repo. Versions are explicit, but the workflow is clunky (you have to remember `git submodule update`).
-- **Subtree:** copies the other repo's code into a folder, with history. It's simpler for consumers.
-- **Monorepo:** all apps and packages live in one repo, managed with Nx, Turborepo or pnpm workspaces. You get atomic cross-package changes, one CI pipeline and "affected-only" builds.
+**Explanation:** Submodules give explicit versions but clunky workflows (`git submodule update`). Subtrees are simpler for consumers. Monorepos (pnpm workspaces, Turborepo, Nx) allow atomic cross-package changes and affected-only builds.
+
+**Example:**
+
+```text
+repo/
+  apps/interpretiq
+  apps/bpobox
+  packages/ui        ← shared component library
+```
 
 **Say it like this:** "For two products sharing a UI library, I'd choose a monorepo with pnpm workspaces and Turborepo. One PR can update the library and both apps, and CI rebuilds only what changed."
 
@@ -868,37 +1061,87 @@ git rebase --onto main old-feature feature
 
 **Q55. What are sparse checkout and partial clone?**
 
-**Short answer:** Tools for huge repos. A partial clone (`git clone --filter=blob:none`) downloads file contents only when needed. A sparse checkout (`git sparse-checkout set apps/web packages/ui`) puts only the selected folders in your working directory.
+**Short answer:** Tools for huge repos. A partial clone downloads file contents only when needed; a sparse checkout puts only selected folders in your working directory.
+
+**Explanation:** Together they make a giant monorepo feel small: you download history metadata, and only the folders you work on.
+
+**Example:**
+
+```bash
+git clone --filter=blob:none https://github.com/org/monorepo.git
+git sparse-checkout set apps/web packages/ui
+```
+
+**Say it like this:** "In a very large monorepo I'd use a partial clone plus sparse checkout, so I only download and see the apps I work on."
 
 ---
 
 **Q56. What is Git LFS?**
 
-**Short answer:** Large File Storage. Big binaries (videos, design files, datasets) live on a separate server, and Git stores only small pointer files. This keeps clones fast.
+**Short answer:** Large File Storage: big binaries live on a separate server and Git stores only small pointer files.
+
+**Explanation:** Git stores every version of every file, so committing videos or design files bloats the repo forever. LFS keeps clones fast.
+
+**Example:**
+
+```bash
+git lfs install
+git lfs track "*.mp4"
+git add .gitattributes demo.mp4
+```
+
+**Say it like this:** "Binary assets like demo videos go through Git LFS, so cloning the repo stays fast."
 
 ---
 
 **Q57. What's the catch with shallow clones in CI?**
 
-**Short answer:** `--depth 1` makes checkout fast, but tools that need history break. Changelog generation, `nx affected`, `git describe` and commit-range linting are examples. In GitHub Actions, set `fetch-depth: 0` (or enough depth) for those jobs.
+**Short answer:** `--depth 1` makes checkout fast, but tools that need history break, such as changelog generation, `nx affected` and `git describe`.
+
+**Explanation:** `actions/checkout` defaults to depth 1. Jobs that compare against main or read tags need more history.
+
+**Example:**
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0   # full history for affected/changelog
+```
+
+**Say it like this:** "Shallow clones speed up CI, but for affected-only builds or release notes I set `fetch-depth: 0`, otherwise the tool can't find the base commit."
 
 ---
 
 **Q58. What are signed commits?**
 
-**Short answer:** Commits signed with a GPG or SSH key prove who made them, and GitHub shows a "Verified" badge. Branch protection can require them. To enable signing, run `git config commit.gpgsign true`.
+**Short answer:** Commits signed with a GPG or SSH key prove who made them, and GitHub shows a "Verified" badge.
+
+**Explanation:** Anyone can set any name and email in Git config, so unsigned authorship can be faked. Branch protection can require signed commits.
+
+**Example:**
+
+```bash
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+git config --global commit.gpgsign true
+```
+
+**Say it like this:** "Signing proves a commit really came from me. For regulated projects, requiring signed commits on main is a cheap integrity control."
 
 ---
 
 **Q59. How do you remove a secret from Git history properly?**
 
-**Short answer:**
+**Short answer:** Rotate the secret first, then rewrite history with `git filter-repo` or BFG, force-push, ask collaborators to re-clone, and enable secret scanning.
 
-1. **Rotate the secret first.** Once it was pushed, assume it's compromised.
-2. Rewrite history with `git filter-repo --path .env --invert-paths` (or BFG Repo-Cleaner).
-3. Force-push all branches and tags.
-4. Ask collaborators to re-clone, and ask GitHub support to clear cached views if needed.
-5. Enable secret scanning and push protection so it can't happen again.
+**Explanation:** Once pushed, assume the secret is already scraped; deleting it doesn't make it safe. Rewriting history only stops future exposure.
+
+**Example:**
+
+```bash
+git filter-repo --path .env --invert-paths
+git push --force --all && git push --force --tags
+```
 
 **Say it like this:** "The first step isn't Git, it's rotating the key, because once it's pushed it may already be scraped. Then I purge it from history and add push protection."
 
@@ -908,11 +1151,13 @@ git rebase --onto main old-feature feature
 
 **Short answer:** It lets you check out multiple branches of the same repo into different folders at the same time.
 
+**Explanation:** Unlike stashing, your current work stays exactly as it is, including running dev servers. Worktrees share the same `.git` data, so they're cheap.
+
 **Example:**
 
 ```bash
-git worktree add ../app-hotfix main   # a second folder on main
-cd ../app-hotfix && fix && commit && push
+git worktree add ../app-hotfix main
+cd ../app-hotfix   # fix, commit, push
 git worktree remove ../app-hotfix
 ```
 
@@ -922,21 +1167,40 @@ git worktree remove ../app-hotfix
 
 **Q61. How does `git pull --rebase` change a team's workflow?**
 
-**Short answer:** It avoids noisy "Merge branch 'main' of origin" commits by replaying your local commits on top of what you pulled. Set it as the default with `git config --global pull.rebase true`.
+**Short answer:** It avoids noisy "Merge branch 'main' of origin" commits by replaying your local commits on top of what you pulled.
+
+**Explanation:** History stays linear and easier to read. Since only your unpushed local commits are rebased, it's safe.
+
+**Example:**
+
+```bash
+git config --global pull.rebase true
+git pull   # now rebases instead of merging
+```
+
+**Say it like this:** "I set `pull.rebase true` globally. My unpushed commits go on top of the latest main, with no pointless merge commits."
 
 ---
 
 **Q62. Client-side vs server-side hooks?**
 
-**Short answer:** Client hooks (`pre-commit`, `commit-msg`, `pre-push`) run locally and can be skipped with `--no-verify`. Server hooks (`pre-receive`, `update`) are enforced on the server. GitHub doesn't allow custom server hooks, so enforcement uses branch protection, rulesets and required Actions checks.
+**Short answer:** Client hooks (`pre-commit`, `commit-msg`, `pre-push`) run locally and can be skipped. Server hooks (`pre-receive`, `update`) are enforced on the server.
+
+**Explanation:** GitHub doesn't allow custom server hooks, so enforcement comes from branch protection, rulesets and required Actions checks instead.
+
+**Example:** Locally, Husky runs lint-staged on pre-commit. On GitHub, the same lint runs as a required status check, so skipping the hook doesn't help.
+
+**Say it like this:** "Client hooks are convenience; the real gate is server-side. On GitHub that means required status checks and branch protection."
 
 ---
 
 ## 🔴 GitHub Actions and CI/CD
 
-**What is CI/CD?** Continuous Integration (CI) automatically builds and tests every change. Continuous Delivery or Deployment (CD) automatically ships passing changes to staging or production. GitHub Actions is GitHub's built-in CI/CD system: YAML files in `.github/workflows/` define *workflows* made of *jobs* (which run on fresh virtual machines) made of *steps*.
-
 **Q63. Describe the anatomy of a workflow.**
+
+**Short answer:** A YAML file in `.github/workflows/` with triggers (`on`), jobs (which run on fresh machines) and steps (actions or shell commands).
+
+**Explanation:** Jobs run in parallel unless you add `needs:`. `uses` runs a reusable action and `run` runs a command. `--frozen-lockfile` makes CI fail if the lockfile doesn't match `package.json`.
 
 **Example:**
 
@@ -953,16 +1217,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
+        with: { node-version: 20, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint && pnpm typecheck
       - run: pnpm test -- --coverage
       - run: pnpm build
 ```
-
-**Explanation:** `on` sets the triggers. `jobs` run in parallel unless you add `needs:`. `uses` runs a reusable action and `run` runs a shell command. `--frozen-lockfile` makes CI fail if the lockfile doesn't match `package.json`.
 
 **Say it like this:** "Every PR runs lint, typecheck, tests with coverage and a production build. Branch protection requires all of them to pass before merge."
 
@@ -970,13 +1230,30 @@ jobs:
 
 **Q64. How do you cache dependencies?**
 
-**Short answer:** Use `actions/setup-node` with `cache: npm|pnpm|yarn`, or `actions/cache` keyed by the lockfile hash (`hashFiles('**/pnpm-lock.yaml')`). When the lockfile changes, the cache key changes too.
+**Short answer:** Use `actions/setup-node` with `cache: npm|pnpm|yarn`, or `actions/cache` keyed by the lockfile hash.
+
+**Explanation:** When the lockfile changes, the key changes and the cache is rebuilt; otherwise installs reuse downloaded packages, often saving minutes per run.
+
+**Example:**
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.pnpm-store
+    key: pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+```
+
+**Say it like this:** "I cache the package store keyed by the lockfile hash, so installs are fast but always correct when dependencies change."
 
 ---
 
 **Q65. What are matrix builds?**
 
-**Short answer:** They run the same job across several configurations.
+**Short answer:** They run the same job across several configurations, such as Node versions or operating systems.
+
+**Explanation:** GitHub creates one job per combination and runs them in parallel. It's useful for libraries that support several runtimes.
+
+**Example:**
 
 ```yaml
 strategy:
@@ -985,17 +1262,39 @@ strategy:
     os: [ubuntu-latest, windows-latest]
 ```
 
+**Say it like this:** "For a shared library I'd test on every Node version we support with a matrix. An app usually only needs the version it deploys on."
+
 ---
 
 **Q66. How do you handle secrets and environments?**
 
-**Short answer:** Store secrets in repo or org settings and reference them as `${{ secrets.API_KEY }}`. GitHub masks them in logs. *Environments* such as `production` add required approvers and environment-specific secrets. Never `echo` secrets, and don't expose secrets to workflows triggered by PRs from forks.
+**Short answer:** Store secrets in repo or org settings and reference them as `${{ secrets.NAME }}`. Environments such as `production` add required approvers and environment-specific secrets.
+
+**Explanation:** GitHub masks secrets in logs, but never `echo` them. Workflows triggered by pull requests from forks don't receive secrets, which protects them from malicious PRs.
+
+**Example:**
+
+```yaml
+jobs:
+  deploy:
+    environment: production   # requires approval, uses prod secrets
+    steps:
+      - run: ./deploy.sh
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+```
+
+**Say it like this:** "Production deploys use a protected environment with required approval and its own secrets, so a normal PR can never touch production credentials."
 
 ---
 
 **Q67. Why use OIDC to AWS instead of long-lived keys?**
 
-**Short answer:** With OpenID Connect, the workflow asks AWS for short-lived credentials by assuming an IAM role. No permanent access keys are stored in GitHub, so there's nothing long-lived to leak.
+**Short answer:** With OpenID Connect the workflow gets short-lived AWS credentials by assuming an IAM role, so no permanent keys are stored in GitHub.
+
+**Explanation:** Static access keys can leak and rarely get rotated. With OIDC, AWS trusts tokens issued for a specific repo and branch, and credentials expire after the job.
+
+**Example:**
 
 ```yaml
 permissions:
@@ -1008,23 +1307,47 @@ steps:
       aws-region: ap-south-1
 ```
 
+**Say it like this:** "Our deploys used OIDC, so there were no AWS keys in GitHub at all. The role could only be assumed from our repo's main branch."
+
 ---
 
 **Q68. How do preview deployments work?**
 
-**Short answer:** Every PR is deployed to its own URL (for example `pr-123.preview.app.com` via Vercel, Netlify, or S3 + CloudFront), and the link is posted on the PR. Designers and QA can test before merge, and the preview is removed when the PR closes.
+**Short answer:** Every PR is deployed to its own URL, and the link is posted on the PR so others can test before merging.
+
+**Explanation:** Designers, PMs and QA see the real change in a browser without running it locally. The preview is torn down when the PR closes. Vercel and Netlify do it automatically; on AWS you can deploy to an S3 prefix behind CloudFront.
+
+**Example:** PR #123 gets `https://pr-123.preview.bpobox.com`, and a bot comments the link.
+
+**Say it like this:** "Preview deployments let the PM review UI changes on a real URL before merge, which caught design issues much earlier."
 
 ---
 
 **Q69. What are reusable workflows and composite actions?**
 
-**Short answer:** A *reusable workflow* (`on: workflow_call`) is a whole pipeline other repos can call, for example one standard "frontend CI" for all apps. A *composite action* bundles repeated steps into one `uses:` step.
+**Short answer:** A reusable workflow (`on: workflow_call`) is a whole pipeline other repos can call. A composite action bundles repeated steps into one `uses:` step.
+
+**Explanation:** They remove copy-pasted CI across repos, so a fix to the pipeline is made once.
+
+**Example:**
+
+```yaml
+jobs:
+  ci:
+    uses: company/ci-templates/.github/workflows/frontend.yml@v2
+```
+
+**Say it like this:** "With several frontend repos, a shared reusable workflow keeps CI consistent, and improvements roll out to every repo at once."
 
 ---
 
 **Q70. What does the `concurrency` key do?**
 
-**Short answer:** It cancels outdated runs. When you push again to a PR, the previous run for that branch stops.
+**Short answer:** It cancels outdated runs: when you push again to a PR, the previous run for that branch stops.
+
+**Explanation:** It saves CI minutes and gives faster feedback on the latest commit. For deploys, it prevents two deployments running at once.
+
+**Example:**
 
 ```yaml
 concurrency:
@@ -1032,11 +1355,30 @@ concurrency:
   cancel-in-progress: true
 ```
 
+**Say it like this:** "I add a concurrency group so only the newest commit's CI runs, and deploys to the same environment never overlap."
+
 ---
 
 **Q71. What are Dependabot and Renovate?**
 
-**Short answer:** Bots that open PRs to update dependencies. Good practice is to group minor updates, auto-merge patch updates when CI passes, and review major updates manually.
+**Short answer:** Bots that open PRs to update dependencies.
+
+**Explanation:** They keep you off old, vulnerable versions. Good practice is to group minor updates, auto-merge patch updates when CI passes, and review major updates manually with their changelogs.
+
+**Example:**
+
+```yaml
+# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+```
+
+**Say it like this:** "Automated dependency PRs keep us current. Patches auto-merge on green CI, and majors get a human review with the changelog."
 
 ---
 
@@ -1044,14 +1386,16 @@ concurrency:
 
 **Q72. You pushed a commit with a bug to `main` and others have already pulled. What do you do?**
 
-**Answer:** Revert, don't reset.
+**Short answer:** Revert it, don't reset it.
+
+**Explanation:** `git revert` creates an undo commit, so main is healthy again without rewriting history. Resetting and force-pushing main would break everyone's local copy. Then fix the bug properly in a new PR with a test.
+
+**Example:**
 
 ```bash
 git revert <bad-sha>
 git push origin main
 ```
-
-Then fix the bug properly in a new PR. Resetting and force-pushing `main` would break everyone's local copy.
 
 **Say it like this:** "I'd revert immediately to get main healthy, tell the team, then ship the real fix with a regression test in a follow-up PR."
 
@@ -1059,89 +1403,140 @@ Then fix the bug properly in a new PR. Resetting and force-pushing `main` would 
 
 **Q73. You accidentally committed to `main` locally instead of a feature branch.**
 
+**Short answer:** Create a branch where you are (keeping the commits), then reset local `main` back to `origin/main`.
+
+**Explanation:** The new branch keeps the commits safe, and since `main` was never pushed, resetting it is harmless.
+
+**Example:**
+
 ```bash
-git switch -c feat/x          # new branch keeps your commits
+git switch -c feat/x
 git switch main
-git reset --hard origin/main  # put local main back to match the remote
+git reset --hard origin/main
 ```
+
+**Say it like this:** "No harm done as long as I haven't pushed. I branch off to save the commits, then reset local main to match the remote."
 
 ---
 
 **Q74. You ran `git reset --hard` and lost work.**
 
-**Answer:** It depends on what state the work was in:
+**Short answer:** If it was committed, find it in `git reflog` and reset back to it. If it was only staged, `git fsck --lost-found` can recover the file contents. If it was never staged, Git never saved it.
 
-- **It was committed:** run `git reflog`, find the commit ID, then `git reset --hard <sha>`.
-- **It was only staged:** `git fsck --lost-found` can recover the dangling blobs (file contents).
-- **It was never staged:** Git never saved it. Check your editor's local history (VS Code timeline, JetBrains local history).
+**Explanation:** Git only stores what you committed or staged. For never-staged changes, check the editor's local history (VS Code Timeline, JetBrains Local History).
+
+**Example:**
+
+```bash
+git reflog
+git reset --hard HEAD@{2}
+```
+
+**Say it like this:** "First I check the reflog, because committed work is recoverable. If it was only in my editor, I check the editor's local history."
 
 ---
 
 **Q75. Your PR has 23 messy commits and the reviewer wants a clean history.**
 
+**Short answer:** Interactive-rebase onto `origin/main`, squash into a few logical commits, and force-push with lease.
+
+**Explanation:** Group commits by meaning ("add search API", "add search UI", "add tests"). Since it's your own branch, rewriting is fine.
+
+**Example:**
+
 ```bash
 git fetch origin
-git rebase -i origin/main     # squash/fixup into 2-4 logical commits
+git rebase -i origin/main
 git push --force-with-lease
 ```
+
+**Say it like this:** "I'd squash it into two to four logical commits with interactive rebase. Each commit tells one part of the story, which makes the review easier."
 
 ---
 
 **Q76. A long-running feature branch constantly conflicts with `main`.**
 
-**Answer:** Fix the process, not just the conflicts:
+**Short answer:** Fix the process: integrate main daily, split the work into smaller PRs, and merge unfinished UI behind a feature flag.
 
-- Integrate `main` into the branch daily (rebase or merge).
-- Split the feature into smaller PRs that can merge early.
-- Hide unfinished UI behind a **feature flag**, so incomplete code can merge safely.
-- Enable `rerere` to avoid resolving the same conflict twice.
+**Explanation:** Conflicts grow with the branch's age. Small, frequent merges are almost conflict-free. `rerere` avoids resolving the same conflict twice.
 
-**Say it like this:** "Constant conflicts are a sign the branch lives too long. I'd split the work and merge behind a feature flag. Small, frequent merges are almost conflict-free."
+**Example:** Instead of one "new scorecard editor" branch for six weeks, merge the data model, then the read-only view, then the editor, each behind a `newScorecard` flag.
+
+**Say it like this:** "Constant conflicts are a sign the branch lives too long. I'd split the work and merge behind a feature flag."
 
 ---
 
 **Q77. A release needs one fix from `develop`, but not the other 10 commits.**
 
-**Answer:** Cherry-pick the one commit (`git cherry-pick -x <sha>`) onto the release branch, tag a patch release (`v2.3.1`), and make sure the fix also exists on `main` or `develop` so it isn't lost in the next release.
+**Short answer:** Cherry-pick that one commit onto the release branch, tag a patch release, and make sure the fix is also on main.
+
+**Explanation:** `-x` records where it came from. Forgetting to merge the fix forward is a classic way to reintroduce the bug in the next release.
+
+**Example:**
+
+```bash
+git switch release/2.3
+git cherry-pick -x 4f5e6d7
+git tag -a v2.3.1 -m "Hotfix"
+```
+
+**Say it like this:** "I cherry-pick just that fix, ship a patch version, and confirm the fix exists on main so it doesn't come back."
 
 ---
 
 **Q78. CI passes locally but fails in GitHub Actions. How do you debug it?**
 
-**Answer:** Check the usual differences between your machine and CI:
+**Short answer:** Check the environment differences: Node version, a clean install from the lockfile, missing env vars or secrets, case-sensitive paths, time zone, test order and unmocked network calls.
 
-- Node version (pin it with `.nvmrc` or `engines`).
-- Dependencies (CI uses `--frozen-lockfile`; your local `node_modules` may be stale).
-- Missing environment variables or secrets.
-- Case-sensitive file paths (macOS ignores case, Linux doesn't: `import './Button'` vs `button.tsx`).
-- Timezone or locale differences in date tests.
-- Tests that depend on run order or shared state.
-- Network calls that aren't mocked.
+**Explanation:** Your machine has cached `node_modules`, a case-insensitive file system (macOS) and local env files; CI has none of these.
 
-**Say it like this:** "The classic one I've hit is case sensitivity. An import worked on Mac but failed on Linux CI. I go through the environment differences one by one."
+**Example:** `import Button from './button'` works on a Mac even though the file is `Button.tsx`, but fails on Linux CI.
+
+**Say it like this:** "The classic one I've hit is case sensitivity: an import worked on Mac but failed on Linux CI. I go through the environment differences one by one, starting with the Node version and a clean install."
 
 ---
 
 **Q79. Two developers need to work on the same feature branch.**
 
-**Answer:** Agree on `git pull --rebase`, small commits and frequent pushes. Alternatively, each developer works on a sub-branch and opens PRs into the shared feature branch.
+**Short answer:** Agree on `git pull --rebase`, small commits and frequent pushes, or have each developer work on a sub-branch and open PRs into the shared branch.
+
+**Explanation:** The risk is overwriting each other's work. Nobody force-pushes the shared branch, and sub-branch PRs give each change a review.
+
+**Example:** `feat/scorecards` is shared; Asha works on `feat/scorecards-api` and Ravi on `feat/scorecards-ui`, each merging into `feat/scorecards`.
+
+**Say it like this:** "We'd agree on rebase-on-pull and no force pushes, or use sub-branches with PRs into the shared branch, which also gives each piece a review."
 
 ---
 
 **Q80. A teammate force-pushed and overwrote your commits on a shared branch.**
 
-**Answer:** Your local reflog still has your commits. Find the commit ID, create a branch from it and push it, then coordinate the merge. Afterwards, enable branch protection to block force pushes on shared branches.
+**Short answer:** Your local reflog still has your commits; restore them on a branch, push it, then merge. Afterwards, protect the branch against force pushes.
+
+**Explanation:** Git doesn't delete your local objects when the remote changes. Find your last commit in the reflog, branch from it, and coordinate with your teammate.
+
+**Example:**
+
+```bash
+git reflog
+git branch recover/my-work a1b2c3d
+git push origin recover/my-work
+```
+
+**Say it like this:** "I'd recover my commits from the reflog, push them to a branch and merge them back in with my teammate. Then I'd turn on branch protection so it can't happen again."
 
 ---
 
 **Q81. Which commit made the bundle size jump from 300 KB to 900 KB?**
 
-**Answer:** Automate `git bisect` with a script:
+**Short answer:** Automate `git bisect` with a script that builds and fails if the bundle is over a threshold.
+
+**Explanation:** `bisect run` treats exit code 0 as good and non-zero as bad, so the script can encode any measurable condition, not just failing tests.
+
+**Example:**
 
 ```bash
-# check-size.sh — exit 1 if the bundle is too big
-npm run build >/dev/null && \
-[ $(du -k dist/assets/index-*.js | cut -f1) -lt 400 ]
+# check-size.sh
+npm run build >/dev/null && [ $(du -k dist/assets/index-*.js | cut -f1) -lt 400 ]
 ```
 
 ```bash
@@ -1149,22 +1544,36 @@ git bisect start HEAD v2.0.0
 git bisect run ./check-size.sh
 ```
 
+**Say it like this:** "Bisect isn't only for failing tests. I give it a script that checks the bundle size, and it finds the commit that added the heavy dependency."
+
 ---
 
 **Q82. You need to make a hotfix while in the middle of a large refactor.**
 
-**Answer:** Run `git worktree add ../app-hotfix main` (or stash), fix the bug there, open a PR, then return to your untouched refactor.
+**Short answer:** Use `git worktree add ../app-hotfix main` (or stash), fix the bug there, open a PR, then return to your untouched refactor.
+
+**Explanation:** A worktree avoids stashing half-finished work and keeps your dev server and editor state on the refactor.
+
+**Example:**
+
+```bash
+git worktree add ../app-hotfix main
+cd ../app-hotfix && git switch -c hotfix/login-crash
+```
+
+**Say it like this:** "I'd open a worktree on main for the hotfix. My refactor stays exactly as it was, and I don't risk losing a stash."
 
 ---
 
 **Q83. How would you enforce consistent commit messages and formatting across 15 developers?**
 
-**Answer:**
+**Short answer:** Husky + lint-staged + commitlint locally, the same checks in CI, branch protection requiring them, and a PR template and CONTRIBUTING guide.
 
-1. **Locally:** Husky + lint-staged (ESLint, Prettier) + commitlint, for fast feedback.
-2. **In CI:** the same checks run again, because local hooks can be skipped.
-3. **On GitHub:** branch protection requires those checks, plus a PR template.
-4. **Culture:** document it in CONTRIBUTING.md and show the benefit, such as auto-generated changelogs.
+**Explanation:** Local hooks give fast feedback but can be skipped; CI is the real gate. Explaining the benefit (automatic changelogs, fewer review nits) gets buy-in.
+
+**Example:** A PR with the message "fixed stuff" fails the commitlint check in CI, and the PR can't merge until it's renamed `fix(scorecard): handle missing weights`.
+
+**Say it like this:** "Hooks for fast feedback, CI as the gate, and documentation for the why. Once people saw the auto-generated changelog, nobody argued about the format."
 
 ---
 
@@ -1172,20 +1581,53 @@ git bisect run ./check-size.sh
 
 **Q84. "Walk me through the CI/CD for your self-hosted LiveKit infrastructure."**
 
-**Sample answer structure:** GitHub Actions builds a Docker image, scans it (for example with Trivy), and pushes it to Amazon ECR. It then deploys to EC2 or ECS, runs health checks, and rolls back automatically if they fail. AWS access uses OIDC, so there are no stored keys. Infrastructure and config changes go through PR review.
+**Short answer:** Each merge builds and scans a Docker image, pushes it to Amazon ECR, deploys it with health checks and automatic rollback, and authenticates to AWS with OIDC.
 
-**Say it like this:** "Every merge to main builds and scans a Docker image, pushes it to ECR, and deploys with a health check. Authentication to AWS uses OIDC, so no access keys live in GitHub. For a media server we drained rooms before replacing a node, so live calls weren't cut."
+**Explanation:** The pipeline is: GitHub Actions build → image scan (e.g. Trivy) → push to ECR → deploy to EC2/ECS → health check → rollback on failure. For a media server, nodes are drained of active rooms before replacement so live calls aren't cut. *Describe only what you actually built, and say "we" for the parts DevOps owned.*
 
-*Describe only what you actually built, and say "we" for the parts DevOps owned.*
+**Example:**
+
+```yaml
+- uses: aws-actions/configure-aws-credentials@v4
+  with: { role-to-assume: ${{ vars.DEPLOY_ROLE }}, aws-region: ap-south-1 }
+- run: docker build -t $ECR/livekit:${{ github.sha }} . && docker push $ECR/livekit:${{ github.sha }}
+- run: ./deploy.sh ${{ github.sha }}   # drains rooms, then rolls nodes
+```
+
+**Say it like this:** "Every merge to main builds and scans a Docker image, pushes it to ECR, and deploys with a health check. AWS auth uses OIDC, so no keys live in GitHub. Because it's a media server, we drained rooms before replacing a node, so live calls weren't cut."
 
 ---
 
 **Q85. "How did you enforce testing standards for the frontend team?"**
 
-**Say it like this:** "I made lint, typecheck, tests and build required status checks on main. I added a coverage threshold for critical modules like auth and the call flow, rather than chasing a global percentage. Our PR template had a 'tests added or updated' checkbox, and CODEOWNERS ensured shared components got a review from someone who knew them."
+**Short answer:** Required CI checks (lint, typecheck, tests, build), coverage thresholds on critical modules, a PR template with a testing checkbox, and CODEOWNERS for shared code.
+
+**Explanation:** Rules alone don't stick, so enforcement was introduced gradually alongside templates and pairing. Coverage targeted critical areas like auth and the call flow instead of chasing a global percentage.
+
+**Example:**
+
+```json
+"coverageThreshold": {
+  "./src/features/auth/": { "lines": 80 },
+  "./src/features/call/": { "lines": 80 }
+}
+```
+
+**Say it like this:** "I made lint, typecheck, tests and build required checks on main, with coverage thresholds on critical modules like auth and the call flow. The PR template had a 'tests added' checkbox, and CODEOWNERS ensured shared components were reviewed by someone who knew them."
 
 ---
 
 **Q86. "How do you handle releases across two products that share a component library?"**
 
-**Say it like this:** "I'd use a monorepo with pnpm workspaces and Changesets. Each change to the library includes a changeset describing the version bump. Releases are semantic-versioned, and each product upgrades deliberately. Breaking changes ship with migration notes, and CI builds both products against the library before merge."
+**Short answer:** A monorepo (or versioned package) with Changesets: every library change declares its version bump, releases follow semver, and each product upgrades deliberately.
+
+**Explanation:** Breaking changes get a major version and migration notes. CI builds both products against the library before merging, so a library change can't silently break one product.
+
+**Example:**
+
+```bash
+pnpm changeset          # "minor: add size prop to Button"
+pnpm changeset version  # bumps @org/ui to 1.5.0 and writes CHANGELOG.md
+```
+
+**Say it like this:** "I'd use a monorepo with pnpm workspaces and Changesets. Library changes are semver-versioned, breaking changes ship with migration notes, and CI builds both InterpretIQ and BpoBox against the library before merge."
