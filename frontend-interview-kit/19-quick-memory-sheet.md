@@ -1,6 +1,14 @@
-# 19 — Quick Memory Sheet (read in 10–15 minutes before any interview)
+# 19 — Quick Memory Sheet (Read in 10–15 Minutes Before Any Interview)
 
-The "engine" line of each topic — read it and the rest of what you know follows.
+## What this sheet is and how to use it
+
+This is a **revision sheet**, not a learning resource. Each topic has already been explained in detail in its own file (02–18). Here you get only the "engine" lines: the key facts that unlock everything else you know about the topic.
+
+**How to use it:**
+
+1. Read it on the morning of the interview, or 30 minutes before.
+2. For each bullet, say the full explanation out loud in one or two sentences. If you can't, go back to that topic's file.
+3. Finish with your 30-second pitch at the bottom, said out loud twice.
 
 ---
 
@@ -91,12 +99,6 @@ The "engine" line of each topic — read it and the rest of what you know follow
 - Mobile-first prefixes; state variants; `data-[state=open]:` for Radix; `aria-*` variants.
 - `cn()` = clsx + tailwind-merge; `cva` for variants.
 - Tenant theming: semantic tokens → CSS variables.
-
-## Angular (if asked)
-- Components, DI services, router, forms, HttpClient, RxJS, signals.
-- switchMap (cancel) · mergeMap (parallel) · concatMap (queue) · exhaustMap (ignore while busy).
-- OnPush + signals + `@for track` + `@defer` for performance.
-- Unsubscribe: async pipe, takeUntilDestroyed, toSignal.
 
 ## Performance
 - LCP ≤ 2.5 s · INP ≤ 200 ms · CLS ≤ 0.1 at p75 (field data).

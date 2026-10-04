@@ -248,7 +248,7 @@ Browser → POST /api/calls (actual request)
 
 **Short answer:** Use several layers:
 
-1. **Encode output by default.** React and Angular escape text automatically.
+1. **Encode output by default.** React escapes text automatically.
 2. **Avoid dangerous sinks:** `innerHTML`, `dangerouslySetInnerHTML`, `eval`, `new Function`, `setTimeout('string')`, `javascript:` URLs.
 3. **Sanitise** when you genuinely need HTML, with DOMPurify.
 4. Add a **Content Security Policy** with nonces or hashes.

@@ -1,8 +1,30 @@
-# 22 — Resume Template (your resume, restructured)
+# 22 — Resume Template (Your Resume, Restructured)
 
-This is your current resume rewritten using the fixes in 01-resume-deep-dive: one achievement per bullet, metric at the end, and a sharper summary. **Only your existing facts are used.** Anything in `[brackets]` is a placeholder. Fill it with a true number or delete the clause, and never guess.
+## Part A — Understand the Topic
 
-Paste into Word or Google Docs: single column, one font (Calibri/Inter 10–11pt), standard headings, export to PDF. Keep it to 2 pages.
+### What this file is
+
+This is your current resume rewritten with the fixes from **01 — Resume Deep-Dive**: one achievement per bullet, the metric at the end, and a sharper summary. **Only your existing facts are used.** Anything in `[brackets]` is a placeholder. Fill it with a true number or delete the clause, and never guess.
+
+### Why the resume is structured this way
+
+| Rule | Why it matters |
+|---|---|
+| **Single column, standard headings** (Summary, Skills, Experience, Education) | Applicant tracking systems (ATS) parse it correctly, and recruiters find things in seconds |
+| **A positioning summary, not a generic one** | The first 2 lines decide whether the recruiter keeps reading. "Owns frontend architecture for real-time and AI SaaS" is specific and memorable |
+| **One achievement per bullet, metric at the end** | Bullets that cram 3–4 achievements together are skimmed and forgotten. Ending on the number makes it stick |
+| **Strongest metric first** in the current role | Recruiters often read only the first bullet of each job |
+| **"Projected" stays on projections** (40% cost cut, 10x traffic) | Interviewers will ask how a number was measured. Inflated numbers lose offers |
+| **Skills you can defend only** | Every skill listed invites 2–3 questions. Drop anything you can't answer on |
+| **Maximum 2 pages, exported to PDF** | Keeps the formatting identical on every computer |
+
+### How to use it
+
+1. Paste the template below into Google Docs or Word. Use one font (Calibri or Inter, 10–11pt) and a single column.
+2. Fill in or delete every `[bracket]`.
+3. Make two versions: **Senior Frontend Engineer** and **Senior Full-Stack Engineer**.
+4. For each application, tailor the top 3 bullets to the job description's keywords. This takes about 10 minutes.
+5. Before sending, practise explaining every number in one sentence (see 01 — Resume Deep-Dive).
 
 ---
 
@@ -59,7 +81,7 @@ Senior Frontend Engineer with 4+ years building real-time and AI-powered SaaS. I
 
 ---
 
-## Before you send it
+## Before You Send It
 - [ ] Every number can be explained in one sentence: what, how measured, over what period.
 - [ ] "Projected" stays on the 40% and 10x claims.
 - [ ] Top 3 bullets tailored to the job description's keywords.

@@ -30,6 +30,8 @@ QUOTE_BG = "EEF4FF"
 HEADER_BG = "1F3A5F"
 ACCENT = RGBColor(0x1F, 0x3A, 0x5F)
 
+QUESTION_RE = re.compile(r"^\*\*Q\d+\.")
+
 md = MarkdownIt("commonmark").enable("table").enable("strikethrough")
 
 
@@ -279,6 +281,13 @@ def convert(md_path: Path, out_path: Path):
                 left_border(par, "3B82F6")
                 par.paragraph_format.left_indent = Cm(0.3)
             add_runs(par, inline.children)
+            if not list_stack and QUESTION_RE.match(inline.content):
+                # "**Q12. …**" lines: make questions easy to scan in the doc
+                par.paragraph_format.space_before = Pt(10)
+                par.paragraph_format.keep_with_next = True
+                for run in par.runs:
+                    run.font.size = Pt(12)
+                    run.font.color.rgb = ACCENT
             i += 3
             continue
         if t == "bullet_list_open":

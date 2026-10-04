@@ -506,7 +506,7 @@ const muted = useCallUI((s) => s.muted);   // subscribes ONLY to `muted`
 
 **Q31. What are signals?**
 
-**Short answer:** Fine-grained reactive values (Preact Signals, Solid, Angular signals). When a signal changes, only the exact DOM nodes or computations that read it update, without re-running whole components.
+**Short answer:** Fine-grained reactive values (Preact Signals, SolidJS, Vue refs). When a signal changes, only the exact DOM nodes or computations that read it update, without re-running whole components.
 
 ---
 
