@@ -4,10 +4,10 @@ LABELS = ['**Short answer:**', '**Explanation:**', '**Example:**', '**Say it lik
 bad_total = 0
 for f in sorted(glob.glob('frontend-interview-kit/*.md')):
     s = open(f, encoding='utf-8').read()
-    parts = re.split(r'(?m)^(?=\*\*Q\d+\.|### Q\d+\.)', s)
-    qs = [p for p in parts if re.match(r'(\*\*|### )Q\d+\.', p)]
+    parts = re.split(r'(?m)^(?=\*\*Q\d+\.|### Q\d+\.|### Design \d+)', s)
+    qs = [p for p in parts if re.match(r'(\*\*|### )Q\d+\.|### Design \d+', p)]
     if not qs: continue
-    bad = [re.match(r'(?:\*\*|### )(Q\d+)', q).group(1) for q in qs if not all(l in q for l in LABELS)]
+    bad = [re.match(r'(?:\*\*|### )(Q\d+|Design \d+)', q).group(1) for q in qs if not all(l in q for l in LABELS)]
     bad_total += len(bad)
     print(f'{f}: {len(qs)} questions, {len(qs)-len(bad)} complete', ('missing: ' + ', '.join(bad[:15]) + (' …' if len(bad) > 15 else '')) if bad else '')
 print('TOTAL incomplete:', bad_total)
