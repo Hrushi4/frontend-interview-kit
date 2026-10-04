@@ -2681,7 +2681,7 @@ function submit(data) {
 
 **Explanation:** `Promise.all` over 200 would fire everything at once and get rate-limited.
 
-**Example:** `await runWithLimit(ids.map((id) => () => retry(() => api(`/calls/${id}`))), 5);` (see Q120 and Q78).
+**Example:** ``await runWithLimit(ids.map((id) => () => retry(() => api(`/calls/${id}`))), 5);`` (see Q120 and Q78).
 
 **Say it like this:** "A pool of five workers plus retry with backoff stays within the limit and still finishes quickly."
 

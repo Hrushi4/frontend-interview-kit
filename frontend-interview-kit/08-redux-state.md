@@ -1076,7 +1076,7 @@ const CallRow = memo(({ id }: { id: string }) => {
 
 **Explanation:** Client measures prevent visual leaks; security lives on the server.
 
-**Example:** `providesTags: [{ type: 'Call', id: `LIST-${tenantId}` }]` and `api.util.resetApiState()` on tenant switch.
+**Example:** ``providesTags: [{ type: 'Call', id: `LIST-${tenantId}` }]`` and `api.util.resetApiState()` on tenant switch.
 
 **Say it like this:** "Four layers: tenant-scoped keys, a tenant-scoped client, cache resets, and above all server enforcement."
 

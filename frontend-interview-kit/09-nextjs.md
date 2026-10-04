@@ -65,129 +65,165 @@ Next.js is the default choice for new React apps. Interviewers check whether you
 
 ## Part B — Interview Questions and Answers
 
+Every answer below has four parts: **Short answer** (say this first), **Explanation** (add if asked for more), **Example** (code or a real situation) and **Say it like this** (a sample spoken answer).
+
 ## 🟢 Level 1 — Basics
 
 **Q1. What is Next.js?**
 
-**Short answer:** A React framework. It adds file-based routing, server rendering, static generation, data-fetching patterns, API routes, image and font optimisation, and build tooling.
+**Short answer:** A React framework that adds file-based routing, server rendering, static generation, data fetching, API routes, image and font optimisation, and build tooling.
 
-**Say it like this:** "React gives me components. Next.js gives me a full application framework around them: routing, server rendering for SEO and speed, API endpoints, and performance optimisations out of the box."
+**Explanation:** React is a UI library; Next.js provides the application framework around it with sensible defaults.
+
+**Example:** `app/calls/page.tsx` becomes the `/calls` page, rendered on the server with data fetched directly in the component.
+
+**Say it like this:** "React gives me components; Next.js gives me routing, server rendering, API endpoints and performance optimisations around them."
 
 ---
 
 **Q2. Why use Next.js instead of plain React (a Vite SPA)?**
 
-**Short answer:** You get SEO and a fast first paint from server rendering, built-in routing and layouts, a backend-for-frontend (route handlers and Server Actions), and optimisations out of the box. A SPA is still a fine choice for authenticated, highly interactive apps where SEO doesn't matter.
+**Short answer:** Server rendering for SEO and fast first paint, built-in routing and layouts, a backend-for-frontend, and optimisations out of the box.
 
-**Say it like this:** "For public pages where SEO and first load matter, Next.js is clearly better. For an internal real-time dashboard behind a login, a Vite SPA is simpler and perfectly valid. I choose based on the product, not hype."
+**Explanation:** A SPA is still fine for authenticated, highly interactive apps where SEO doesn't matter.
+
+**Example:** InterpretIQ's marketing site benefits from Next.js SEO; its authenticated real-time call app works fine as a Vite SPA.
+
+**Say it like this:** "For public pages, Next.js is clearly better. For a real-time dashboard behind a login, a SPA is simpler and valid. I choose by product, not hype."
 
 ---
 
 **Q3. What rendering strategies does Next.js support?**
 
-**Short answer:** CSR, SSR, SSG, ISR, streaming and partial prerendering (see the table in Part A).
+**Short answer:** CSR, SSR, SSG, ISR, streaming and partial prerendering.
 
-**Example:**
+**Explanation:** Pick per route based on freshness, personalisation and SEO needs.
 
-- Marketing homepage → SSG (built once, served from a CDN).
-- Product page → ISR with `revalidate: 3600` (rebuilt at most once an hour).
-- Logged-in dashboard → SSR or CSR (personalised).
-- Report page with one slow chart → streaming, with the chart inside `<Suspense>`.
+**Example:** Marketing homepage → SSG; product page → ISR (`revalidate: 3600`); dashboard → SSR or CSR; report with a slow chart → streaming.
+
+**Say it like this:** "I choose the rendering strategy per route: static where possible, server-rendered where personalised, streamed where parts are slow."
 
 ---
 
 **Q4. App Router vs Pages Router?**
 
-**Short answer:**
+**Short answer:** The App Router uses Server Components, nested layouts, streaming and Server Actions; the Pages Router uses `getServerSideProps`, `getStaticProps` and `pages/api`.
 
-| | App Router (`app/`) | Pages Router (`pages/`) |
+**Explanation:** Both can coexist during migration.
+
+**Example:**
+
+| | App Router | Pages Router |
 |---|---|---|
-| Components | Server Components by default | Client components |
-| Data fetching | `async` components, `fetch` | `getServerSideProps`, `getStaticProps` |
+| Data fetching | async components | `getServerSideProps` |
 | Layouts | nested `layout.tsx` | `_app.tsx` |
-| Loading and errors | `loading.tsx`, `error.tsx` | manual |
 | Mutations | Server Actions | API routes |
-| API endpoints | `route.ts` | `pages/api/*` |
 
-Both can coexist during a migration.
+**Say it like this:** "New projects use the App Router for Server Components and layouts; the Pages Router is still supported for existing apps."
 
 ---
 
 **Q5. How does file-based routing work in the App Router?**
 
-**Short answer:** Folders become URL segments, and a `page.tsx` file makes a segment publicly reachable.
+**Short answer:** Folders become URL segments, and a `page.tsx` makes a segment publicly reachable.
+
+**Explanation:** Files like `layout.tsx` and `loading.tsx` in the same folder add shared UI and loading states.
+
+**Example:**
 
 ```text
-app/
-  page.tsx                → /
-  calls/
-    page.tsx              → /calls
-    [id]/
-      page.tsx            → /calls/123
+app/page.tsx              → /
+app/calls/page.tsx        → /calls
+app/calls/[id]/page.tsx   → /calls/123
 ```
+
+**Say it like this:** "The folder structure is the route structure, which makes it easy to find any page's code."
 
 ---
 
 **Q6. What are the special files?**
 
-**Short answer:**
+**Short answer:** `layout`, `page`, `loading`, `error`, `not-found`, `template`, `route`, `default` and `middleware`.
 
-| File | Purpose |
-|---|---|
-| `layout.tsx` | shared UI that **persists** across child navigations |
-| `page.tsx` | the route's UI |
-| `loading.tsx` | Suspense fallback while the page loads |
-| `error.tsx` | error boundary (must be a client component) |
-| `not-found.tsx` | 404 UI |
-| `template.tsx` | like a layout, but **remounts** on every navigation |
-| `route.ts` | API endpoint (GET, POST, …) |
-| `default.tsx` | fallback for parallel routes |
-| `middleware.ts` | runs before requests (at the project root) |
+**Explanation:** Layouts persist across navigation; templates remount; `error.tsx` must be a client component; `route.ts` defines API endpoints.
+
+**Example:** `app/calls/loading.tsx` shows a skeleton while `app/calls/page.tsx` fetches data.
+
+**Say it like this:** "Special files give each route segment its own layout, loading and error handling by convention."
 
 ---
 
 **Q7. How do dynamic routes work?**
 
-**Short answer:** `[id]` matches one segment, `[...slug]` matches everything after (catch-all), and `[[...slug]]` is an optional catch-all. In recent versions, `params` is a promise:
+**Short answer:** `[id]` matches one segment, `[...slug]` matches the rest, and `[[...slug]]` is optional; `params` is a promise in recent versions.
+
+**Explanation:** Await `params` before reading values.
+
+**Example:**
 
 ```tsx
 export default async function CallPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const call = await getCall(id);
-  return <CallDetail call={call} />;
+  return <CallDetail call={await getCall(id)} />;
 }
 ```
+
+**Say it like this:** "Brackets in folder names define params, and in current Next.js I await `params` before using them."
 
 ---
 
 **Q8. What are route groups?**
 
-**Short answer:** Folders in parentheses, like `(marketing)/about/page.tsx`, organise files and share layouts *without* adding a URL segment. The URL is just `/about`.
+**Short answer:** Folders in parentheses that organise routes and share layouts without adding a URL segment.
 
-**Example:** `(marketing)` and `(dashboard)` groups can have completely different layouts.
+**Explanation:** They let different sections use different layouts.
+
+**Example:** `app/(marketing)/about/page.tsx` → `/about`; `(marketing)` and `(dashboard)` groups have different layouts.
+
+**Say it like this:** "Route groups separate the marketing site and the app shell without changing URLs."
 
 ---
 
 **Q9. How do linking and navigation work?**
 
-**Short answer:** `<Link href="/calls">` navigates on the client without a full reload, and in production it prefetches the route when the link scrolls into view. In client components use `useRouter().push()`, and in server code use `redirect()`.
+**Short answer:** `<Link>` navigates on the client and prefetches in production; `useRouter().push()` in client components; `redirect()` on the server.
+
+**Explanation:** Client navigation avoids full reloads and keeps layouts mounted.
+
+**Example:**
+
+```tsx
+<Link href="/calls">Calls</Link>
+redirect('/login'); // in a Server Component or Action
+```
+
+**Say it like this:** "`Link` gives instant navigation with prefetching; on the server I use `redirect`."
 
 ---
 
 **Q10. What does `next/image` give you?**
 
-**Short answer:** Automatic responsive sizes, modern formats (WebP and AVIF), lazy loading by default, no layout shift (it requires `width`/`height` or `fill`), and `priority` for the LCP image.
+**Short answer:** Responsive sizes, modern formats, lazy loading by default, no layout shift, and `priority` for the LCP image.
+
+**Explanation:** It requires `width`/`height` or `fill`, which prevents CLS.
+
+**Example:**
 
 ```tsx
-<Image src="/hero.jpg" alt="Interpreter on a call" width={1200} height={600}
-       sizes="(max-width: 768px) 100vw, 50vw" priority />
+<Image src="/hero.jpg" alt="Interpreter on a call" width={1200} height={600} sizes="(max-width: 768px) 100vw, 50vw" priority />
 ```
+
+**Say it like this:** "`next/image` handles formats, sizes and lazy loading for me; I mark the hero with `priority`."
 
 ---
 
 **Q11. What does `next/font` do?**
 
-**Short answer:** It self-hosts Google or local fonts at build time, so there's no extra request to Google. It also generates size-adjusted fallback fonts, which gives zero layout shift when the font loads.
+**Short answer:** It self-hosts fonts at build time and generates size-adjusted fallbacks for zero layout shift.
+
+**Explanation:** No request to Google at runtime, which helps privacy and performance.
+
+**Example:**
 
 ```tsx
 import { Inter } from 'next/font/google';
@@ -195,31 +231,50 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' });
 <html className={inter.className}>
 ```
 
+**Say it like this:** "`next/font` removes font-related layout shift and third-party requests automatically."
+
 ---
 
 **Q12. How do environment variables work?**
 
-**Short answer:** Variables in `.env.local` and similar files are **server-only** by default. Variables prefixed with `NEXT_PUBLIC_` are *inlined into the client bundle at build time*, so anyone can read them. Never put secrets in `NEXT_PUBLIC_` variables.
+**Short answer:** Variables are server-only by default; `NEXT_PUBLIC_` variables are inlined into the client bundle at build time.
+
+**Explanation:** Anyone can read `NEXT_PUBLIC_` values, so never put secrets there.
+
+**Example:** `NEXT_PUBLIC_LIVEKIT_URL` is fine; `LIVEKIT_API_SECRET` must stay server-only.
+
+**Say it like this:** "The `NEXT_PUBLIC_` prefix means 'shipped to every browser', so secrets never get it."
 
 ---
 
 **Q13. How do you set page metadata?**
 
-```ts
-export const metadata: Metadata = { title: 'Calls', description: 'Review call quality' };
+**Short answer:** Export a `metadata` object or a `generateMetadata` function from a page or layout.
 
+**Explanation:** `generateMetadata` can fetch data for dynamic titles; results are deduped with the page's fetches.
+
+**Example:**
+
+```ts
 export async function generateMetadata({ params }): Promise<Metadata> {
   const { id } = await params;
-  const call = await getCall(id);
-  return { title: `Call with ${call.agent}` };
+  return { title: `Call with ${(await getCall(id)).agent}` };
 }
 ```
+
+**Say it like this:** "Each route exports its metadata, so titles and social previews are correct and server-rendered."
 
 ---
 
 **Q14. Where do static assets go?**
 
-**Short answer:** In the `public/` folder, served from the root. `public/logo.svg` becomes `/logo.svg`.
+**Short answer:** In `public/`, served from the root.
+
+**Explanation:** Use it for icons, `robots.txt` and files that need fixed URLs; images in components should go through `next/image`.
+
+**Example:** `public/logo.svg` → `/logo.svg`.
+
+**Say it like this:** "`public` is for files with fixed URLs, like favicons and the manifest."
 
 ---
 
@@ -227,182 +282,216 @@ export async function generateMetadata({ params }): Promise<Metadata> {
 
 **Q15. Server Components vs Client Components?**
 
-| | Server Component (default) | Client Component (`'use client'`) |
-|---|---|---|
-| Runs | on the server only | on the server (SSR) and in the browser |
-| JavaScript sent to browser | none | yes |
-| Data access | direct (database, secrets) | through APIs |
-| Hooks, state, effects | no | yes |
-| Event handlers | no | yes |
-| Browser APIs | no | yes |
+**Short answer:** Server Components run only on the server, ship no JS and can access data directly; Client Components (`'use client'`) are interactive and hydrated.
 
-**Short answer:** Default to Server Components, and add `'use client'` only on interactive leaf components.
+**Explanation:** Default to Server Components and add `'use client'` only on interactive leaves.
 
-**Say it like this:** "I push `'use client'` as far down the tree as possible. The page and data tables are Server Components, and only the filter dropdown or the play button is a Client Component. Less JavaScript ships, and secrets never leave the server."
+**Example:** The calls page and table render on the server; the filter dropdown is a client component.
+
+**Say it like this:** "I push `'use client'` as far down as possible, so less JavaScript ships and secrets never leave the server."
 
 ---
 
 **Q16. What does `'use client'` really mean?**
 
-**Short answer:** It marks a **boundary**: this module, and everything it imports, becomes part of the client bundle. It does **not** mean "render only in the browser". Client components are still server-rendered to HTML first, then hydrated.
+**Short answer:** It marks a boundary: that module and everything it imports join the client bundle.
+
+**Explanation:** It doesn't mean "render only in the browser"; client components are still server-rendered to HTML and then hydrated.
+
+**Example:** Adding `'use client'` to a layout accidentally pulls every imported component into the bundle.
+
+**Say it like this:** "`'use client'` is a bundle boundary, so I put it on small interactive files, not on layouts."
 
 ---
 
 **Q17. How do you compose Server and Client Components?**
 
-**Short answer:** A Client Component can't *import* a Server Component, but it can *receive* one as `children` or props from a Server parent:
+**Short answer:** Client Components can't import Server Components, but can receive them as `children` or props.
+
+**Explanation:** Props crossing the boundary must be serialisable.
+
+**Example:**
 
 ```tsx
-// app/calls/page.tsx (server)
 export default function Page() {
-  return (
-    <ClientTabs>                 {/* client: handles tab switching */}
-      <ServerCallTable />        {/* server: rendered on server, passed as children */}
-    </ClientTabs>
-  );
+  return <ClientTabs><ServerCallTable /></ClientTabs>;
 }
 ```
 
-Props passed to Client Components must be **serialisable**: plain objects, not functions or class instances (Server Actions are the exception).
+**Say it like this:** "I pass server-rendered content into client wrappers as children, so interactivity doesn't drag data code into the browser."
 
 ---
 
 **Q18. What are the `server-only` and `client-only` packages for?**
 
-**Short answer:** Add `import 'server-only'` at the top of modules that use secrets or the database. If anyone imports that module into a Client Component, the **build fails**, so secrets can't accidentally leak into the browser bundle.
+**Short answer:** Importing `server-only` makes the build fail if that module is ever imported into client code.
+
+**Explanation:** It's a guard against leaking secrets or database code into the browser bundle.
+
+**Example:**
+
+```ts
+import 'server-only';
+export async function getCalls(tenantId: string) { return db.call.findMany({ where: { tenantId } }); }
+```
+
+**Say it like this:** "Data-access modules import `server-only`, so a mistaken client import fails the build instead of leaking."
 
 ---
 
 **Q19. How do you fetch data in Server Components?**
 
+**Short answer:** Make the component `async` and await data directly, running independent fetches in parallel.
+
+**Explanation:** Avoid waterfalls and put slow parts behind Suspense.
+
+**Example:**
+
 ```tsx
 export default async function CallsPage() {
-  const [calls, stats] = await Promise.all([getCalls(), getStats()]);   // parallel, not sequential
+  const [calls, stats] = await Promise.all([getCalls(), getStats()]);
   return <CallsView calls={calls} stats={stats} />;
 }
 ```
 
-**Short answer:** Server Components can be `async` and await data directly. Avoid sequential "waterfalls", start independent fetches together, and put slow parts in their own Suspense boundaries.
+**Say it like this:** "Server Components fetch directly, and I start independent requests together to avoid waterfalls."
 
 ---
 
 **Q20. What are the caching and revalidation concepts?**
 
-**Short answer:** There are four layers:
+**Short answer:** Request memoisation, the data cache, the full route cache and the client router cache, controlled with `revalidate`, `no-store`, tags, `revalidatePath` and `revalidateTag`.
 
-1. **Request memoisation:** the same `fetch` is deduplicated within one render pass.
-2. **Data cache:** `fetch` results are persisted across requests.
-3. **Full route cache:** the rendered HTML and RSC payload are stored for static routes.
-4. **Client router cache:** visited routes are kept in browser memory.
+**Explanation:** Defaults changed across versions, and newer versions add `'use cache'`; anything personalised must never land in a shared cache.
 
-**Controls:**
+**Example:**
 
 ```ts
-fetch(url, { cache: 'no-store' });                       // always fresh
-fetch(url, { next: { revalidate: 60, tags: ['calls'] } }); // fresh for 60s, taggable
-export const revalidate = 60;                            // segment config
-revalidateTag('calls'); revalidatePath('/calls');        // on-demand invalidation
+fetch(url, { cache: 'no-store' });
+fetch(url, { next: { revalidate: 60, tags: ['calls'] } });
+revalidateTag('calls');
 ```
 
-Newer versions add explicit caching directives (`'use cache'`, `cacheLife`, `cacheTag`) and changed the defaults, so check the version.
-
-**Say it like this:** "I treat caching as a per-data decision: how fresh does this need to be, and is it user-specific? Anything personalised must never land in a shared cache."
+**Say it like this:** "I decide caching per data type: how fresh must it be, and is it user-specific?"
 
 ---
 
 **Q21. What makes a route static or dynamic?**
 
-**Short answer:** Using `cookies()`, `headers()`, `searchParams`, uncached fetches or `connection()` makes a route **dynamic** (rendered per request). Otherwise Next.js may render it **statically** at build time.
+**Short answer:** Reading `cookies()`, `headers()`, `searchParams`, uncached fetches or `connection()` makes it dynamic; otherwise it may be static.
+
+**Explanation:** Static routes are rendered at build time and served from cache.
+
+**Example:** A page reading the session cookie is dynamic; the pricing page with no request data is static.
+
+**Say it like this:** "Anything that reads the request makes a route dynamic, which is exactly what personalised pages need."
 
 ---
 
 **Q22. What does `generateStaticParams` do?**
 
+**Short answer:** It pre-builds dynamic routes at build time.
+
+**Explanation:** Combine with `dynamicParams` to build popular pages up front and the rest on demand.
+
+**Example:**
+
 ```ts
 export async function generateStaticParams() {
-  const posts = await getPopularPosts();
-  return posts.map((p) => ({ slug: p.slug }));   // pre-build these pages
+  return (await getPopularPosts()).map((p) => ({ slug: p.slug }));
 }
-export const dynamicParams = true;               // others are built on demand
 ```
 
-**Short answer:** It pre-builds dynamic routes at build time, which is SSG for `[slug]` pages.
+**Say it like this:** "Build the pages people actually visit, generate the long tail on demand."
 
 ---
 
 **Q23. How do loading UI and streaming work?**
 
-**Short answer:** `loading.tsx` automatically wraps the page in Suspense. For finer control, wrap slow widgets inside the page so the shell renders first:
+**Short answer:** `loading.tsx` wraps the page in Suspense; for finer control, wrap slow widgets in `<Suspense>` inside the page.
+
+**Explanation:** The shell renders first and slow parts stream in.
+
+**Example:**
 
 ```tsx
-export default function Dashboard() {
-  return (
-    <>
-      <Header />                                           {/* instant */}
-      <Suspense fallback={<ChartSkeleton />}>
-        <SlowAnalyticsChart />                             {/* streams in later */}
-      </Suspense>
-    </>
-  );
-}
+<Header />
+<Suspense fallback={<ChartSkeleton />}><SlowAnalyticsChart /></Suspense>
 ```
+
+**Say it like this:** "Slow widgets get their own Suspense boundary, so the rest of the page appears immediately."
 
 ---
 
 **Q24. How do you handle errors?**
 
-**Short answer:** `error.tsx` is a client-component error boundary with a `reset()` function to retry. `global-error.tsx` covers the root layout, and calling `notFound()` renders `not-found.tsx`. In production, error details are hidden from users. A `digest` ID lets you match the error to the server logs.
+**Short answer:** `error.tsx` boundaries with `reset()`, `global-error.tsx` for the root, and `notFound()` for 404s.
+
+**Explanation:** Production hides error details; a `digest` links the user-facing error to server logs.
+
+**Example:**
+
+```tsx
+'use client';
+export default function Error({ reset }: { reset: () => void }) {
+  return <div role="alert">Couldn't load calls. <button onClick={reset}>Retry</button></div>;
+}
+```
+
+**Say it like this:** "Each segment can have its own error boundary with a retry, and the digest connects it to our logs."
 
 ---
 
 **Q25. What are Route Handlers?**
 
+**Short answer:** API endpoints in `route.ts` files exporting HTTP method functions.
+
+**Explanation:** Use them for webhooks, BFF endpoints, callbacks and streaming; always authenticate and validate.
+
+**Example:**
+
 ```ts
-// app/api/calls/route.ts
-export async function GET(req: Request) {
+export async function GET() {
   const session = await auth();
   if (!session) return new Response('Unauthorized', { status: 401 });
   return Response.json(await listCalls(session.tenantId));
 }
-
-export async function POST(req: Request) {
-  const body = CallSchema.parse(await req.json());     // validate
-  // authorize + create
-}
 ```
 
-**Short answer:** API endpoints inside the app. Use them for webhooks, backend-for-frontend endpoints, third-party callbacks and streaming responses.
+**Say it like this:** "Route handlers are my BFF endpoints and webhook receivers, with auth checks on each."
 
 ---
 
 **Q26. What are Server Actions?**
 
+**Short answer:** Server functions callable from forms or client code without writing an API route.
+
+**Explanation:** Each action is a public HTTP endpoint, so always check auth, permissions and validate input inside it.
+
+**Example:**
+
 ```tsx
 'use server';
 export async function submitScore(formData: FormData) {
   const session = await auth();
-  if (!session) throw new Error('Unauthorized');
-  if (!session.permissions.includes('calls:score')) throw new Error('Forbidden');
+  if (!session?.permissions.includes('calls:score')) throw new Error('Forbidden');
   const data = ScoreSchema.parse(Object.fromEntries(formData));
   await db.score.create({ data: { ...data, reviewerId: session.userId } });
   revalidateTag(`call-${data.callId}`);
 }
-
-// usage in a component:
-<form action={submitScore}>…</form>
 ```
 
-**Short answer:** Server-side functions you can call directly from forms or client code, with no API route to write.
-
-**Critical point:** each Server Action is a **public HTTP endpoint**. Always validate the input and check authorisation *inside* the action.
-
-**Say it like this:** "Server Actions feel like calling a function, but under the hood they're POST endpoints anyone can call. Every action starts with an auth check, a permission check and Zod validation."
+**Say it like this:** "Server Actions feel like function calls but are POST endpoints anyone can hit, so each starts with auth, permissions and Zod."
 
 ---
 
 **Q27. What is middleware used for?**
 
-**Short answer:** Code that runs **before** a request is routed. Use it for auth redirects, locale detection, tenant rewrites by hostname, A/B test cookies and headers. Keep it fast and don't fetch heavy data there. Still authorise inside pages and actions, because a misconfigured matcher can let requests skip middleware.
+**Short answer:** Code that runs before routing, for auth redirects, locale detection, tenant rewrites, A/B cookies and headers.
+
+**Explanation:** Keep it fast, and still authorise in pages and actions, because a misconfigured matcher can skip it.
+
+**Example:**
 
 ```ts
 export function middleware(req: NextRequest) {
@@ -411,45 +500,92 @@ export function middleware(req: NextRequest) {
 export const config = { matcher: ['/dashboard/:path*'] };
 ```
 
+**Say it like this:** "Middleware handles redirects and rewrites, but real authorisation still happens where data is accessed."
+
 ---
 
 **Q28. Rewrites vs redirects?**
 
-**Short answer:** A **redirect** changes the URL in the browser (301/308 permanent, 302/307 temporary). A **rewrite** serves a different path while keeping the URL the user sees. Use rewrites to proxy APIs or to map `acme.app.com` to `/tenants/acme`.
+**Short answer:** A redirect changes the browser URL; a rewrite serves a different path while keeping the URL.
+
+**Explanation:** Rewrites suit API proxies and tenant subdomains; redirects suit moved pages and auth flows.
+
+**Example:** `acme.app.com/calls` rewrites internally to `/tenants/acme/calls`.
+
+**Say it like this:** "Redirects change what users see in the address bar; rewrites change what the server serves behind it."
 
 ---
 
 **Q29. Which client-side navigation hooks are there?**
 
-**Short answer:** `useRouter`, `usePathname`, `useSearchParams` (wrap it in a Suspense boundary for static rendering), `useParams` and `useSelectedLayoutSegment`.
+**Short answer:** `useRouter`, `usePathname`, `useSearchParams`, `useParams` and `useSelectedLayoutSegment`.
+
+**Explanation:** `useSearchParams` needs a Suspense boundary in statically rendered routes.
+
+**Example:**
+
+```tsx
+const pathname = usePathname();
+<Link className={pathname.startsWith('/calls') ? 'active' : ''} href="/calls">Calls</Link>
+```
+
+**Say it like this:** "Navigation hooks are client-only, so active-link highlighting lives in a small client component."
 
 ---
 
 **Q30. What persists in a layout?**
 
-**Short answer:** A layout's state and DOM **persist** when you navigate between its child routes, and the layout doesn't re-render. So a server layout can't know the current pathname. To highlight the active nav item, use a small client component with `usePathname()`.
+**Short answer:** A layout's state and DOM persist across navigation between its children, and it doesn't re-render.
+
+**Explanation:** So a server layout can't know the current path; use a client component with `usePathname()` for active nav.
+
+**Example:** The sidebar's collapsed state survives moving between `/calls` and `/calls/123`.
+
+**Say it like this:** "Layouts are persistent shells, which is great for sidebars and players that shouldn't reset."
 
 ---
 
 **Q31. What are the authentication patterns?**
 
-**Short answer:** The server or identity provider issues a session cookie (HttpOnly, Secure, SameSite). Read it in Server Components with `cookies()`, use middleware for redirects, and check authorisation in every Server Action, route handler and data function. Libraries include Auth.js, Clerk, or a custom OIDC setup.
+**Short answer:** A server-issued HttpOnly session cookie, read with `cookies()`, middleware for redirects, and authorisation in every action, handler and data function.
+
+**Explanation:** Libraries include Auth.js, Clerk or custom OIDC.
+
+**Example:** `const session = await auth()` at the top of every Server Action and data function.
+
+**Say it like this:** "Auth is checked where data is touched, not just in middleware."
 
 ---
 
 **Q32. How do you configure image optimisation?**
 
-**Short answer:** List allowed remote hosts in `images.remotePatterns`, set `sizes` for responsive images, and use a custom loader if images come from your own CDN.
+**Short answer:** Allow remote hosts with `images.remotePatterns`, set `sizes`, and use a custom loader for your own CDN.
+
+**Explanation:** Without allowlisting, external images aren't optimised, which also prevents abuse of your optimiser.
+
+**Example:**
+
+```ts
+images: { remotePatterns: [{ protocol: 'https', hostname: 'cdn.bpobox.com' }] }
+```
+
+**Say it like this:** "Remote images are allowlisted, and responsive `sizes` stop phones downloading desktop images."
 
 ---
 
 **Q33. How do you load third-party scripts efficiently?**
 
+**Short answer:** `next/script` with a strategy: `beforeInteractive`, `afterInteractive` or `lazyOnload`.
+
+**Explanation:** Most third-party scripts should load after interaction or lazily to protect INP and LCP.
+
+**Example:**
+
 ```tsx
 <Script src="https://analytics.example.com/a.js" strategy="lazyOnload" />
 ```
 
-**Short answer:** `next/script` takes a `strategy`: `beforeInteractive` (critical), `afterInteractive` (the default, e.g. tag managers) or `lazyOnload` (low-priority widgets like chat).
+**Say it like this:** "Third-party scripts load as late as their purpose allows."
 
 ---
 
@@ -457,21 +593,35 @@ export const config = { matcher: ['/dashboard/:path*'] };
 
 **Q34. What is the RSC payload?**
 
-**Short answer:** A compact, serialised description of the rendered Server Component tree. It contains the rendered output, references to the Client Component chunks, and their props. It streams to the browser, and React uses it to update the page without a full HTML reload, which is how client-side navigation works with Server Components.
+**Short answer:** A compact serialised description of the rendered Server Component tree, with references to client chunks and their props.
+
+**Explanation:** It streams to the browser and is how client navigation updates the page without full HTML reloads.
+
+**Example:** Navigating from `/calls` to `/calls/123` fetches an RSC payload for the changed segment only.
+
+**Say it like this:** "The RSC payload is the server's rendered output in a form React can merge into the existing page."
 
 ---
 
 **Q35. How do Server Components reduce bundle size?**
 
-**Short answer:** Their code and dependencies (markdown parsers, date libraries, database clients) never ship to the browser. Only their rendered output does.
+**Short answer:** Their code and dependencies never ship to the browser; only their output does.
 
-**Example:** Rendering markdown with a 60 KB library in a Server Component sends 0 KB of that library to users.
+**Explanation:** Heavy libraries like markdown parsers and date utilities used only for rendering cost the client nothing.
+
+**Example:** Rendering transcripts with a 60 KB markdown library in a Server Component ships 0 KB of it.
+
+**Say it like this:** "Anything that only renders static output belongs on the server, where its dependencies are free."
 
 ---
 
 **Q36. What are parallel routes?**
 
-**Short answer:** Folders starting with `@` (`@analytics`, `@team`) render **at the same time** as named slots in a layout. Each slot has its own loading and error states, which suits dashboards.
+**Short answer:** `@`-prefixed folders render simultaneously as named slots in a layout, each with its own loading and error states.
+
+**Explanation:** Useful for dashboards with independent panels.
+
+**Example:**
 
 ```tsx
 export default function Layout({ children, analytics, team }) {
@@ -479,141 +629,242 @@ export default function Layout({ children, analytics, team }) {
 }
 ```
 
+**Say it like this:** "Parallel routes let dashboard panels load and fail independently."
+
 ---
 
 **Q37. What are intercepting routes?**
 
-**Short answer:** `(.)photo/[id]` intercepts a navigation so a modal opens over the current page, while the URL still updates and can be shared. Visiting that URL directly renders the full page. Instagram's photo modal is the classic example.
+**Short answer:** Routes like `(.)photo/[id]` that show a modal over the current page while the URL updates; visiting directly shows the full page.
+
+**Explanation:** It gives shareable modal URLs, like Instagram's photo modal.
+
+**Example:** Clicking a call row opens `/calls/123` as a modal over the list; refreshing shows the full call page.
+
+**Say it like this:** "Intercepting routes make modals linkable without losing the page behind them."
 
 ---
 
 **Q38. What is Partial Prerendering (PPR)?**
 
-**Short answer:** The static shell of a page is served instantly from the edge or CDN, and the dynamic parts (inside Suspense) stream in through the same response. You get static speed and dynamic freshness on one page.
+**Short answer:** A static shell served instantly, with dynamic Suspense sections streamed in the same response.
+
+**Explanation:** You get static speed and dynamic freshness on one page.
+
+**Example:** A product page's layout and description are static; price and stock stream in per request.
+
+**Say it like this:** "PPR stops the most dynamic bit of a page from making the whole page dynamic."
 
 ---
 
 **Q39. Edge runtime vs Node.js runtime?**
 
-**Short answer:** The **Edge** runtime has fast cold starts and runs close to users, but its APIs are limited: no native Node modules and many npm packages won't work. **Node.js** gives you the full ecosystem. You can choose per route.
+**Short answer:** Edge has fast cold starts near users but limited APIs; Node.js has the full ecosystem.
+
+**Explanation:** Many npm packages and native modules don't run on the edge. Choose per route.
+
+**Example:** Middleware and geolocation run on the edge; a route using the Prisma client runs on Node.
+
+**Say it like this:** "Edge for lightweight, latency-sensitive logic; Node for anything that needs the full ecosystem."
 
 ---
 
 **Q40. How do you stream responses, such as AI tokens, from a route handler?**
 
+**Short answer:** Return a `Response` wrapping a `ReadableStream` with `Content-Type: text/event-stream`.
+
+**Explanation:** Enqueue SSE-formatted chunks as tokens arrive and close at the end.
+
+**Example:**
+
 ```ts
 export async function POST(req: Request) {
-  const encoder = new TextEncoder();
+  const enc = new TextEncoder();
   const stream = new ReadableStream({
-    async start(controller) {
-      for await (const token of llm(await req.json())) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
-      }
-      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-      controller.close();
+    async start(c) {
+      for await (const t of llm(await req.json())) c.enqueue(enc.encode(`data: ${JSON.stringify(t)}\n\n`));
+      c.enqueue(enc.encode('data: [DONE]\n\n')); c.close();
     },
   });
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
-  });
+  return new Response(stream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
 }
 ```
+
+**Say it like this:** "A route handler streams tokens as SSE, so the browser shows the answer as it's generated."
 
 ---
 
 **Q41. How do you build a multi-tenant app with Next.js?**
 
-**Short answer:**
+**Short answer:** Resolve the tenant from the hostname in middleware, rewrite to a `[tenant]` segment, load tenant config in the layout, and scope caches and data by tenant.
 
-1. Middleware reads the hostname (`acme.app.com`) and rewrites to `/[tenant]/...`.
-2. The layout fetches the tenant config (branding, features).
-3. Cache tags are tenant-scoped (`tenant-${id}`).
-4. Per-tenant theming uses CSS variables.
-5. Every data function filters by tenant on the server.
+**Explanation:** Theming uses CSS variables; every data function filters by tenant on the server.
+
+**Example:**
+
+```ts
+const tenant = req.headers.get('host')!.split('.')[0];
+return NextResponse.rewrite(new URL(`/${tenant}${req.nextUrl.pathname}`, req.url));
+```
+
+**Say it like this:** "The hostname decides the tenant, and every cache key and query includes it."
 
 ---
 
 **Q42. How do you set security headers and a CSP with nonces?**
 
-**Short answer:** Generate a random nonce in middleware for each request and set `Content-Security-Policy: script-src 'self' 'nonce-abc123'`. Next.js applies the nonce to its own scripts. Add HSTS, `frame-ancestors` and `Permissions-Policy` through `next.config` headers or middleware.
+**Short answer:** Generate a per-request nonce in middleware, set it in the `Content-Security-Policy` header, and Next.js applies it to its scripts.
+
+**Explanation:** Add HSTS, `frame-ancestors` and `Permissions-Policy` via config headers or middleware.
+
+**Example:**
+
+```ts
+const nonce = btoa(crypto.randomUUID());
+res.headers.set('Content-Security-Policy', `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; frame-ancestors 'none'`);
+```
+
+**Say it like this:** "A nonce-based CSP means only our scripts run, even if something gets injected."
 
 ---
 
 **Q43. What should you know about Server Action security?**
 
-**Short answer:** Next.js mitigates CSRF by comparing the Origin and Host headers, and action IDs are hard to guess. But **authorisation and input validation are always your job**. Don't capture sensitive values in inline actions, and return only minimal data.
+**Short answer:** Next.js mitigates CSRF by checking Origin and Host, but authorisation and validation are always your job.
+
+**Explanation:** Don't capture sensitive values in inline actions, and return minimal data.
+
+**Example:** An action closing over a `userId` from the page can be replayed by another user if it doesn't re-check the session.
+
+**Say it like this:** "The framework handles CSRF; I handle who's allowed to do what, inside every action."
 
 ---
 
 **Q44. How can data leak to the client?**
 
-**Short answer:** Passing a whole database object as a prop to a Client Component serialises *every field*, including password hashes and internal notes, into the page. Map data to DTOs (only the fields the UI needs), use `server-only`, and consider React's experimental taint APIs.
+**Short answer:** Passing whole database objects as props to client components serialises every field into the page.
 
-**Say it like this:** "Anything passed to a client component is visible in the page source. I map database records to small DTOs before they cross the server/client boundary."
+**Explanation:** Map to DTOs, use `server-only`, and consider React's taint APIs.
+
+**Example:**
+
+```tsx
+<AgentCard agent={{ id: a.id, name: a.name }} />   // not the full record with internal notes
+```
+
+**Say it like this:** "Anything passed to a client component is in the page source, so I pass small DTOs."
 
 ---
 
 **Q45. How do you avoid request waterfalls?**
 
-**Short answer:**
+**Short answer:** Parallel `Promise.all`, the preload pattern, sibling Suspense boundaries, and fetching only what each layout needs.
 
-- Run independent fetches together with `Promise.all`.
-- Use the preload pattern: call `getX()` early without awaiting it.
-- Put independent sections in sibling Suspense boundaries.
-- Fetch only what the layout needs in the layout.
+**Explanation:** Sequential awaits in nested components multiply latency.
+
+**Example:**
+
+```ts
+export const preloadCall = (id: string) => void getCall(id); // start early, await later
+```
+
+**Say it like this:** "I start fetches as early as possible and let independent sections load side by side."
 
 ---
 
 **Q46. Why is data stale after a mutation, and how do you fix it?**
 
-**Short answer:** The cached data wasn't invalidated. Call `revalidatePath` or `revalidateTag` inside the Server Action, and if the client router cache is still stale, call `router.refresh()`.
+**Short answer:** The cache wasn't invalidated; call `revalidatePath` or `revalidateTag` in the action, and `router.refresh()` if needed.
+
+**Explanation:** Both the server cache and the client router cache can hold old data.
+
+**Example:** After `submitScore`, `revalidateTag('call-123')` refreshes the call page's data.
+
+**Say it like this:** "Every mutation explicitly invalidates the data it changed."
 
 ---
 
 **Q47. How do you add instrumentation and observability?**
 
-**Short answer:** Use `instrumentation.ts` to register OpenTelemetry or Sentry, the `onRequestError` hook for server errors, and `useReportWebVitals` to send Core Web Vitals to analytics.
+**Short answer:** `instrumentation.ts` to register OpenTelemetry or Sentry, `onRequestError` for server errors, and `useReportWebVitals` for Core Web Vitals.
+
+**Explanation:** This connects server traces, errors and real-user metrics.
+
+**Example:**
+
+```ts
+export function register() { if (process.env.NEXT_RUNTIME === 'nodejs') initSentry(); }
+```
+
+**Say it like this:** "Server errors, traces and Web Vitals are wired in from the start, not after the first incident."
 
 ---
 
 **Q48. How do you deploy outside Vercel?**
 
-**Short answer:** Build with `output: 'standalone'` to get a minimal Docker image. If you run several instances, configure a shared cache handler (Redis or S3) so ISR stays consistent. Put a CDN in front and set up an image optimisation service.
+**Short answer:** `output: 'standalone'` for a minimal Docker image, a shared cache handler for multiple instances, a CDN in front, and an image optimisation service.
+
+**Explanation:** Without a shared cache, ISR pages differ between instances.
+
+**Example:** Docker on ECS with a Redis cache handler and CloudFront in front.
+
+**Say it like this:** "Standalone output plus a shared cache makes Next.js run consistently on any container platform."
 
 ---
 
 **Q49. How do you analyse bundles and improve performance?**
 
-**Short answer:**
+**Short answer:** `@next/bundle-analyzer`, `next/dynamic` with `ssr: false` for browser-only widgets, small `'use client'` boundaries, and fewer root providers.
 
-- `@next/bundle-analyzer` shows what's in each bundle.
-- `next/dynamic` with `ssr: false` for browser-only widgets like a video SDK.
-- Avoid big client providers in the root layout.
-- Keep `'use client'` boundaries small.
+**Explanation:** Root-level client providers pull large amounts of code into every page.
+
+**Example:**
+
+```ts
+const CallRoom = dynamic(() => import('./CallRoom'), { ssr: false });
+```
+
+**Say it like this:** "I analyse bundles, lazy-load heavy browser-only code and keep client boundaries small."
 
 ---
 
 **Q50. How do you handle internationalisation?**
 
-**Short answer:** Use a `[locale]` route segment, detect the locale in middleware, load dictionaries in Server Components (so they don't ship as JavaScript), and add `hreflang` alternates through metadata.
+**Short answer:** A `[locale]` segment, locale detection in middleware, dictionaries loaded in Server Components, and `hreflang` alternates.
+
+**Explanation:** Loading dictionaries on the server means translations don't ship as JavaScript.
+
+**Example:** `/es/calls` loads `dictionaries/es.json` in the layout.
+
+**Say it like this:** "Locale is part of the URL, and translations render on the server."
 
 ---
 
 **Q51. How do you test a Next.js app?**
 
-**Short answer:** Test client components with Vitest or Jest and RTL. Cover Server Components with E2E tests (Playwright), or by unit-testing their data functions separately. Mock `next/navigation` in unit tests.
+**Short answer:** Vitest or Jest with RTL for client components, E2E (Playwright) for Server Components and flows, and unit tests for data functions.
+
+**Explanation:** Mock `next/navigation` in unit tests.
+
+**Example:**
+
+```ts
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/calls' }));
+```
+
+**Say it like this:** "Client components get unit tests, server-rendered flows get Playwright, and data functions are tested directly."
 
 ---
 
 **Q52. How do you migrate from the Pages Router to the App Router?**
 
-**Short answer:** Incrementally, since both directories coexist:
+**Short answer:** Incrementally: move layouts, convert `getServerSideProps` to async Server Components, API routes to route handlers, `next/router` to `next/navigation`, and push providers down.
 
-1. Move layouts first.
-2. Convert `getServerSideProps` into async Server Components.
-3. Convert API routes into route handlers.
-4. Replace `next/router` with `next/navigation`.
-5. Review context providers. Push them down, and mark them `'use client'`.
+**Explanation:** Both routers coexist, so pages can move one at a time.
+
+**Example:** Start with `/about` and `/pricing`, then the dashboard once patterns are proven.
+
+**Say it like this:** "Migrate page by page, starting with simple static pages, while both routers run side by side."
 
 ---
 
@@ -621,66 +872,111 @@ export async function POST(req: Request) {
 
 **Q53. The marketing site is fast, but the dashboard behind login feels slow after migrating to Next.js.**
 
-**Answer:** Likely causes:
+**Short answer:** Profile; usually too much client JS in the root layout, waterfalls, or everything uncached. Move providers down, parallelise fetches, stream slow widgets, and cache tenant config.
 
-- Too much client JavaScript in the root layout (many providers).
-- Waterfalls in Server Components.
-- Everything made dynamic and uncached.
+**Explanation:** Authenticated pages are dynamic, so slow data and heavy client bundles show directly.
 
-Profile first. Then move providers lower, parallelise fetches, stream slow widgets with Suspense, and cache the tenant config.
+**Example:** Moving a charting provider from the root layout to the analytics route cut the dashboard's JS by 40%.
+
+**Say it like this:** "I'd measure first; usually heavy root providers and sequential fetches are the culprits."
 
 ---
 
 **Q54. After a deploy, a page shows another user's data.**
 
-**Answer:** Personalised data was cached as static: either Next.js treated the route as static, or a `fetch` was cached across users. This is a **security incident**. Mark the route dynamic (read cookies or headers, use `no-store`), scope cache keys by user or tenant, and audit the caching config. Purge the cache immediately.
+**Short answer:** Personalised data was cached as static; it's a security incident. Purge the cache, mark the route dynamic, scope caches per user or tenant, and audit caching.
+
+**Explanation:** A fetch cached across users or a route treated as static serves one user's render to everyone.
+
+**Example:** Adding `cache: 'no-store'` and reading the session cookie made the route dynamic and per-user.
+
+**Say it like this:** "First contain it by purging the cache, then fix the caching config and add a test so it can't recur."
 
 ---
 
 **Q55. A dashboard showing local times throws hydration mismatch errors.**
 
-**Answer:** The server formats times in *its* time zone (often UTC) and the client formats them in the user's. Format on the client after mount, or pass an explicit time zone to both sides.
+**Short answer:** Server and client format times in different time zones; format on the client after mount or pass an explicit time zone to both.
+
+**Explanation:** Servers often run in UTC while users are elsewhere.
+
+**Example:**
+
+```ts
+new Intl.DateTimeFormat('en-IN', { timeStyle: 'short', timeZone: user.timeZone }).format(date);
+```
+
+**Say it like this:** "Use the same explicit time zone on server and client, or render times after mount."
 
 ---
 
 **Q56. A heavy video SDK breaks server rendering with `window is not defined`.**
 
+**Short answer:** Load it only in the browser with `next/dynamic` and `ssr: false`, inside a client-only boundary.
+
+**Explanation:** The SDK touches `window` at import time, which fails on the server.
+
+**Example:**
+
 ```tsx
 const CallRoom = dynamic(() => import('./CallRoom'), { ssr: false, loading: () => <Spinner /> });
 ```
 
-**Answer:** Load it only in the browser with `next/dynamic` and `ssr: false`, or import it inside `useEffect`, and keep it inside a client-only boundary.
+**Say it like this:** "Browser-only SDKs load dynamically on the client, which also keeps them out of other pages' bundles."
 
 ---
 
 **Q57. A user without permission manages to call a Server Action.**
 
-**Answer:** Every action must check the session and permissions on the server. Hiding a button isn't security, because the action endpoint can be called directly.
+**Short answer:** Add session and permission checks inside every action; hiding a button isn't security.
+
+**Explanation:** Actions are endpoints and can be called directly.
+
+**Example:** `if (!session?.permissions.includes('calls:score')) throw new Error('Forbidden');` at the top of `submitScore`.
+
+**Say it like this:** "Every action checks permissions itself, because the UI can be bypassed."
 
 ---
 
 **Q58. You need Twilio webhooks to trigger processing.**
 
-**Answer:** A route handler verifies the **Twilio signature**, so it rejects fake requests. It enqueues the work (to Celery or a queue) instead of processing synchronously, and returns 200 quickly. Make processing **idempotent**, because webhooks are retried and can arrive twice.
+**Short answer:** A route handler verifies the Twilio signature, enqueues the work, returns 200 quickly, and processing is idempotent.
+
+**Explanation:** Webhooks retry and can arrive twice, so deduplicate by the recording ID.
+
+**Example:**
+
+```ts
+if (!twilio.validateRequest(token, sig, url, params)) return new Response('Forbidden', { status: 403 });
+await queue.add('score-call', { recordingSid: params.RecordingSid }, { jobId: params.RecordingSid });
+return new Response('OK');
+```
+
+**Say it like this:** "Verify, enqueue, return fast, and make processing idempotent by job ID."
 
 ---
 
 **Q59. The SEO team complains that pages aren't indexed well.**
 
-**Answer:**
+**Short answer:** Server-render public pages, add metadata and canonicals, a sitemap and robots file, structured data, crawlable links and fast LCP.
 
-- SSR or SSG for public pages.
-- Proper metadata and canonical URLs.
-- A sitemap (`app/sitemap.ts`) and `app/robots.ts`.
-- Structured data.
-- Crawlable `<a href>` links.
-- A fast LCP.
+**Explanation:** Client-only rendering and JS-only links are the usual problems.
+
+**Example:** `app/sitemap.ts` lists every public page; product pages use ISR.
+
+**Say it like this:** "Public pages must be server-rendered with real links and proper metadata."
 
 ---
 
 **Q60. Build times are long because of thousands of static pages.**
 
-**Answer:** Pre-build only the popular pages with `generateStaticParams`, generate the rest on demand with ISR, and cache builds in CI.
+**Short answer:** Pre-build only popular pages and generate the rest on demand with ISR; cache builds in CI.
+
+**Explanation:** Most traffic hits a small fraction of pages.
+
+**Example:** Build the top 500 pages; the other 20,000 render on first request and are cached.
+
+**Say it like this:** "Build what's popular, generate the long tail on demand."
 
 ---
 
@@ -688,16 +984,34 @@ const CallRoom = dynamic(() => import('./CallRoom'), { ssr: false, loading: () =
 
 **Q61. "Slaylink used Next.js with NestJS. How did you split responsibilities?"**
 
-**Say it like this:** "Next.js owned the presentation layer: server-rendered pages for SEO, routing, and backend-for-frontend concerns like reading session cookies and combining several API calls for a page. NestJS owned the domain logic, authentication, the GraphQL API and database access. That kept business rules in one backend, reusable by other clients." *(Then describe exactly what you built.)*
+**Short answer:** Next.js handled presentation, SEO pages, routing and BFF concerns; NestJS handled domain logic, auth, the GraphQL API and the database.
+
+**Explanation:** Keeping business rules in one backend made them reusable by other clients. Then describe exactly what you built.
+
+**Example:** A creator profile page in Next.js fetched one GraphQL query from NestJS that combined profile, posts and brand campaigns.
+
+**Say it like this:** "Next.js owned the presentation and BFF layer; NestJS owned the business logic and data, so rules lived in one place."
 
 ---
 
 **Q62. "Would you build InterpretIQ on Next.js? Why or why not?"**
 
-**Say it like this:** "Most InterpretIQ screens are authenticated and real-time, built around LiveKit, so a SPA or PWA is a valid choice. SEO doesn't matter there. Next.js would add value in three ways: a backend-for-frontend that keeps tokens on the server, which is better for PHI security; server-rendered dashboards; and public marketing pages. The trade-off is more server infrastructure and framework complexity. I'd consider it for a v2, mainly for the BFF security benefit."
+**Short answer:** Most of InterpretIQ is authenticated and real-time, so a SPA/PWA works; Next.js would add a BFF for token security, server-rendered dashboards and public pages.
+
+**Explanation:** The trade-off is more server infrastructure and framework complexity.
+
+**Example:** A v2 could use Next.js route handlers to hold OAuth tokens server-side, with the call room still a client-only component.
+
+**Say it like this:** "The call experience doesn't need SSR, but a BFF that keeps tokens off the browser is a strong security reason to consider Next.js for v2."
 
 ---
 
 **Q63. "How would you implement the SSE compliance chat in Next.js?"**
 
-**Say it like this:** "A route handler streams LLM tokens as `text/event-stream`. Auth uses the session cookie, so the client doesn't handle tokens. The client reads the stream with `fetch` and a stream reader. I'd rate-limit per user and per tenant, and log usage metrics without any PHI. Tenant isolation is enforced in the retrieval layer before anything reaches the model."
+**Short answer:** A route handler streams LLM tokens as `text/event-stream`, authenticated by the session cookie, read on the client with fetch streaming, rate-limited per user and tenant.
+
+**Explanation:** Tenant isolation happens in the retrieval query before anything reaches the model; usage is logged without PHI.
+
+**Example:** `POST /api/compliance-chat` → auth → tenant-filtered retrieval → LLM stream → SSE response.
+
+**Say it like this:** "A streaming route handler with cookie auth, tenant-filtered retrieval and rate limits, consumed with fetch streaming on the client."
