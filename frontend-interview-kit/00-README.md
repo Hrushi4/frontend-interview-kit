@@ -70,7 +70,9 @@ Question levels:
 
 ## Google Docs versions
 
-Every file is also available as a Word document (`.docx`) in the `google-docs/` folder at the root of the repo. To use one in Google Docs:
+**Everything in one file:** `google-docs/Frontend-Interview-Kit-ALL.docx` contains all the files in order, each starting on a new page with its own top-level heading. Upload it once, open it with Google Docs, and use **View → Show outline** to jump between files.
+
+Every file is also available as its own Word document (`.docx`) in the `google-docs/` folder at the root of the repo. To use one in Google Docs:
 
 1. Open Google Drive → **New → File upload** → choose a `.docx` file from `google-docs/`.
 2. Right-click the uploaded file → **Open with → Google Docs**.

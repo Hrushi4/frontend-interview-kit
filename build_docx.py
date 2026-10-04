@@ -237,14 +237,41 @@ def build_table(doc, tokens, i):
 
 def convert(md_path: Path, out_path: Path):
     text = md_path.read_text(encoding="utf-8")
-    tokens = md.parse(text)
     doc = Document()
     setup_styles(doc)
     core = doc.core_properties
-    first = text.splitlines()[0].lstrip("# ").strip()
-    core.title = first
+    core.title = text.splitlines()[0].lstrip("# ").strip()
     core.author = "Frontend Interview Kit"
+    render(doc, text)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(out_path)
 
+
+def combine(paths, out_path: Path):
+    """All files in one document: a contents list, then each file on a new page."""
+    doc = Document()
+    setup_styles(doc)
+    doc.core_properties.title = "Frontend Interview Kit"
+    doc.core_properties.author = "Frontend Interview Kit"
+    doc.add_heading("Frontend Interview Kit", level=0)
+    doc.add_paragraph(
+        "Every topic file in one document. Each file starts on a new page with its own "
+        "top-level heading. In Google Docs, open View → Show outline (or the outline "
+        "icon on the left) to jump between files."
+    )
+    doc.add_heading("Contents", level=2)
+    for path in paths:
+        title = path.read_text(encoding="utf-8").splitlines()[0].lstrip("# ").strip()
+        doc.add_paragraph(title, style="List Bullet")
+    for path in paths:
+        doc.add_page_break()
+        render(doc, path.read_text(encoding="utf-8"))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(out_path)
+
+
+def render(doc, text: str):
+    tokens = md.parse(text)
     list_stack = []  # each entry: [ordered, counter]
     quote_depth = 0
     i = 0
@@ -313,9 +340,6 @@ def convert(md_path: Path, out_path: Path):
             pass
         i += 1
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    doc.save(out_path)
-
 
 def main():
     prefix = sys.argv[1] if len(sys.argv) > 1 else ""
@@ -323,6 +347,10 @@ def main():
     for path in files:
         out = OUT / (path.stem + ".docx")
         convert(path, out)
+        print(f"built {out.relative_to(ROOT)}")
+    if not prefix:
+        out = OUT / "Frontend-Interview-Kit-ALL.docx"
+        combine(files, out)
         print(f"built {out.relative_to(ROOT)}")
 
 
