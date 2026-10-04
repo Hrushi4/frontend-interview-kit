@@ -73,231 +73,347 @@ For senior roles, interviewers check four things:
 
 ## Part B — Interview Questions and Answers
 
+Every answer below has four parts: **Short answer** (say this first), **Explanation** (add if asked for more), **Example** (code or a real situation) and **Say it like this** (a sample spoken answer).
+
 ## 🟢 Level 1 — Basics
 
 **Q1. What is TypeScript and why use it?**
 
-**Short answer:** A typed superset of JavaScript that compiles to plain JavaScript. It catches errors at build time, makes refactoring safe, gives great IDE support, and documents intent. The types are erased at runtime.
+**Short answer:** A typed superset of JavaScript that compiles to plain JavaScript, catching errors at build time.
 
-**Say it like this:** "TypeScript adds a static type system on top of JavaScript. Its biggest value for me is refactoring: in a large React codebase I can rename a field or change an API shape, and the compiler shows me every place that breaks before users see it."
+**Explanation:** It makes refactoring safe, gives strong IDE support and documents intent. Types are erased at runtime, so they cost nothing in the browser.
+
+**Example:**
+
+```ts
+function totalMinutes(calls: { minutes: number }[]) { return calls.reduce((s, c) => s + c.minutes, 0); }
+totalMinutes([{ minutes: '5' }]); // ❌ compile error
+```
+
+**Say it like this:** "Its biggest value for me is refactoring: I change an API shape and the compiler shows every place that breaks before users see it."
 
 ---
 
 **Q2. What's the difference between compile time and runtime in TypeScript?**
 
-**Short answer:** TypeScript checks types only during compilation. At runtime the types no longer exist. Data from APIs, `localStorage`, URL params or LLMs is unverified, so validate it with Zod or Valibot.
+**Short answer:** TypeScript checks types only while compiling; at runtime the types are gone.
+
+**Explanation:** Data from APIs, `localStorage`, URL params or LLMs is unverified, so validate it with Zod or Valibot at the boundary.
 
 **Example:**
 
 ```ts
 type User = { name: string };
 const user = JSON.parse(localStorage.getItem('user')!) as User; // TS trusts you
-user.name.toUpperCase();   // crashes at runtime if stored data was { }
+user.name.toUpperCase(); // crashes if stored data was {}
 ```
 
-**Say it like this:** "TypeScript protects code I wrote, not data I receive. At every boundary, like an API response or LLM output, I validate with a Zod schema and derive the type from that schema, so the type and the runtime check can't drift apart."
+**Say it like this:** "TypeScript protects code I wrote, not data I receive. At every boundary I validate with a Zod schema and derive the type from it."
 
 ---
 
 **Q3. What are the basic types?**
 
-**Short answer:** `string`, `number`, `boolean`, `bigint`, `symbol`, `null` and `undefined`. Also arrays (`string[]` or `Array<string>`), tuples (`[string, number]`), `object`, and the special types `unknown`, `any`, `never` and `void`.
+**Short answer:** `string`, `number`, `boolean`, `bigint`, `symbol`, `null`, `undefined`, arrays, tuples, `object`, and the special types `unknown`, `any`, `never` and `void`.
+
+**Explanation:** Arrays are written `string[]` or `Array<string>`; tuples fix length and position types, like `[string, number]`.
+
+**Example:**
+
+```ts
+let id: string = 'c1';
+let scores: number[] = [80, 92];
+let pair: [lat: number, lng: number] = [19.07, 72.87];
+```
+
+**Say it like this:** "The primitives map to JavaScript's, plus special types like `unknown` for safe input and `never` for impossible cases."
 
 ---
 
 **Q4. What is type inference?**
 
-**Short answer:** TypeScript works out types from values, so you don't have to write them everywhere.
+**Short answer:** TypeScript works out types from values, so you don't annotate everything.
+
+**Explanation:** Annotate function parameters, public return types and exports; let inference handle local variables. `const` infers literal types, `let` widens.
+
+**Example:**
 
 ```ts
-let count = 5;              // number
-const status = 'live';      // literal type 'live'
-const ids = [1, 2, 3];      // number[]
+let count = 5;          // number
+const status = 'live';  // 'live'
+const ids = [1, 2, 3];  // number[]
 ```
 
-**Best practice:** annotate function parameters, return types of public functions, and exported APIs. Let inference handle local variables.
+**Say it like this:** "I annotate the boundaries of functions and modules and let inference handle the inside, which keeps code clean but safe."
 
 ---
 
 **Q5. `type` vs `interface`?**
 
+**Short answer:** Both describe object shapes. Only `type` can express unions, tuples and mapped or conditional types; only `interface` supports declaration merging.
+
+**Explanation:**
+
 | | `interface` | `type` |
 |---|---|---|
 | Object shapes | ✅ | ✅ |
-| Unions, primitives, tuples | ❌ | ✅ |
-| Declaration merging (re-opening) | ✅ | ❌ |
-| Extending | `extends` | `&` intersection |
-| Mapped and conditional types | ❌ | ✅ |
+| Unions, tuples, primitives | ❌ | ✅ |
+| Declaration merging | ✅ | ❌ |
+| Extending | `extends` | `&` |
 
 **Example:**
 
 ```ts
 interface User { id: string; name: string }
-interface User { email: string }        // merges → User has id, name, email
-
-type Status = 'idle' | 'live';          // only `type` can do unions
+interface User { email: string }          // merges
+type Status = 'idle' | 'live';            // only type can do this
 type Admin = User & { permissions: string[] };
 ```
 
-**Say it like this:** "Both describe object shapes. I use `interface` for public object contracts, since it can be extended and merged, which suits libraries. I use `type` for unions and computed types. Consistency within the codebase matters more than which one you pick."
+**Say it like this:** "I use `interface` for public object contracts and `type` for unions and computed types. Consistency in the codebase matters more than the choice."
 
 ---
 
 **Q6. How do you declare optional and readonly properties?**
 
+**Short answer:** Use `?` for optional and `readonly` for properties that can't be reassigned.
+
+**Explanation:** An optional property has type `T | undefined`, so you must handle the missing case. `readonly` is compile-time only.
+
+**Example:**
+
 ```ts
 interface User {
-  readonly id: string;   // can't be reassigned
+  readonly id: string;
   name: string;
-  email?: string;        // may be missing (string | undefined)
+  email?: string;
 }
 ```
+
+**Say it like this:** "IDs are `readonly` so nobody reassigns them by accident, and optional fields force me to handle the missing case."
 
 ---
 
 **Q7. What are union types?**
 
-**Short answer:** A value that can be one of several types.
+**Short answer:** A value that can be one of several types, written with `|`.
+
+**Explanation:** You narrow a union before using type-specific features. Literal unions are a great alternative to enums.
+
+**Example:**
 
 ```ts
 type Status = 'idle' | 'connecting' | 'live' | 'ended';
-function show(id: string | number) { … }
+function show(id: string | number) { return typeof id === 'number' ? id.toFixed() : id; }
 ```
+
+**Say it like this:** "Unions model 'one of these'. Combined with narrowing, they make invalid values impossible to pass."
 
 ---
 
 **Q8. What are intersection types?**
 
-**Short answer:** A value that has *all* the members of the combined types.
+**Short answer:** A value that has all the members of the combined types, written with `&`.
+
+**Explanation:** Intersections combine reusable pieces, like timestamps or tenant info. Conflicting property types intersect to `never`.
+
+**Example:**
 
 ```ts
 type Timestamps = { createdAt: Date; updatedAt: Date };
 type Call = { id: string; duration: number } & Timestamps;
 ```
 
+**Say it like this:** "Intersections let me compose types from small reusable parts, like adding timestamps to any entity."
+
 ---
 
 **Q9. What are literal types?**
 
-**Short answer:** Types representing one exact value. `const x = 'a'` is inferred as the literal type `'a'`, while `let x = 'a'` is widened to `string`, because it could change.
+**Short answer:** Types representing one exact value, like `'admin'` or `42`.
+
+**Explanation:** `const x = 'a'` infers `'a'`; `let x = 'a'` widens to `string` because it can change. Unions of literals model fixed sets of values.
+
+**Example:**
+
+```ts
+let dir: 'left' | 'right' = 'left';
+dir = 'up'; // ❌
+```
+
+**Say it like this:** "Literal unions are how I type things like roles and statuses, so typos become compile errors."
 
 ---
 
 **Q10. `any` vs `unknown`?**
 
-**Short answer:** `any` switches off type checking, and it spreads silently through your code. `unknown` accepts any value but forces you to *narrow* it before use. That makes it the safe choice for external input.
+**Short answer:** `any` switches off type checking and spreads silently; `unknown` accepts anything but forces you to narrow before use.
+
+**Explanation:** `unknown` is the safe type for external input and caught errors. `any` should be banned with ESLint.
+
+**Example:**
 
 ```ts
 function handle(value: unknown) {
-  value.toUpperCase();                        // ❌ error: must narrow first
-  if (typeof value === 'string') value.toUpperCase(); // ✅
-}
-
-function bad(value: any) {
-  value.foo.bar.baz();                        // compiles, crashes at runtime
+  value.toUpperCase();                                  // ❌ must narrow
+  if (typeof value === 'string') value.toUpperCase();   // ✅
 }
 ```
 
-**Say it like this:** "`any` means 'trust me, don't check'. `unknown` means 'I don't know yet, make me check'. I ban `any` with an ESLint rule and use `unknown` for anything external, like a caught error or a parsed JSON value."
+**Say it like this:** "`any` means 'don't check'; `unknown` means 'make me check'. I ban `any` and use `unknown` for anything external."
 
 ---
 
 **Q11. `void` vs `undefined` vs `never`?**
 
-**Short answer:**
+**Short answer:** `void` means the return value should be ignored; `undefined` means it literally returns undefined; `never` means it never returns or the value is impossible.
 
-- `void`: the function's return value should be ignored.
-- `undefined`: the function literally returns `undefined`.
-- `never`: the function never returns at all (it always throws or loops forever), or the value is impossible.
+**Explanation:** `never` is used for functions that always throw and for exhaustiveness checks.
+
+**Example:**
 
 ```ts
 function log(msg: string): void { console.log(msg); }
 function fail(msg: string): never { throw new Error(msg); }
 ```
 
+**Say it like this:** "`void` is 'ignore the result', `never` is 'this can't happen', which I use for exhaustive switches."
+
 ---
 
 **Q12. How do you type functions?**
 
+**Short answer:** Annotate parameters and, for public functions, the return type; use function type aliases for callbacks.
+
+**Explanation:** Explicit return types catch accidental changes to what a function returns.
+
+**Example:**
+
 ```ts
 function add(a: number, b: number): number { return a + b; }
-const greet = (name: string, title?: string): string => `${title ?? ''} ${name}`.trim();
 type Handler = (event: CustomEvent) => void;
+const greet = (name: string, title?: string): string => `${title ?? ''} ${name}`.trim();
 ```
+
+**Say it like this:** "Parameters are always typed, and public functions get explicit return types so their contract can't drift silently."
 
 ---
 
 **Q13. Optional vs default parameters?**
 
-**Short answer:** `(x?: number)` means `x` may be `undefined`. `(x = 10)` infers `number` and uses 10 when no value is passed.
+**Short answer:** `x?: number` may be `undefined`; `x = 10` infers `number` and uses 10 when nothing is passed.
+
+**Explanation:** Inside the function, an optional parameter must be handled as possibly undefined, while a defaulted one never is.
+
+**Example:**
+
+```ts
+function page(size?: number) { return size ?? 20; }
+function page2(size = 20) { return size; } // size: number
+```
+
+**Say it like this:** "Defaults are usually cleaner than optionals, because inside the function the value is always defined."
 
 ---
 
 **Q14. What are type assertions (`as`)?**
 
-**Short answer:** They tell the compiler "trust me, it's this type", with **no runtime check**.
+**Short answer:** They tell the compiler to treat a value as a type, with no runtime check.
+
+**Explanation:** Use them sparingly, for things TypeScript can't know, like a specific DOM element type. Avoid double assertions (`as unknown as X`) outside tests.
+
+**Example:**
 
 ```ts
 const video = document.getElementById('local-video') as HTMLVideoElement;
 ```
 
-Avoid double assertions (`x as unknown as Y`) except in tests, because they hide real errors. Prefer narrowing or validation.
+**Say it like this:** "An assertion is me overriding the compiler, so I only use it when I genuinely know more than it does."
 
 ---
 
 **Q15. What is the non-null assertion `!`?**
 
-**Short answer:** `ref.current!.play()` tells TypeScript the value isn't `null` or `undefined`. Use it sparingly. If you're wrong, it crashes at runtime. Prefer `if (ref.current) …` or optional chaining.
+**Short answer:** It tells TypeScript a value isn't null or undefined.
+
+**Explanation:** If you're wrong, it crashes at runtime. Prefer narrowing (`if (ref.current)`) or optional chaining.
+
+**Example:**
+
+```ts
+ref.current!.play();           // risky
+ref.current?.play();           // safe
+```
+
+**Say it like this:** "I treat `!` as a code smell and narrow instead, because it hides real null cases."
 
 ---
 
 **Q16. Enums vs union literals?**
 
-**Short answer:** Enums generate a runtime JavaScript object. Numeric enums have quirks, such as reverse mappings and accepting any number. Prefer string unions, or `as const` objects when you need runtime values too.
+**Short answer:** Enums generate runtime objects with some quirks; string unions or `as const` objects are usually better.
+
+**Explanation:** Numeric enums accept any number and have reverse mappings. `as const` objects give both runtime values and a derived union type.
+
+**Example:**
 
 ```ts
-// Instead of: enum Role { Admin = 'admin', QA = 'qa' }
 const Role = { Admin: 'admin', QA: 'qa', Agent: 'agent' } as const;
-type Role = (typeof Role)[keyof typeof Role];   // 'admin' | 'qa' | 'agent'
-
-function canScore(role: Role) { return role !== Role.Agent; }
+type Role = (typeof Role)[keyof typeof Role]; // 'admin' | 'qa' | 'agent'
 ```
+
+**Say it like this:** "I prefer `as const` objects over enums: plain JavaScript at runtime and a precise union type at compile time."
 
 ---
 
 **Q17. Arrays vs tuples?**
 
-**Short answer:** `number[]` is any length. A tuple has a fixed length and a fixed type at each position, and elements can be named: `[lat: number, lng: number]`. `readonly string[]` prevents mutation.
+**Short answer:** Arrays have any length and one element type; tuples have a fixed length and a type per position.
+
+**Explanation:** Tuples can name their elements for readability. `readonly string[]` prevents mutation.
+
+**Example:**
 
 ```ts
-const [value, setValue] = useState(0);   // useState returns a tuple
+const [value, setValue] = useState(0);         // useState returns a tuple
+type Point = [lat: number, lng: number];
 ```
+
+**Say it like this:** "Tuples are for small fixed groups, like what `useState` returns; for anything bigger, an object with names is clearer."
 
 ---
 
 **Q18. What is an index signature?**
 
+**Short answer:** A type for objects with arbitrary keys: `{ [key: string]: number }` or `Record<string, number>`.
+
+**Explanation:** Accessing a key returns `number`, even if it doesn't exist; `noUncheckedIndexedAccess` makes it `number | undefined`, which is safer.
+
+**Example:**
+
 ```ts
-type ScoresByAgent = { [agentId: string]: number };
-// same as
-type ScoresByAgent2 = Record<string, number>;
+type ScoresByAgent = Record<string, number>;
+const scores: ScoresByAgent = { asha: 88 };
 ```
+
+**Say it like this:** "`Record` types lookup maps, and I enable `noUncheckedIndexedAccess` so missing keys are handled."
 
 ---
 
 **Q19. Which `tsconfig.json` options matter most?**
 
-**Short answer:**
+**Short answer:** `target`, `module`, `moduleResolution`, `strict`, `jsx`, `paths`, `noEmit`, `skipLibCheck`, `isolatedModules` and `esModuleInterop`.
 
-- `target`: which JavaScript version to output.
-- `module`, and `moduleResolution: "bundler"` for Vite or Next.js.
-- `strict`.
-- `jsx: "react-jsx"`.
-- `paths` and `baseUrl`: import aliases like `@/components`.
-- `noEmit`: when a bundler does the compiling.
-- `skipLibCheck`: speed.
-- `isolatedModules`: required by esbuild and SWC.
-- `esModuleInterop`.
+**Explanation:** `moduleResolution: "bundler"` suits Vite and Next.js; `noEmit` is used when a bundler compiles; `isolatedModules` is required by esbuild and SWC.
+
+**Example:**
+
+```json
+{ "compilerOptions": { "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
+  "strict": true, "jsx": "react-jsx", "noEmit": true, "paths": { "@/*": ["./src/*"] } } }
+```
+
+**Say it like this:** "The non-negotiable is `strict: true`; the rest mostly align TypeScript with the bundler."
 
 ---
 
@@ -305,7 +421,16 @@ type ScoresByAgent2 = Record<string, number>;
 
 **Short answer:** `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, `strictBindCallApply`, `strictPropertyInitialization`, `noImplicitThis`, `alwaysStrict` and `useUnknownInCatchVariables`.
 
-**Say it like this:** "`strictNullChecks` alone prevents the most common runtime error in JavaScript, 'cannot read property of undefined'. I wouldn't start a project without `strict` on."
+**Explanation:** `strictNullChecks` alone prevents the most common runtime error: reading a property of undefined.
+
+**Example:**
+
+```ts
+const user = users.find((u) => u.id === id);
+user.name; // ❌ with strict: 'user' is possibly 'undefined'
+```
+
+**Say it like this:** "I wouldn't start a project without strict mode; null checks alone prevent a whole class of production crashes."
 
 ---
 
@@ -313,151 +438,173 @@ type ScoresByAgent2 = Record<string, number>;
 
 **Q21. What narrowing techniques are there?**
 
-**Short answer:** `typeof`, `instanceof`, the `in` operator, equality checks, truthiness checks, checking a discriminant property, `Array.isArray`, user-defined type guards and assertion functions.
+**Short answer:** `typeof`, `instanceof`, `in`, equality checks, truthiness, discriminant checks, `Array.isArray`, type guards and assertion functions.
+
+**Explanation:** After a check, TypeScript refines the type inside that branch.
+
+**Example:**
 
 ```ts
 function format(input: string | number | Date | null) {
   if (input == null) return '—';
   if (typeof input === 'number') return input.toFixed(2);
   if (input instanceof Date) return input.toISOString();
-  return input.trim();          // TS knows: string
+  return input.trim(); // string
 }
 ```
+
+**Say it like this:** "Narrowing is TypeScript following my `if` statements, so each branch knows the exact type."
 
 ---
 
 **Q22. What is a user-defined type guard?**
 
+**Short answer:** A function returning `value is Type`; when it returns true, TypeScript narrows the value.
+
+**Explanation:** It's useful for checking unknown errors or API shapes, but the guard's logic must actually be correct, because TypeScript trusts it.
+
+**Example:**
+
 ```ts
 type ApiError = { status: number; message: string };
-
 function isApiError(e: unknown): e is ApiError {
   return typeof e === 'object' && e !== null && 'status' in e && 'message' in e;
 }
-
-try { … } catch (e) {
-  if (isApiError(e)) toast(e.message);   // e is ApiError here
-}
 ```
 
-**Short answer:** A function whose return type is `value is Type`. When it returns true, TypeScript narrows the value in that branch.
+**Say it like this:** "Type guards wrap a runtime check so the compiler knows the result, which is great for caught errors."
 
 ---
 
 **Q23. What is an assertion function?**
 
+**Short answer:** A function that throws if a condition fails and narrows the type for the rest of the scope.
+
+**Explanation:** Its return type is `asserts v is T` (or `asserts condition`). It replaces repeated `if (!x) throw` blocks.
+
+**Example:**
+
 ```ts
 function assertDefined<T>(v: T, msg = 'Expected value'): asserts v is NonNullable<T> {
   if (v == null) throw new Error(msg);
 }
-
-const room = getRoom();
 assertDefined(room, 'Room not ready');
-room.connect();   // room is non-null after this line
+room.connect();
 ```
 
-**Short answer:** It throws if a condition fails, and narrows the type for the rest of the scope.
+**Say it like this:** "An assertion function is a guard clause the compiler understands: after it, the value is non-null."
 
 ---
 
 **Q24. What are discriminated unions, and how do you check exhaustiveness?**
 
+**Short answer:** Unions where each member has a shared literal field (the discriminant); a `never` default in a switch makes the compiler fail when a case is missing.
+
+**Explanation:** Each state carries only its own data, so impossible states can't be represented, and adding a state forces every switch to handle it.
+
+**Example:**
+
 ```ts
 type CallState =
   | { status: 'idle' }
   | { status: 'connecting'; attempt: number }
-  | { status: 'live'; roomId: string; startedAt: number }
+  | { status: 'live'; roomId: string }
   | { status: 'failed'; error: string };
 
 function label(s: CallState): string {
   switch (s.status) {
-    case 'idle':       return 'Ready';
-    case 'connecting': return `Connecting (attempt ${s.attempt})`;
-    case 'live':       return `Live in ${s.roomId}`;
-    case 'failed':     return `Failed: ${s.error}`;
-    default: {
-      const _exhaustive: never = s;   // error if a case is missing
-      return _exhaustive;
-    }
+    case 'idle': return 'Ready';
+    case 'connecting': return `Connecting (${s.attempt})`;
+    case 'live': return `Live in ${s.roomId}`;
+    case 'failed': return `Failed: ${s.error}`;
+    default: { const _x: never = s; return _x; }
   }
 }
 ```
 
-**Explanation:** Every member shares a literal field (`status`), the *discriminant*. Checking it narrows to exactly one member, so `s.roomId` is only accessible when `status === 'live'`. The `never` default makes the compiler fail when someone adds a new status and forgets to handle it.
-
-**Say it like this:** "Discriminated unions make impossible states impossible. With separate booleans like `isLoading`, `isError` and `isLive`, nothing stops two from being true at once. With a union, the call is in exactly one state, and each state carries only the data valid for it. I used this for the LiveKit call lifecycle."
+**Say it like this:** "Discriminated unions make impossible states impossible. I used one for the LiveKit call lifecycle, and new states were compile errors until every screen handled them."
 
 ---
 
 **Q25. Why use generics?**
 
-**Short answer:** Generics let you write reusable code that *keeps the relationship* between input and output types.
+**Short answer:** To write reusable code that keeps the relationship between input and output types.
+
+**Explanation:** Without generics you'd use `any` and lose typing, or duplicate the function per type. A generic is a type parameter, like a function parameter for types.
+
+**Example:**
 
 ```ts
 function first<T>(items: T[]): T | undefined { return items[0]; }
-first([1, 2]);        // number | undefined
-first(['a', 'b']);    // string | undefined
+first([1, 2]);     // number | undefined
+first(['a']);      // string | undefined
 ```
 
-**Explanation:** Without generics you'd have to use `any` (and lose all typing) or write one function per type. A generic is like a function parameter, but for types.
+**Say it like this:** "Generics let one function work for many types while still returning the exact type you passed in."
 
 ---
 
 **Q26. What are generic constraints?**
 
-```ts
-function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] {
-  return items.map((i) => i[key]);
-}
-pluck([{ id: 'a', score: 90 }], 'score'); // number[]
-pluck([{ id: 'a' }], 'nope');             // ❌ 'nope' is not a key
+**Short answer:** `extends` limits which types a generic accepts, so you can safely use their properties.
 
-function getId<T extends { id: string }>(x: T) { return x.id; }
+**Explanation:** `K extends keyof T` is the classic pattern for typed property access.
+
+**Example:**
+
+```ts
+function pluck<T, K extends keyof T>(items: T[], key: K): T[K][] { return items.map((i) => i[key]); }
+pluck([{ id: 'a', score: 90 }], 'score'); // number[]
+pluck([{ id: 'a' }], 'nope');             // ❌
 ```
 
-**Short answer:** `extends` limits which types are allowed, so you can safely use their properties.
+**Say it like this:** "Constraints say 'any type, as long as it has this shape', which keeps generics flexible but safe."
 
 ---
 
 **Q27. What are default generic parameters?**
 
+**Short answer:** A fallback type used when the caller doesn't specify one: `<T = unknown>`.
+
+**Explanation:** They make generic types convenient to use without forcing every caller to pass a type argument.
+
+**Example:**
+
 ```ts
 interface ApiResponse<T = unknown> { data: T; error?: string }
-const r: ApiResponse = { data: null };          // T = unknown
+const r: ApiResponse = { data: null };
 const u: ApiResponse<User> = { data: user };
 ```
+
+**Say it like this:** "Defaults make generic APIs ergonomic: simple cases need no type argument."
 
 ---
 
 **Q28. How do `keyof`, `typeof` and indexed access work?**
 
+**Short answer:** `typeof` gets the type of a value, `keyof` gets a union of a type's keys, and `T['key']` looks up a property's type.
+
+**Explanation:** Together they derive types from existing values, so you don't duplicate definitions.
+
+**Example:**
+
 ```ts
 const config = { theme: 'dark', retries: 3 };
-type Config = typeof config;        // { theme: string; retries: number }
-type ConfigKey = keyof Config;      // 'theme' | 'retries'
-type Retries = Config['retries'];   // number
-
-type Calls = { id: string; score: number }[];
-type Call = Calls[number];          // the element type of the array
+type Config = typeof config;
+type ConfigKey = keyof Config;     // 'theme' | 'retries'
+type Retries = Config['retries'];  // number
+type Call = Calls[number];         // element type of an array
 ```
 
-**Short answer:** `typeof` gets the type of a value, `keyof` gets a union of a type's keys, and `T['key']` looks up a property's type.
+**Say it like this:** "I derive types from the source of truth with `typeof` and `keyof` instead of writing them twice."
 
 ---
 
 **Q29. Which built-in utility types should you know?**
 
-| Utility | What it does | Example |
-|---|---|---|
-| `Partial<T>` / `Required<T>` | all properties optional / required | `Partial<User>` for update payloads |
-| `Readonly<T>` | all properties readonly | immutable state |
-| `Pick<T, K>` / `Omit<T, K>` | keep / remove properties | `Omit<User, 'password'>` |
-| `Record<K, V>` | object with keys K and values V | `Record<Role, Permission[]>` |
-| `Exclude<U, X>` / `Extract<U, X>` | filter union members | `Exclude<Status, 'ended'>` |
-| `NonNullable<T>` | remove null and undefined | |
-| `ReturnType<F>` / `Parameters<F>` | function return / params | `ReturnType<typeof useCall>` |
-| `Awaited<T>` | unwrap a Promise | `Awaited<ReturnType<typeof fetchUser>>` |
-| `NoInfer<T>` | block inference at a position | |
+**Short answer:** `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`, `Exclude`, `Extract`, `NonNullable`, `ReturnType`, `Parameters`, `Awaited` and `NoInfer`.
+
+**Explanation:** They transform existing types, for example deriving an update payload or a public user type.
 
 **Example:**
 
@@ -465,41 +612,54 @@ type Call = Calls[number];          // the element type of the array
 type User = { id: string; name: string; email: string; password: string };
 type PublicUser = Omit<User, 'password'>;
 type UserUpdate = Partial<Pick<User, 'name' | 'email'>>;
+type Data = Awaited<ReturnType<typeof fetchUser>>;
 ```
+
+**Say it like this:** "Utility types let me derive variants of one model, like a public user without the password, so they never drift."
 
 ---
 
 **Q30. What does `as const` do?**
 
-**Short answer:** It infers the narrowest possible type: literal values and readonly arrays and objects. It's very useful for creating union types from a list of values.
+**Short answer:** It infers the narrowest type: literal values and readonly arrays and objects.
+
+**Explanation:** It's the standard way to create a union type from a runtime list of values.
+
+**Example:**
 
 ```ts
 const PERMISSIONS = ['calls:read', 'calls:score', 'users:manage'] as const;
 type Permission = (typeof PERMISSIONS)[number];
-// 'calls:read' | 'calls:score' | 'users:manage'
 ```
 
-**Say it like this:** "I define the list once as a runtime array with `as const` and derive the union type from it. The dropdown options and the type can never drift apart."
+**Say it like this:** "I define the list once with `as const` and derive the union from it, so dropdown options and the type can't drift apart."
 
 ---
 
 **Q31. What is the `satisfies` operator?**
 
-```ts
-const routes = {
-  home: '/',
-  calls: '/calls',
-  call: '/calls/:id',
-} satisfies Record<string, `/${string}`>;
+**Short answer:** It checks that a value matches a type without widening the value's own inferred type.
 
-routes.call;   // keeps literal type '/calls/:id' and autocompletes keys
+**Explanation:** A plain annotation would lose the specific keys and literal values; `satisfies` keeps them while still validating.
+
+**Example:**
+
+```ts
+const routes = { home: '/', calls: '/calls', call: '/calls/:id' } satisfies Record<string, `/${string}`>;
+routes.call; // still '/calls/:id', with autocomplete for keys
 ```
 
-**Short answer:** `satisfies` checks that a value matches a type *without widening* the value's own inferred type. A plain annotation (`const routes: Record<string, string>`) would lose the specific keys and literal values.
+**Say it like this:** "`satisfies` validates a config object against a type but keeps its precise inferred type, so I get both safety and autocomplete."
 
 ---
 
 **Q32. What are function overloads?**
+
+**Short answer:** Several call signatures for one implementation.
+
+**Explanation:** They're useful when the return type depends on the argument type in ways a union can't express. Prefer unions or generics when they can.
+
+**Example:**
 
 ```ts
 function parse(input: string): Date;
@@ -507,54 +667,87 @@ function parse(input: number): Date;
 function parse(input: string | number) { return new Date(input); }
 ```
 
-**Short answer:** Several call signatures for one implementation. Prefer unions or generics when they can express the same thing.
+**Say it like this:** "Overloads describe several valid ways to call a function; I reach for them only when generics can't express it."
 
 ---
 
 **Q33. What type does optional chaining produce?**
 
-**Short answer:** `user?.address?.city` has type `string | undefined`, and you must handle the `undefined` case.
+**Short answer:** The property type plus `undefined`: `user?.address?.city` is `string | undefined`.
+
+**Explanation:** You must handle the undefined case, often with `??` for a default.
+
+**Example:**
+
+```ts
+const city = user?.address?.city ?? 'Unknown';
+```
+
+**Say it like this:** "Optional chaining adds `undefined` to the type, and `??` gives the fallback in one expression."
 
 ---
 
 **Q34. What are type-only imports and exports?**
 
-**Short answer:** `import type { User } from './types'` is erased completely from the JavaScript output. It avoids accidental runtime imports and circular dependencies, and the `verbatimModuleSyntax` option requires it.
+**Short answer:** `import type { User } from './types'` is erased completely from the JavaScript output.
+
+**Explanation:** It prevents accidental runtime imports and circular dependencies, and `verbatimModuleSyntax` requires it.
+
+**Example:**
+
+```ts
+import type { CallState } from './callMachine';
+export type { CallState };
+```
+
+**Say it like this:** "Type-only imports guarantee a types file never ends up in the bundle or creates a runtime cycle."
 
 ---
 
 **Q35. How do classes work in TypeScript?**
 
-```ts
-abstract class Shape { abstract area(): number; }
+**Short answer:** They add access modifiers (`public`, `private`, `protected`), `readonly`, parameter properties, `abstract` classes and `implements`.
 
-class Session implements Disposable {
-  #secret = '';                                 // runtime-private
-  constructor(private readonly id: string,       // parameter property
-              protected ttl = 3600) {}
-  [Symbol.dispose]() { /* cleanup */ }
+**Explanation:** TypeScript's `private` is compile-time only; JavaScript's `#private` is enforced at runtime.
+
+**Example:**
+
+```ts
+class Session {
+  #secret = '';
+  constructor(private readonly id: string, protected ttl = 3600) {}
 }
 ```
 
-**Short answer:** `public`, `private` and `protected` are checked at compile time only, while `#private` is enforced at runtime. You also get `readonly`, parameter properties, `abstract` classes and `implements`.
+**Say it like this:** "Parameter properties remove boilerplate, and for real privacy I use `#` fields rather than the `private` keyword."
 
 ---
 
 **Q36. What is the type of a caught error?**
 
-**Short answer:** With `useUnknownInCatchVariables` (part of `strict`), `catch (e)` gives `e` the type `unknown`, because anything can be thrown. Narrow it first:
+**Short answer:** With `useUnknownInCatchVariables` (part of strict), it's `unknown`, because anything can be thrown.
+
+**Explanation:** Narrow before using it, with `instanceof Error` or a type guard.
+
+**Example:**
 
 ```ts
-catch (e) {
+try { await save(); } catch (e) {
   const message = e instanceof Error ? e.message : String(e);
 }
 ```
+
+**Say it like this:** "Caught errors are `unknown`, so I narrow them, because JavaScript lets you throw anything, even a string."
 
 ---
 
 **Q37. What are declaration files (`.d.ts`)?**
 
-**Short answer:** Files that describe types for JavaScript code. Use `@types/*` packages for popular libraries, `declare module 'legacy-lib'` for untyped packages, and `declare global` to extend globals:
+**Short answer:** Files that describe types for JavaScript code, with no implementation.
+
+**Explanation:** Use `@types/*` packages for popular libraries, `declare module 'x'` for untyped ones, and `declare global` to extend globals.
+
+**Example:**
 
 ```ts
 declare global {
@@ -562,9 +755,17 @@ declare global {
 }
 ```
 
+**Say it like this:** "Declaration files add types to JavaScript I don't control, like a third-party analytics global."
+
 ---
 
 **Q38. What is module augmentation?**
+
+**Short answer:** Adding fields to a library's types from your own code by redeclaring its module.
+
+**Explanation:** It's how you extend library extension points, like column metadata in TanStack Table.
+
+**Example:**
 
 ```ts
 import '@tanstack/react-table';
@@ -573,164 +774,202 @@ declare module '@tanstack/react-table' {
 }
 ```
 
-**Short answer:** Adding fields to a library's types from your own code. Here, every table column can now have `meta.align`.
+**Say it like this:** "Augmentation lets me add typed fields to a library's interfaces without forking it."
 
 ---
 
 **Q39. How do you type environment variables?**
 
-```ts
-// vite-env.d.ts
-interface ImportMetaEnv {
-  readonly VITE_API_URL: string;
-  readonly VITE_LIVEKIT_URL: string;
-}
-```
+**Short answer:** Declare them (for Vite, in `ImportMetaEnv`), and also validate them at startup.
 
-**Explanation:** Types don't prove the variables are actually set, so also validate them at startup:
+**Explanation:** Types don't prove the variables are actually set in a given deployment. A Zod check at boot fails fast with a clear message.
+
+**Example:**
 
 ```ts
+interface ImportMetaEnv { readonly VITE_API_URL: string; readonly VITE_LIVEKIT_URL: string }
 const env = z.object({ VITE_API_URL: z.string().url() }).parse(import.meta.env);
 ```
+
+**Say it like this:** "Typed env vars help autocomplete, but a startup validation is what catches a missing variable in a real deploy."
 
 ---
 
 **Q40. How do you type `fetch` responses safely?**
 
+**Short answer:** Validate the response with a Zod schema and derive the type from that schema.
+
+**Explanation:** The schema is the single source of truth: the runtime check and the type can't drift apart.
+
+**Example:**
+
 ```ts
-import { z } from 'zod';
-
-const CallSchema = z.object({
-  id: z.string(),
-  agent: z.string(),
-  score: z.number().nullable(),
-});
-type Call = z.infer<typeof CallSchema>;          // type derived from the schema
-
+const CallSchema = z.object({ id: z.string(), agent: z.string(), score: z.number().nullable() });
+type Call = z.infer<typeof CallSchema>;
 async function getCalls(): Promise<Call[]> {
   const res = await fetch('/api/calls');
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return z.array(CallSchema).parse(await res.json()); // throws if shape is wrong
+  return z.array(CallSchema).parse(await res.json());
 }
 ```
 
-**Say it like this:** "The schema is the single source of truth. Zod validates at runtime, and `z.infer` gives me the TypeScript type. If the backend changes shape, we get a clear validation error at the boundary instead of a mysterious crash deep in the UI."
+**Say it like this:** "If the backend changes shape, we get a clear validation error at the boundary instead of a mysterious crash deep in the UI."
 
 ---
 
 ## 🔴 Level 3 — Advanced (Type-Level Programming)
 
-**What is "type-level programming"?** Using TypeScript's type system like a small programming language: loops (mapped types), if/else (conditional types), pattern matching (`infer`) and string manipulation (template literal types). Senior interviews ask you to read these, and sometimes to write simple ones.
-
 **Q41. What are mapped types?**
+
+**Short answer:** Types that loop over keys to build a new type: `{ [K in keyof T]: … }`.
+
+**Explanation:** `Partial`, `Readonly` and `Record` are mapped types. Modifiers `+?`, `-?`, `+readonly` and `-readonly` add or remove optionality and readonly.
+
+**Example:**
 
 ```ts
 type Nullable<T> = { [K in keyof T]: T[K] | null };
-type Mutable<T>  = { -readonly [K in keyof T]: T[K] };   // remove readonly
-type Optional<T> = { [K in keyof T]+?: T[K] };           // add optional
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 ```
 
-**Short answer:** A loop over keys that builds a new type. `Partial`, `Readonly` and `Record` are all mapped types.
+**Say it like this:** "A mapped type is a for-loop over keys at the type level."
 
 ---
 
 **Q42. What is key remapping with `as`?**
 
+**Short answer:** `as` in a mapped type renames keys or filters them out (mapping to `never` removes a key).
+
+**Explanation:** Combined with template literal types it can generate getter names or pick keys by value type.
+
+**Example:**
+
 ```ts
 type Getters<T> = { [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K] };
-type G = Getters<{ name: string; age: number }>;
-// { getName: () => string; getAge: () => number }
-
 type OnlyStrings<T> = { [K in keyof T as T[K] extends string ? K : never]: T[K] };
 ```
 
-**Short answer:** `as` renames keys or filters them out: mapping a key to `never` removes it.
+**Say it like this:** "Key remapping lets a mapped type rename or filter keys, like generating `getName` from `name`."
 
 ---
 
 **Q43. What are conditional types?**
 
+**Short answer:** If/else for types: `T extends U ? X : Y`.
+
+**Explanation:** They power utilities like `Exclude`, `NonNullable` and `ReturnType`.
+
+**Example:**
+
 ```ts
 type IsString<T> = T extends string ? true : false;
-type A = IsString<'hi'>;  // true
-type B = IsString<42>;    // false
+type A = IsString<'hi'>; // true
+type B = IsString<42>;   // false
 ```
 
-**Short answer:** If/else for types: `T extends U ? X : Y`.
+**Say it like this:** "Conditional types choose a type based on another type, which is how most built-in utilities work."
 
 ---
 
 **Q44. What does `infer` do?**
 
+**Short answer:** It captures part of a type during a conditional match, like a pattern-matching variable.
+
+**Explanation:** It extracts element types, promise values, function arguments and return types.
+
+**Example:**
+
 ```ts
 type ElementType<T> = T extends readonly (infer U)[] ? U : never;
 type PromiseValue<T> = T extends Promise<infer V> ? V : T;
-type FirstArg<F> = F extends (first: infer A, ...rest: any[]) => any ? A : never;
-
-type X = ElementType<string[]>;           // string
-type Y = PromiseValue<Promise<number>>;   // number
+type X = ElementType<string[]>; // string
 ```
 
-**Short answer:** It captures part of a type during a conditional match, like a pattern-matching variable.
+**Say it like this:** "`infer` says 'match this shape and give me the piece inside', like unwrapping a Promise type."
 
 ---
 
 **Q45. What are distributive conditional types?**
 
-**Short answer:** When a conditional type checks a bare type parameter, it's applied to each union member separately:
+**Short answer:** A conditional type on a bare type parameter is applied to each union member separately.
+
+**Explanation:** Wrapping in a tuple (`[T] extends [U]`) turns distribution off when you want to treat the union as a whole.
+
+**Example:**
 
 ```ts
 type ToArray<T> = T extends any ? T[] : never;
-type R = ToArray<string | number>;      // string[] | number[]   (distributed)
-
+type R = ToArray<string | number>;      // string[] | number[]
 type ToArrayND<T> = [T] extends [any] ? T[] : never;
-type R2 = ToArrayND<string | number>;   // (string | number)[]   (not distributed)
+type R2 = ToArrayND<string | number>;   // (string | number)[]
 ```
 
-Wrapping in a tuple (`[T]`) turns distribution off.
+**Say it like this:** "Conditionals distribute over unions by default, which is how `Exclude` filters members; a tuple wrapper stops it."
 
 ---
 
 **Q46. What are template literal types?**
 
+**Short answer:** String types built from other types with template syntax.
+
+**Explanation:** They type event names, CSS values and API paths precisely.
+
+**Example:**
+
 ```ts
 type CallEvent = 'join' | 'leave';
-type Handler = `on${Capitalize<CallEvent>}`;            // 'onJoin' | 'onLeave'
-type ApiPath = `/api/${'calls' | 'users'}/${string}`;   // pattern-matched strings
+type Handler = `on${Capitalize<CallEvent>}`;           // 'onJoin' | 'onLeave'
+type ApiPath = `/api/${'calls' | 'users'}/${string}`;
 ```
+
+**Say it like this:** "Template literal types let me type string patterns, like handler names generated from event names."
 
 ---
 
 **Q47. What are recursive types?**
 
+**Short answer:** Types that refer to themselves, for nested structures like JSON or deep partials.
+
+**Explanation:** Keep recursion bounded where possible, because very deep recursion slows the compiler.
+
+**Example:**
+
 ```ts
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
-
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
-type DeepReadonly<T> = { readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K] };
 ```
+
+**Say it like this:** "Recursive types describe nested data like JSON or a settings tree, but I keep them simple for compiler performance."
 
 ---
 
 **Q48. How do you extract route params from a path string?**
 
+**Short answer:** Use template literal pattern matching with `infer` and recursion.
+
+**Explanation:** Routers like React Router and TanStack Router use this to type `useParams`, so a typo in a param name is a compile error.
+
+**Example:**
+
 ```ts
 type Params<P extends string> =
   P extends `${string}:${infer Param}/${infer Rest}`
     ? { [K in Param | keyof Params<Rest>]: string }
-    : P extends `${string}:${infer Param}`
-      ? { [K in Param]: string }
-      : {};
-
-type T = Params<'/tenants/:tenantId/calls/:callId'>;
-// { tenantId: string; callId: string }
+    : P extends `${string}:${infer Param}` ? { [K in Param]: string } : {};
+type T = Params<'/tenants/:tenantId/calls/:callId'>; // { tenantId: string; callId: string }
 ```
 
-**Explanation:** Template literal pattern matching plus recursion. Routers such as React Router and TanStack Router use this to type `useParams`.
+**Say it like this:** "The type parses the path string itself, so route params are typed directly from the route definition."
 
 ---
 
 **Q49. Implement `Pick`, `Omit`, `Exclude`, `ReturnType` and `Awaited` yourself.**
+
+**Short answer:** Mapped types for Pick and Omit, conditional types for Exclude, and `infer` for ReturnType and Awaited.
+
+**Explanation:** Writing them shows you understand the building blocks rather than memorising utilities.
+
+**Example:**
 
 ```ts
 type MyPick<T, K extends keyof T> = { [P in K]: T[P] };
@@ -740,114 +979,194 @@ type MyReturnType<F> = F extends (...args: any[]) => infer R ? R : never;
 type MyAwaited<T> = T extends PromiseLike<infer V> ? MyAwaited<V> : T;
 ```
 
+**Say it like this:** "Pick is a mapped type, Exclude a distributive conditional, Omit combines both, and ReturnType uses `infer`."
+
 ---
 
 **Q50. What are branded (nominal) types?**
+
+**Short answer:** A string or number type tagged with a phantom brand, so `TenantId` and `UserId` are incompatible even though both are strings.
+
+**Explanation:** Structural typing treats all strings as equal; a brand restores nominal behaviour at zero runtime cost. Create branded values through validating functions.
+
+**Example:**
 
 ```ts
 type Brand<T, B extends string> = T & { readonly __brand: B };
 type TenantId = Brand<string, 'TenantId'>;
 type UserId = Brand<string, 'UserId'>;
-
-const asTenantId = (s: string) => s as TenantId;   // ideally validate here
 function getCalls(tenant: TenantId) {}
-
-const userId = 'u_123' as UserId;
-getCalls(userId);   // ❌ compile error — prevents mixing IDs
+getCalls('u_123' as UserId); // ❌
 ```
 
-**Short answer:** Structural typing treats all strings as the same type. A brand makes `TenantId` and `UserId` incompatible even though both are strings at runtime.
-
-**Say it like this:** "In a multi-tenant app, passing a user ID where a tenant ID is expected could leak data. Branded types turn that mistake into a compile error at zero runtime cost."
+**Say it like this:** "In a multi-tenant app, passing a user ID where a tenant ID is expected could leak data, so brands make that a compile error."
 
 ---
 
 **Q51. What are covariance and contravariance?**
 
-**Short answer:**
+**Short answer:** Covariant positions (return types, reading arrays) accept subtypes; contravariant positions (function parameters under `strictFunctionTypes`) accept supertypes.
 
-- **Covariant** (arrays when reading, return types): a `Dog[]` can be used where an `Animal[]` is expected.
-- **Contravariant** (function parameters, under `strictFunctionTypes`): a handler that accepts any `Animal` can be used where a `Dog` handler is expected, but not the other way round.
-- **Bivariant:** method-shorthand parameters are checked both ways. This is an unsound legacy behaviour.
+**Explanation:** A handler that accepts any `Animal` can be used where a `Dog` handler is expected, but not the reverse. Method-shorthand parameters are bivariant, a legacy unsound behaviour.
 
-You can annotate variance explicitly on generic parameters with `in` and `out`.
+**Example:**
+
+```ts
+type Handler<T> = (value: T) => void;
+const handleAnimal: Handler<Animal> = () => {};
+const h: Handler<Dog> = handleAnimal; // ✅ contravariance
+```
+
+**Say it like this:** "Outputs can be more specific, inputs more general. That's why callback parameter types sometimes surprise people."
 
 ---
 
 **Q52. What does structural typing imply?**
 
-**Short answer:** Types are compatible if their shapes match, whatever their names. Excess property checks apply only to *fresh object literals*:
+**Short answer:** Types are compatible if their shapes match, regardless of names; excess property checks apply only to fresh object literals.
+
+**Explanation:** It makes TypeScript flexible but means different concepts with the same shape are interchangeable unless you brand them.
+
+**Example:**
 
 ```ts
 type P = { x: number };
-const a: P = { x: 1, y: 2 };      // ❌ excess property (fresh literal)
+const a: P = { x: 1, y: 2 };   // ❌ excess property (fresh literal)
 const tmp = { x: 1, y: 2 };
-const b: P = tmp;                  // ✅ allowed (not fresh)
+const b: P = tmp;              // ✅ allowed
 ```
 
-Use brands when you need nominal behaviour.
+**Say it like this:** "TypeScript compares shapes, not names; when names matter, like IDs, I use branded types."
 
 ---
 
 **Q53. What is `never` useful for besides exhaustiveness checks?**
 
-**Short answer:** Filtering keys in mapped types, impossible branches, functions that always throw, and forbidding properties: `{ a: string; b?: never }` means `b` must not be passed.
+**Short answer:** Filtering keys in mapped types, impossible branches, functions that always throw, and forbidding properties.
+
+**Explanation:** `b?: never` means "this property must not be passed", which helps model mutually exclusive props.
+
+**Example:**
+
+```ts
+type LinkOnly = { href: string; onClick?: never };
+```
+
+**Say it like this:** "`never` is the empty type, so I use it to say 'this can't exist', from exhaustive switches to forbidden props."
 
 ---
 
 **Q54. How do you make mutually exclusive props (XOR)?**
 
+**Short answer:** Build a union where each side forbids the other's keys with `?: never`.
+
+**Explanation:** Without it, a component accepting `href | onClick` allows both at once.
+
+**Example:**
+
 ```ts
 type Without<T, U> = { [K in Exclude<keyof T, keyof U>]?: never };
 type XOR<T, U> = (T & Without<U, T>) | (U & Without<T, U>);
-
 type LinkOrButton = XOR<{ href: string }, { onClick: () => void }>;
-const a: LinkOrButton = { href: '/x' };                          // ✅
-const b: LinkOrButton = { href: '/x', onClick: () => {} };       // ❌
 ```
+
+**Say it like this:** "An XOR type makes passing both `href` and `onClick` a compile error, so the component's contract is clear."
 
 ---
 
 **Q55. What are `const` type parameters?**
 
+**Short answer:** `<const T>` makes a generic infer literal, readonly types without callers writing `as const`.
+
+**Explanation:** It's useful for helpers that take configuration arrays or objects.
+
+**Example:**
+
 ```ts
 function tuple<const T extends readonly unknown[]>(x: T) { return x; }
-const t = tuple(['a', 1]);   // readonly ['a', 1] — no `as const` needed at the call site
+const t = tuple(['a', 1]); // readonly ['a', 1]
 ```
+
+**Say it like this:** "`const` type parameters give precise literal types from config helpers without burdening callers."
 
 ---
 
 **Q56. What does `NoInfer` do?**
 
+**Short answer:** It stops a parameter contributing to generic inference.
+
+**Explanation:** Without it, a default value can widen the inferred type instead of being checked against it.
+
+**Example:**
+
 ```ts
 function setDefault<T>(values: T[], fallback: NoInfer<T>) {}
-setDefault(['a', 'b'], 'c');   // ✅
-setDefault(['a', 'b'], 1);     // ❌ — without NoInfer, T would widen to string | number
+setDefault(['a', 'b'], 1); // ❌ instead of widening T to string | number
 ```
+
+**Say it like this:** "`NoInfer` tells TypeScript to infer from one argument and only check the other."
 
 ---
 
 **Q57. How do complex types affect performance?**
 
-**Short answer:** Deeply recursive conditional types slow down the compiler and the IDE. Prefer interfaces over large intersections, limit recursion depth, enable `skipLibCheck`, use project references, and profile with `tsc --extendedDiagnostics` or `--generateTrace`.
+**Short answer:** Deeply recursive conditional types and huge unions slow down the compiler and IDE.
+
+**Explanation:** Prefer interfaces over big intersections, limit recursion, enable `skipLibCheck`, use project references, and profile with `--extendedDiagnostics` or `--generateTrace`.
+
+**Example:** `tsc --generateTrace ./trace` revealed one route-params type taking seconds; simplifying it fixed the slow editor.
+
+**Say it like this:** "Type cleverness has a cost, so when the IDE gets slow I profile the compiler instead of guessing."
 
 ---
 
 **Q58. How do project references work in a monorepo?**
 
-**Short answer:** Set `composite: true` and list `references` so each package builds incrementally. Share a `tsconfig.base.json`, and use `paths` or workspace packages for internal imports.
+**Short answer:** Each package sets `composite: true`, and dependents list it in `references`, so builds are incremental.
+
+**Explanation:** TypeScript only rebuilds changed packages, and boundaries between packages become explicit. Share settings with a base tsconfig.
+
+**Example:**
+
+```json
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "composite": true }, "references": [{ "path": "../ui" }] }
+```
+
+**Say it like this:** "Project references keep a monorepo's type-checking fast and make package dependencies explicit."
 
 ---
 
 **Q59. How do you emit declarations for a component library?**
 
-**Short answer:** Set `declaration: true` and `declarationMap: true`, use `exports` in `package.json` with a `types` condition, and don't export types from internal file paths. Consumers should import only from the public entry point.
+**Short answer:** Enable `declaration` and `declarationMap`, export types through `package.json` `exports` with a `types` condition, and expose only the public entry point.
+
+**Explanation:** Consumers then get types, go-to-definition into your source, and no imports from internal paths.
+
+**Example:**
+
+```json
+{ "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } } }
+```
+
+**Say it like this:** "A library ships its `.d.ts` files with proper `exports`, so consumers get types and only the public API."
 
 ---
 
 **Q60. When are `unique symbol`, abstract constructor types and `this` types used?**
 
-**Short answer:** In library-level patterns: fluent builders (methods returning `this`), mixins (abstract constructor types), and guaranteed-unique keys (`unique symbol`).
+**Short answer:** In library patterns: guaranteed-unique keys, mixins, and fluent builders whose methods return `this`.
+
+**Explanation:** `this` return types keep chaining typed in subclasses; abstract constructor types let mixins accept abstract classes.
+
+**Example:**
+
+```ts
+class QueryBuilder {
+  where(clause: string): this { /* … */ return this; }
+}
+```
+
+**Say it like this:** "These are mostly for library authors; in app code I'd mostly see `this` types in fluent builders."
 
 ---
 
@@ -855,36 +1174,39 @@ setDefault(['a', 'b'], 1);     // ❌ — without NoInfer, T would widen to stri
 
 **Q61. How do you type props and children?**
 
-```tsx
-type CardProps = {
-  title: string;
-  footer?: React.ReactNode;
-  children: React.ReactNode;
-};
+**Short answer:** Write a props type and use `React.ReactNode` for anything renderable.
 
+**Explanation:** `React.FC` works but isn't needed; explicit props on a function are clearer and handle generics better.
+
+**Example:**
+
+```tsx
+type CardProps = { title: string; footer?: React.ReactNode; children: React.ReactNode };
 function Card({ title, footer, children }: CardProps) {
   return (<section><h2>{title}</h2>{children}{footer}</section>);
 }
 ```
 
-**Short answer:** Use a props type with `React.ReactNode` for anything renderable. `React.FC` works but isn't needed, and explicit props are clearer.
+**Say it like this:** "Props get an explicit type, and `ReactNode` covers anything React can render."
 
 ---
 
 **Q62. How do you extend native element props?**
 
-```tsx
-type ButtonProps = React.ComponentPropsWithoutRef<'button'> & {
-  variant?: 'primary' | 'ghost';
-};
+**Short answer:** Intersect `React.ComponentPropsWithoutRef<'button'>` (or `ComponentProps` in React 19) with your own props.
 
+**Explanation:** Every native prop (type, disabled, aria-*) then works and is type-checked, and you spread the rest onto the element.
+
+**Example:**
+
+```tsx
+type ButtonProps = React.ComponentPropsWithoutRef<'button'> & { variant?: 'primary' | 'ghost' };
 function Button({ variant = 'primary', ...rest }: ButtonProps) {
   return <button data-variant={variant} {...rest} />;
 }
-// <Button type="submit" disabled aria-label="Save" /> — all native props work
 ```
 
-**Note:** In React 19, `ref` is a normal prop, so `ComponentProps<'button'>` includes it.
+**Say it like this:** "Design-system components extend native props, so consumers get every HTML attribute with types for free."
 
 ---
 
@@ -892,118 +1214,161 @@ function Button({ variant = 'primary', ...rest }: ButtonProps) {
 
 **Short answer:** `React.ChangeEvent<HTMLInputElement>`, `React.FormEvent<HTMLFormElement>`, `React.KeyboardEvent<HTMLDivElement>` and `React.MouseEvent<HTMLButtonElement>`.
 
+**Explanation:** The generic parameter types `e.currentTarget`, so you get the right properties, like `value` on an input.
+
+**Example:**
+
 ```tsx
 const onChange = (e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value);
 ```
+
+**Say it like this:** "React's event types are generic over the element, which gives me typed `currentTarget` properties."
 
 ---
 
 **Q64. How do you type `useState`?**
 
+**Short answer:** Pass a type argument when the initial value doesn't show the full type, like `null` or an empty array.
+
+**Explanation:** Using a discriminated union for complex state prevents impossible combinations.
+
+**Example:**
+
 ```tsx
 const [user, setUser] = useState<User | null>(null);
-const [call, setCall] = useState<CallState>({ status: 'idle' });   // discriminated union
+const [call, setCall] = useState<CallState>({ status: 'idle' });
 ```
 
-**Short answer:** Give the type explicitly when the initial value doesn't show the full type (like `null` or an empty array).
+**Say it like this:** "When the initial value is `null` or `[]`, I tell `useState` the real type, otherwise TypeScript infers something too narrow."
 
 ---
 
 **Q65. How do you type `useRef`?**
 
+**Short answer:** `useRef<HTMLVideoElement>(null)` for DOM refs, and `useRef<T | undefined>(undefined)` for mutable values.
+
+**Explanation:** The DOM form gives a ref object React manages; the mutable form lets you assign `.current` yourself.
+
+**Example:**
+
 ```tsx
-const videoRef = useRef<HTMLVideoElement>(null);              // DOM ref
-const timerRef = useRef<number | undefined>(undefined);       // mutable value
+const videoRef = useRef<HTMLVideoElement>(null);
+const timerRef = useRef<number | undefined>(undefined);
 ```
+
+**Say it like this:** "DOM refs start as `null` with the element type; mutable refs include `undefined` in their type."
 
 ---
 
 **Q66. How do you type `useReducer`?**
 
-```ts
-type Action =
-  | { type: 'join'; roomId: string }
-  | { type: 'leave' }
-  | { type: 'fail'; error: string };
+**Short answer:** Type the state and make actions a discriminated union, so each action's payload is checked.
 
+**Explanation:** The reducer's switch narrows each action, and a missing case can be caught with `never`.
+
+**Example:**
+
+```ts
+type Action = { type: 'join'; roomId: string } | { type: 'leave' } | { type: 'fail'; error: string };
 function reducer(state: CallState, action: Action): CallState {
   switch (action.type) {
-    case 'join': return { status: 'live', roomId: action.roomId, startedAt: Date.now() };
+    case 'join': return { status: 'live', roomId: action.roomId };
     case 'leave': return { status: 'idle' };
     case 'fail': return { status: 'failed', error: action.error };
   }
 }
 ```
 
+**Say it like this:** "Actions as a discriminated union mean every dispatch is checked and every case has the right payload."
+
 ---
 
 **Q67. How do you build a typed context with a guard hook?**
 
+**Short answer:** Create the context with `null` as the default and expose a hook that throws if used outside the provider.
+
+**Explanation:** Consumers then get a non-null type and misuse fails loudly in development.
+
+**Example:**
+
 ```tsx
 const RoomCtx = createContext<RoomApi | null>(null);
-
 export function useRoom() {
   const ctx = useContext(RoomCtx);
   if (!ctx) throw new Error('useRoom must be used inside <RoomProvider>');
-  return ctx;   // typed as RoomApi, never null
+  return ctx;
 }
 ```
 
-**Explanation:** Consumers never have to null-check, and misuse fails loudly in development.
+**Say it like this:** "The guard hook removes null checks from every consumer and catches a missing provider immediately."
 
 ---
 
 **Q68. How do you write a generic component?**
 
+**Short answer:** Add a type parameter to the component function and use it in the props.
+
+**Explanation:** A generic table then type-checks column keys against the row type.
+
+**Example:**
+
 ```tsx
-type TableProps<Row> = {
-  rows: Row[];
-  columns: { key: keyof Row; header: string }[];
-  getRowId: (row: Row) => string;
-};
-
+type TableProps<Row> = { rows: Row[]; columns: { key: keyof Row; header: string }[]; getRowId: (r: Row) => string };
 function Table<Row>({ rows, columns, getRowId }: TableProps<Row>) {
-  return (
-    <table>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={getRowId(r)}>
-            {columns.map((c) => <td key={String(c.key)}>{String(r[c.key])}</td>)}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  return <table><tbody>{rows.map((r) => <tr key={getRowId(r)}>{columns.map((c) => <td key={String(c.key)}>{String(r[c.key])}</td>)}</tr>)}</tbody></table>;
 }
-
-<Table rows={calls} columns={[{ key: 'agent', header: 'Agent' }]} getRowId={(c) => c.id} />
-// key: 'agnt' → compile error
 ```
+
+**Say it like this:** "A generic table catches a misspelled column key at compile time."
 
 ---
 
 **Q69. How do you type a polymorphic `as` prop?**
 
+**Short answer:** Make the component generic over `React.ElementType` and take the props of whichever element is passed.
+
+**Explanation:** `<Text as="label" htmlFor="x">` then checks `htmlFor` against label props.
+
+**Example:**
+
 ```tsx
 type PolyProps<E extends React.ElementType> = { as?: E } & Omit<React.ComponentPropsWithoutRef<E>, 'as'>;
-
 function Text<E extends React.ElementType = 'span'>({ as, ...rest }: PolyProps<E>) {
-  const Component = as ?? 'span';
-  return <Component {...rest} />;
+  const C = as ?? 'span';
+  return <C {...rest} />;
 }
-
-<Text as="label" htmlFor="email">Email</Text>   // label props are type-checked
 ```
+
+**Say it like this:** "Polymorphic components keep semantics flexible while still type-checking the chosen element's props."
 
 ---
 
 **Q70. How do you type a custom hook's return value?**
 
-**Short answer:** Return a tuple with `as const` for two values (`return [value, setValue] as const`). For three or more, return a named object, which is clearer at the call site.
+**Short answer:** Return a tuple with `as const` for two values, or a named object for three or more.
+
+**Explanation:** Without `as const`, a returned array is inferred as a union array and loses position types.
+
+**Example:**
+
+```ts
+function useToggle(initial = false) {
+  const [on, set] = useState(initial);
+  return [on, () => set((v) => !v)] as const;
+}
+```
+
+**Say it like this:** "Tuples need `as const` to keep their positions typed; for more values I return an object."
 
 ---
 
 **Q71. How do you type Redux Toolkit?**
+
+**Short answer:** Derive `RootState` and `AppDispatch` from the store and create typed hooks.
+
+**Explanation:** Then every selector and dispatch is typed without annotating them individually.
+
+**Example:**
 
 ```ts
 export type RootState = ReturnType<typeof store.getState>;
@@ -1012,22 +1377,25 @@ export const useAppSelector = useSelector.withTypes<RootState>();
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 ```
 
+**Say it like this:** "The store is the source of truth for its types; components use the typed hooks."
+
 ---
 
 **Q72. How do you type forms with Zod and React Hook Form?**
 
-```ts
-const ScoreFormSchema = z.object({
-  callId: z.string(),
-  score: z.number().min(0).max(100),
-  comment: z.string().optional(),
-});
-type ScoreForm = z.infer<typeof ScoreFormSchema>;
+**Short answer:** Define a Zod schema, infer the form type from it, and pass `zodResolver` to `useForm`.
 
+**Explanation:** One schema gives validation rules, error messages and the TypeScript type.
+
+**Example:**
+
+```ts
+const ScoreFormSchema = z.object({ callId: z.string(), score: z.number().min(0).max(100), comment: z.string().optional() });
+type ScoreForm = z.infer<typeof ScoreFormSchema>;
 const form = useForm<ScoreForm>({ resolver: zodResolver(ScoreFormSchema) });
 ```
 
-**Short answer:** One schema gives you validation rules, error messages and the TypeScript type.
+**Say it like this:** "For scorecards one Zod schema drove both validation and types, so they could never disagree."
 
 ---
 
@@ -1035,73 +1403,110 @@ const form = useForm<ScoreForm>({ resolver: zodResolver(ScoreFormSchema) });
 
 **Q73. The API sometimes returns `score: null`, and the UI crashes even though the types say `number`.**
 
-**Answer:** The type was a promise nobody checked. Fix it in four steps:
+**Short answer:** Validate at the boundary, correct the type to `number | null`, handle null in the UI, and generate types from the API contract.
 
-1. Validate at the boundary with Zod, so bad data fails loudly where it enters.
-2. Correct the type to `number | null`.
-3. Handle `null` in the UI (show "Not scored").
-4. Prevent drift by generating types from the OpenAPI schema and adding a contract test.
+**Explanation:** Hand-written types are promises nobody checks. Runtime validation makes bad data fail loudly where it enters.
 
-**Say it like this:** "The types lied because they were written by hand and never checked. I'd make the runtime schema the source of truth and derive the type from it."
+**Example:** `score: z.number().nullable()` in the schema, and the UI shows "Not scored" when it's null.
+
+**Say it like this:** "The types lied because they were written by hand. I'd make the runtime schema the source of truth and derive the type from it."
 
 ---
 
 **Q74. A refactor renamed a status from `'live'` to `'connected'`, and some screens silently broke.**
 
-**Answer:** The status strings were compared directly all over the code (`if (status === 'live')`). Model the status as a union type with exhaustive `switch` statements and a `never` default, and put the status helpers in one place. A rename then becomes a compile error everywhere it matters.
+**Short answer:** Model status as a union with exhaustive switches and central helpers, so renames become compile errors.
+
+**Explanation:** Raw string comparisons scattered around the code (`status === 'live'`) can't be checked once a status is renamed if they're typed as `string`.
+
+**Example:** `type Status = 'idle' | 'connected' | 'ended'` plus `isActive(status)` helper; the old `'live'` comparisons now fail to compile.
+
+**Say it like this:** "With a typed union, a rename shows every place to update before it ships."
 
 ---
 
 **Q75. Developers keep passing `userId` where `tenantId` is expected.**
 
-**Answer:** Use branded types (Q50), created only by validating constructor functions, for example `parseTenantId(raw)`.
+**Short answer:** Use branded types created only by validating constructor functions.
+
+**Explanation:** Both are strings structurally; the brand makes them incompatible at compile time with no runtime cost.
+
+**Example:**
+
+```ts
+const parseTenantId = (raw: string): TenantId => { if (!raw.startsWith('t_')) throw new Error(); return raw as TenantId; };
+```
+
+**Say it like this:** "Branded IDs turn a potential data-leak bug into a compile error."
 
 ---
 
 **Q76. What's your plan for migrating a large JavaScript codebase to TypeScript?**
 
-**Answer:**
+**Short answer:** Incrementally: `allowJs`, convert leaf modules first, tighten strictness gradually, block new `any`, and generate API types early.
 
-1. Turn on `allowJs` (and `checkJs` for gradual checking), so JS and TS coexist.
-2. Convert leaf modules first (utils, API clients), then move up to components.
-3. Start with lenient settings and tighten `strict` flags directory by directory.
-4. Block *new* `any` with ESLint (`@typescript-eslint/no-explicit-any`).
-5. Generate API types from OpenAPI early. It gives the biggest win fastest.
-6. Track the `any` count as a metric and celebrate it going down.
+**Explanation:** A big-bang migration stalls feature work. Tracking the `any` count shows progress.
+
+**Example:** Week 1: tsconfig with `allowJs` and API types from OpenAPI. Weeks 2–6: utils and API clients converted. Then components, with `strict` enabled folder by folder.
+
+**Say it like this:** "I'd migrate leaf-first and tighten gradually, so the team keeps shipping features while type coverage rises."
 
 ---
 
 **Q77. Type-checking is slow in CI and the IDE lags.**
 
-**Answer:** Enable `skipLibCheck`, use project references with incremental builds, avoid giant unions and deeply recursive types, split huge barrel files (`index.ts` re-exporting everything), and profile with `--generateTrace`.
+**Short answer:** Enable `skipLibCheck`, use project references, simplify heavy types, split barrel files, and profile with `--generateTrace`.
+
+**Explanation:** A few expensive types or huge barrel files often cause most of the slowdown.
+
+**Example:** Replacing a 300-export `index.ts` barrel with direct imports cut editor latency noticeably.
+
+**Say it like this:** "I'd measure with the compiler trace and fix the hotspots rather than turning checks off."
 
 ---
 
 **Q78. A component should accept `href` or `onClick`, but never both.**
 
-**Answer:** Use XOR props (Q54), or a discriminated union on a `kind` field: `{ kind: 'link'; href } | { kind: 'button'; onClick }`.
+**Short answer:** Use an XOR props type or a discriminated union on a `kind` field.
+
+**Explanation:** It makes the component's contract explicit and catches invalid usage at compile time.
+
+**Example:**
+
+```ts
+type Props = { kind: 'link'; href: string } | { kind: 'button'; onClick: () => void };
+```
+
+**Say it like this:** "A union of the two shapes means the component can't be used with both, so its behaviour is unambiguous."
 
 ---
 
 **Q79. You need types shared between a FastAPI or NestJS backend and a React frontend.**
 
-**Answer:** Generate them from the API contract. Use openapi-typescript or Orval from the OpenAPI spec, or GraphQL Code Generator for GraphQL. In a NestJS + React monorepo, a shared `contracts` package of Zod schemas can validate on both sides.
+**Short answer:** Generate them from the API contract: OpenAPI generators or GraphQL codegen, or a shared Zod package in a TS monorepo.
+
+**Explanation:** Generated types stay in sync automatically; CI can fail when generated files are out of date.
+
+**Example:** `npx openapi-typescript http://localhost:8000/openapi.json -o src/api/schema.ts` in a CI step.
+
+**Say it like this:** "Types come from the contract, not from memory, and CI fails if they're stale."
 
 ---
 
 **Q80. An LLM returns JSON for a QA scorecard, but sometimes fields are missing.**
 
-**Answer:** Never trust it with `as`.
+**Short answer:** Validate with Zod's `safeParse`, retry once with the error in the prompt, then fall back to human review. Never cast with `as`.
+
+**Explanation:** LLM output is untrusted input, so it gets the same validation as any external data.
+
+**Example:**
 
 ```ts
 const result = ScorecardSchema.safeParse(JSON.parse(llmText));
-if (!result.success) {
-  // retry once, sending result.error back to the model in the prompt,
-  // then fall back to "needs human review"
-}
+if (!result.success) return retryOrHumanReview(callId, result.error);
 ```
 
-**Say it like this:** "LLM output is untrusted input. We validated every scorecard with Zod. On failure we retried once with the validation error in the prompt, and then routed the call to human review. A bad score never reached the UI."
+**Say it like this:** "Every scorecard was validated with Zod; failures got one retry with the validation error, then human review. A bad score never reached the UI."
 
 ---
 
@@ -1109,33 +1514,52 @@ if (!result.success) {
 
 **Q81. "How did you type RBAC permissions so the UI can't check a permission that doesn't exist?"**
 
+**Short answer:** Define the role-permission map once with `as const` and `satisfies`, derive `Role` and `Permission` types from it, and type the `can()` helper with them.
+
+**Explanation:** A typo in a permission string becomes a compile error. The UI check is UX only; the server enforces every permission.
+
+**Example:**
+
 ```ts
 const ROLE_PERMISSIONS = {
-  admin: ['calls:read', 'calls:score', 'users:manage', 'tenant:configure'],
+  admin: ['calls:read', 'calls:score', 'users:manage'],
   qa: ['calls:read', 'calls:score'],
   agent: ['calls:read:own'],
 } as const satisfies Record<string, readonly string[]>;
-
-type Role = keyof typeof ROLE_PERMISSIONS;                    // 'admin' | 'qa' | 'agent'
-type Permission = (typeof ROLE_PERMISSIONS)[Role][number];    // union of all permission strings
-
-export const can = (role: Role, permission: Permission) =>
-  (ROLE_PERMISSIONS[role] as readonly Permission[]).includes(permission);
-
-can('qa', 'calls:score');    // ✅
-can('qa', 'calls:scroe');    // ❌ compile error — typo caught
+type Role = keyof typeof ROLE_PERMISSIONS;
+type Permission = (typeof ROLE_PERMISSIONS)[Role][number];
+export const can = (role: Role, p: Permission) => (ROLE_PERMISSIONS[role] as readonly Permission[]).includes(p);
 ```
 
-**Say it like this:** "The permission map is defined once with `as const` and `satisfies`, and the `Role` and `Permission` types are derived from it. A typo in a permission string is a compile error. But the UI check is only for UX. The FastAPI backend enforces every permission on every request."
+**Say it like this:** "Roles and permissions are derived from one map, so a misspelled permission is a compile error. The FastAPI backend still enforces every permission on every request."
 
 ---
 
 **Q82. "How did you type the LiveKit connection lifecycle?"**
 
-**Say it like this:** "As a discriminated union: idle, checking-devices, connecting, connected, reconnecting, disconnected and failed. Each state carries only its own data. For example, `reconnecting` has an attempt count and `failed` has an error. A reducer with an exhaustive switch handles the typed events, so adding a new state forced us to handle it in every screen."
+**Short answer:** As a discriminated union of states, with a reducer over typed events and an exhaustive switch.
+
+**Explanation:** Each state carries only its own data (reconnecting has an attempt count, failed has an error), and adding a state forced every screen to handle it.
+
+**Example:**
+
+```ts
+type Conn =
+  | { status: 'idle' } | { status: 'checkingDevices' } | { status: 'connecting' }
+  | { status: 'connected'; roomId: string } | { status: 'reconnecting'; attempt: number }
+  | { status: 'failed'; error: string };
+```
+
+**Say it like this:** "The call lifecycle was a typed state machine: impossible states couldn't be written, and new states were compile errors until handled."
 
 ---
 
 **Q83. "How did you keep FastAPI and React in sync?"**
 
-**Say it like this:** "FastAPI generates an OpenAPI schema automatically. We generated TypeScript types and a typed client from it, and CI failed if the generated files were out of date. For critical responses, such as AI scores, we also validated at runtime with Zod, because generated types still only describe the contract and don't enforce it."
+**Short answer:** FastAPI's OpenAPI schema generated TypeScript types and a client, CI failed on stale types, and critical responses were also validated with Zod.
+
+**Explanation:** Generated types describe the contract but don't enforce it at runtime, so high-risk data like AI scores got runtime validation too.
+
+**Example:** A CI job regenerates `schema.ts` and runs `git diff --exit-code`; a backend field rename fails the frontend build.
+
+**Say it like this:** "Types were generated from FastAPI's OpenAPI spec and checked in CI, and AI scores were validated at runtime because generated types don't enforce anything."
