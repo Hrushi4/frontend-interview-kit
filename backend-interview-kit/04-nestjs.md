@@ -348,9 +348,314 @@ export class ScoringProcessor extends WorkerHost {
 
 ---
 
+## 🟢 More Basics
+
+**Q19. What does the `@Injectable()` decorator do?**
+
+**Short answer:** It marks a class as a provider that Nest's DI container can create and inject.
+
+**Explanation:** It also lets Nest read constructor parameter types through TypeScript metadata.
+
+**Example:** `@Injectable() export class ScoringService {}`.
+
+**Say it like this:** "Injectable registers a class with the DI container so others can ask for it in their constructors."
+
+---
+
+**Q20. How do you read route params, query and body in Nest?**
+
+**Short answer:** With parameter decorators: `@Param()`, `@Query()`, `@Body()`, `@Headers()`, `@Req()`.
+
+**Explanation:** Combine with pipes for validation and conversion (`ParseIntPipe`, `ParseUUIDPipe`, DTOs).
+
+**Example:** `@Get(':id') get(@Param('id', ParseUUIDPipe) id: string, @Query() q: ListCallsQuery) {}`.
+
+**Say it like this:** "Decorators pull values out of the request, and pipes validate them before my code sees them."
+
+---
+
+**Q21. How do you set status codes and headers in Nest?**
+
+**Short answer:** `@HttpCode(204)`, `@Header('Cache-Control', 'no-store')`, or throw `HttpException`s for errors.
+
+**Explanation:** Avoid using the raw response object unless needed (it bypasses interceptors).
+
+**Example:** `@Delete(':id') @HttpCode(204) remove(@Param('id') id: string) { return this.svc.remove(id); }`.
+
+**Say it like this:** "Decorators set status and headers declaratively, and I avoid the raw response so interceptors still work."
+
+---
+
+**Q22. What built-in HTTP exceptions does Nest provide?**
+
+**Short answer:** `BadRequestException`, `UnauthorizedException`, `ForbiddenException`, `NotFoundException`, `ConflictException` and others, all extending `HttpException`.
+
+**Explanation:** Throw them from services or create domain exceptions mapped by a filter.
+
+**Example:** `throw new NotFoundException('Call not found')`.
+
+**Say it like this:** "Nest's exceptions map straight to status codes, so services can signal 404 or 409 cleanly."
+
+---
+
+**Q23. What is the Nest CLI used for?**
+
+**Short answer:** Generating modules, controllers, services and resources with consistent structure, plus building and running the app.
+
+**Explanation:** `nest g resource calls` scaffolds a full CRUD feature.
+
+**Example:** `nest g module scoring && nest g service scoring`.
+
+**Say it like this:** "The CLI keeps structure consistent across the team, which is half the value of Nest."
+
+---
+
+**Q24. What is `main.ts` responsible for?**
+
+**Short answer:** Bootstrapping: creating the app, global pipes, filters and interceptors, CORS, security middleware, versioning, Swagger, and listening on a port.
+
+**Explanation:** Also enable shutdown hooks for graceful shutdown.
+
+**Example:**
+
+```ts
+const app = await NestFactory.create(AppModule);
+app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+app.enableShutdownHooks();
+await app.listen(3000);
+```
+
+**Say it like this:** "main.ts wires the global behaviour once: validation, security, docs and graceful shutdown."
+
+---
+
+## 🟡 More Intermediate
+
+**Q25. How do you implement JWT authentication with Passport in Nest?**
+
+**Short answer:** A `JwtStrategy` validates the token and returns the user; `AuthGuard('jwt')` protects routes; a global guard plus a `@Public()` decorator makes secure-by-default.
+
+**Explanation:** Secure-by-default means new routes are protected unless explicitly public.
+
+**Example:**
+
+```ts
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private reflector: Reflector) { super(); }
+  canActivate(ctx: ExecutionContext) {
+    return this.reflector.get<boolean>('isPublic', ctx.getHandler()) || super.canActivate(ctx);
+  }
+}
+```
+
+**Say it like this:** "Auth is a global guard, so every new route is protected by default and public routes must opt out explicitly."
+
+---
+
+**Q26. How do you create a custom decorator like `@CurrentUser()`?**
+
+**Short answer:** `createParamDecorator` that reads `request.user` from the execution context.
+
+**Explanation:** Cleaner and more testable than reaching for `@Req()`.
+
+**Example:**
+
+```ts
+export const CurrentUser = createParamDecorator((_d, ctx: ExecutionContext) => ctx.switchToHttp().getRequest().user);
+```
+
+**Say it like this:** "A small param decorator gives handlers the user directly, without touching the raw request."
+
+---
+
+**Q27. How does Swagger/OpenAPI work in Nest?**
+
+**Short answer:** `@nestjs/swagger` builds an OpenAPI document from controllers, DTOs and decorators like `@ApiProperty`, served at `/docs`.
+
+**Explanation:** The CLI plugin can infer most DTO properties automatically.
+
+**Example:** `SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, new DocumentBuilder().addBearerAuth().build()))`.
+
+**Say it like this:** "The OpenAPI spec comes from the code, so docs stay accurate and the frontend can generate types from it."
+
+---
+
+**Q28. How do you implement caching in Nest?**
+
+**Short answer:** `@nestjs/cache-manager` with a Redis store, `CacheInterceptor` for GET routes, or manual caching in services.
+
+**Explanation:** Include tenant and user in cache keys where responses differ.
+
+**Example:** `@UseInterceptors(CacheInterceptor) @CacheTTL(60) @Get('leaderboard')`.
+
+**Say it like this:** "Simple GET caching via an interceptor, and manual caching where the key needs tenant or user context."
+
+---
+
+**Q29. How do you schedule cron jobs in Nest?**
+
+**Short answer:** `@nestjs/schedule` with `@Cron()`, `@Interval()` and `@Timeout()` decorators.
+
+**Explanation:** With multiple instances, every instance runs the cron, so use a distributed lock or a dedicated worker.
+
+**Example:** `@Cron('0 2 * * *') async nightlyAggregates() { if (await lock.acquire('nightly')) await this.agg.run(); }`.
+
+**Say it like this:** "Cron decorators are easy, but with several replicas I make sure only one runs the job, using a lock or a single scheduler."
+
+---
+
+**Q30. How do you use events inside a Nest app?**
+
+**Short answer:** `@nestjs/event-emitter` for in-process events (`@OnEvent`), or queues and brokers for cross-service or durable events.
+
+**Explanation:** In-process events decouple modules but are lost on crash.
+
+**Example:** `this.events.emit('scorecard.finalised', { id })`; a notifications listener sends emails.
+
+**Say it like this:** "In-process events decouple modules; anything that must not be lost goes through a queue."
+
+---
+
+**Q31. What are dynamic modules (`forRoot`, `forRootAsync`)?**
+
+**Short answer:** Modules configured at import time, returning providers based on options; `forRootAsync` builds options from injected config.
+
+**Explanation:** Used for database, cache and client libraries.
+
+**Example:** `TypeOrmModule.forRootAsync({ inject: [ConfigService], useFactory: (c) => ({ url: c.get('DATABASE_URL') }) })`.
+
+**Say it like this:** "Dynamic modules let reusable modules take configuration, usually from ConfigService."
+
+---
+
+**Q32. How do you version APIs in Nest?**
+
+**Short answer:** `app.enableVersioning({ type: VersioningType.URI })` and `@Version('2')` on controllers or routes.
+
+**Explanation:** Header or media-type versioning are also supported.
+
+**Example:** `@Controller({ path: 'calls', version: '2' })`.
+
+**Say it like this:** "Nest has versioning built in, so v1 and v2 controllers can live side by side cleanly."
+
+---
+
+**Q33. How do you handle file uploads in Nest?**
+
+**Short answer:** `FileInterceptor` with Multer options and `ParseFilePipe` validators for size and type, or presigned S3 URLs for large files.
+
+**Explanation:** Keep files out of memory for big uploads.
+
+**Example:** `@UseInterceptors(FileInterceptor('file')) upload(@UploadedFile(new ParseFilePipe({ validators: [new MaxFileSizeValidator({ maxSize: 5e6 })] })) f)`.
+
+**Say it like this:** "Small uploads use the interceptor with validators; large ones go straight to S3 via presigned URLs."
+
+---
+
+## 🔴 More Advanced
+
+**Q34. How do you implement rate limiting in Nest?**
+
+**Short answer:** `@nestjs/throttler` with a Redis storage for multiple instances, plus per-route overrides with `@Throttle()`.
+
+**Explanation:** Key by user for authenticated routes.
+
+**Example:** `ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }])` with `@Throttle({ default: { limit: 5, ttl: 60_000 } })` on login.
+
+**Say it like this:** "The throttler module with Redis storage gives shared limits, tighter on auth routes."
+
+---
+
+**Q35. How do you build GraphQL APIs in Nest?**
+
+**Short answer:** `@nestjs/graphql` with Apollo or Mercurius, code-first `@ObjectType`, `@Resolver`, `@Query`, `@Mutation` and `@ResolveField`, guards for auth and DataLoaders in context.
+
+**Explanation:** Guards need `GqlExecutionContext` to read the request.
+
+**Example:** `@ResolveField(() => Brand) brand(@Parent() c: Campaign, @Context('loaders') l) { return l.brand.load(c.brandId); }`.
+
+**Say it like this:** "Same modules and services as REST, but resolvers instead of controllers, with DataLoaders to avoid N+1."
+
+---
+
+**Q36. How do you handle transactions across services in Nest?**
+
+**Short answer:** Start the transaction in the use-case service and pass the transaction client (or use CLS-based transactional decorators) to repositories.
+
+**Explanation:** `@nestjs-cls/transactional` propagates the transaction implicitly.
+
+**Example:** `@Transactional() async finalise(id) { await this.scorecards.finalise(id); await this.audit.log(id); }`.
+
+**Say it like this:** "The use case owns the transaction, and repositories join it, so either everything is saved or nothing is."
+
+---
+
+**Q37. How do you structure a large Nest codebase?**
+
+**Short answer:** Feature modules with clear public exports, a shared or core module for cross-cutting concerns, and layering inside each feature (controller, service, repository, DTOs).
+
+**Explanation:** Lint rules (or Nx boundaries) stop features importing each other's internals.
+
+**Example:** `src/modules/{calls,scorecards,tenants,auth}`, `src/common/{filters,guards,interceptors}`.
+
+**Say it like this:** "Features are modules with explicit exports, and lint rules enforce the boundaries as the codebase grows."
+
+---
+
+**Q38. How do you use Prisma with Nest?**
+
+**Short answer:** A `PrismaService` extending `PrismaClient`, injected into repositories; migrations via Prisma Migrate; extensions for tenant filtering.
+
+**Explanation:** Connect in `onModuleInit` and use shutdown hooks.
+
+**Example:** `@Injectable() export class PrismaService extends PrismaClient implements OnModuleInit { async onModuleInit() { await this.$connect(); } }`.
+
+**Say it like this:** "Prisma becomes one injectable service, and repositories use it, so swapping or mocking it is easy."
+
+---
+
+## 🧩 More Scenarios
+
+**Q39. A guard can't find `request.user`. Why?**
+
+**Short answer:** Guard order: the roles guard ran before the authentication guard, or auth isn't applied to that route.
+
+**Explanation:** Global guards run before controller and route guards, in registration order.
+
+**Example:** Register `JwtAuthGuard` before `RolesGuard` in `APP_GUARD` providers.
+
+**Say it like this:** "Roles need an authenticated user, so authentication must run first. It's usually a guard-order problem."
+
+---
+
+**Q40. A provider can't be resolved ("Nest can't resolve dependencies of X"). How do you fix it?**
+
+**Short answer:** Make sure the provider is in the module's `providers`, or exported from another module that's imported, and check injection tokens and circular imports.
+
+**Explanation:** The error message names the missing dependency index.
+
+**Example:** `CallsService` used in `ScoringModule` but `CallsModule` didn't export it.
+
+**Say it like this:** "That error almost always means a provider isn't exported or the module isn't imported. The message tells you which one."
+
+---
+
+**Q41. Validation isn't running on nested objects. Why?**
+
+**Short answer:** `class-validator` needs `@ValidateNested()` and `@Type(() => Child)` from `class-transformer` for nested DTOs.
+
+**Explanation:** Without `@Type`, the nested object stays a plain object and isn't validated.
+
+**Example:** `@ValidateNested({ each: true }) @Type(() => AnswerDto) answers: AnswerDto[];`.
+
+**Say it like this:** "Nested DTOs need both ValidateNested and Type, otherwise they silently skip validation."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q19. "What did you build with NestJS at Slaylink?"**
+**Q42. "What did you build with NestJS at Slaylink?"**
 
 **Short answer:** Describe the real features: [for example the creator and brand campaign APIs] with NestJS, GraphQL and MongoDB, organised in modules.
 

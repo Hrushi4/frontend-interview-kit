@@ -264,9 +264,257 @@ calls(first: 20, after: "Y3Vyc29y") { edges { node { id score } } pageInfo { has
 
 ---
 
+## 🟢 More Basics
+
+**Q16. What are scalar types in GraphQL?**
+
+**Short answer:** Built-in `Int`, `Float`, `String`, `Boolean` and `ID`, plus custom scalars like `DateTime`, `JSON` or `Email`.
+
+**Explanation:** Custom scalars validate and serialise values consistently.
+
+**Example:** `scalar DateTime` with a resolver that parses and serialises ISO strings.
+
+**Say it like this:** "Custom scalars like DateTime keep formats consistent across the whole schema."
+
+---
+
+**Q17. What are input types?**
+
+**Short answer:** Types used as arguments to mutations and queries, defined with `input`; they can't contain output-only fields or resolvers.
+
+**Explanation:** One input object per mutation keeps signatures stable as fields are added.
+
+**Example:** `input UpdateProfileInput { phone: String, address: AddressInput }` → `updateProfile(input: UpdateProfileInput!)`.
+
+**Say it like this:** "Mutations take a single input object, so adding a field later doesn't break callers."
+
+---
+
+**Q18. What are enums, interfaces and unions?**
+
+**Short answer:** Enums restrict values to a set; interfaces define shared fields implemented by types; unions say a field can be one of several types.
+
+**Explanation:** Clients use `__typename` and fragments to handle interfaces and unions.
+
+**Example:** `union SearchResult = Call | Agent | Report`.
+
+**Say it like this:** "Enums for fixed values, interfaces for shared shapes, unions when a field can be different types."
+
+---
+
+**Q19. What are fragments?**
+
+**Short answer:** Reusable sets of fields that queries can include, often colocated with the UI component that needs them.
+
+**Explanation:** Inline fragments (`... on Call`) select fields on specific types in unions.
+
+**Example:** `fragment CallSummary on Call { id startedAt score }`.
+
+**Say it like this:** "Fragments let each component declare its own data needs, and the page query composes them."
+
+---
+
+**Q20. What are variables, and why use them?**
+
+**Short answer:** Values passed separately from the query text, typed in the operation signature.
+
+**Explanation:** They enable caching of parsed queries, persisted queries, and avoid string concatenation (injection).
+
+**Example:** `query Call($id: ID!) { call(id: $id) { id } }` with `{ "id": "c_42" }`.
+
+**Say it like this:** "The query text stays constant and values go in variables, which is safer and cacheable."
+
+---
+
+**Q21. What is introspection, and should it be enabled in production?**
+
+**Short answer:** A built-in query that returns the schema; tools rely on it. Disable it for public production APIs or restrict it to authenticated developers.
+
+**Explanation:** Introspection makes it easier for attackers to map your API, though it's not a security boundary itself.
+
+**Example:** Enabled in dev and staging; disabled in prod with persisted queries.
+
+**Say it like this:** "Introspection is great for tooling, but on a public production API I turn it off and rely on persisted queries."
+
+---
+
+## 🟡 More Intermediate
+
+**Q22. How do subscriptions work, and how do you scale them?**
+
+**Short answer:** Clients subscribe over WebSocket (graphql-ws); the server pushes results when events are published, using a pub/sub backend (Redis) across instances.
+
+**Explanation:** Authorise each subscription and filter events per user or tenant.
+
+**Example:** `subscription { callScored(tenantId: $t) { id score } }` backed by Redis pub/sub.
+
+**Say it like this:** "Subscriptions are WebSockets plus pub/sub; across instances Redis fans events out, and every subscription is authorised."
+
+---
+
+**Q23. How do you design mutations well?**
+
+**Short answer:** Name by intent (`finaliseScorecard`, not `updateScorecard`), take one input object, and return the changed object plus typed errors.
+
+**Explanation:** Returning the changed object lets client caches update automatically.
+
+**Example:** `finaliseScorecard(input: { id }): FinaliseScorecardPayload { scorecard { id status } errors { field message } }`.
+
+**Say it like this:** "Mutations are named after the business action and return what changed, so the client cache stays correct."
+
+---
+
+**Q24. How do you handle file uploads with GraphQL?**
+
+**Short answer:** Usually not through GraphQL: get a presigned URL from a mutation, upload directly to storage, then confirm with another mutation.
+
+**Explanation:** The multipart request spec exists but complicates CSRF and gateways.
+
+**Example:** `createUploadUrl(fileName)` → PUT to S3 → `attachRecording(callId, key)`.
+
+**Say it like this:** "GraphQL handles metadata; the bytes go straight to S3 with a presigned URL."
+
+---
+
+**Q25. How do you do field-level authorisation?**
+
+**Short answer:** Check permissions in the field resolver (or with a schema directive) and return null or an error for sensitive fields.
+
+**Explanation:** Make sensitive fields nullable so a denied field doesn't break the whole object.
+
+**Example:** `Patient.notes` resolver returns null unless the user is the assigned provider.
+
+**Say it like this:** "Sensitive fields check permission in their own resolver, and they're nullable so denial is graceful."
+
+---
+
+**Q26. What are persisted queries?**
+
+**Short answer:** Clients send a hash or ID instead of the full query text; the server looks up a registered query.
+
+**Explanation:** Smaller requests, GET-friendly for CDN caching, and an allowlist that blocks arbitrary queries.
+
+**Example:** `GET /graphql?id=7f3a…&variables=…`.
+
+**Say it like this:** "Persisted queries make GraphQL cacheable over GET and lock production to queries we've approved."
+
+---
+
+**Q27. How do you test a GraphQL API?**
+
+**Short answer:** Unit test resolvers and services, integration test operations against a test server and database, and check schema changes against client operations in CI.
+
+**Explanation:** Snapshot the schema to catch unintended changes.
+
+**Example:** `server.executeOperation({ query, variables }, { contextValue: { user } })`.
+
+**Say it like this:** "I test operations end to end with a real context and database, and CI flags any breaking schema change."
+
+---
+
+**Q28. How do you monitor GraphQL in production?**
+
+**Short answer:** Per-operation and per-resolver metrics (latency, errors), operation names required, tracing with OpenTelemetry, and schema usage analytics.
+
+**Explanation:** HTTP metrics alone are useless with one endpoint.
+
+**Example:** Dashboard of p95 latency by `operationName`.
+
+**Say it like this:** "With one endpoint, monitoring must be per operation and per resolver, otherwise everything looks like one URL."
+
+---
+
+## 🔴 More Advanced
+
+**Q29. How does Apollo Client's normalised cache work?**
+
+**Short answer:** It splits responses into objects keyed by `__typename:id`, so any query that returns the same object updates it everywhere.
+
+**Explanation:** Mutations that return updated objects refresh all views; lists need cache updates or refetches.
+
+**Example:** Updating a passenger's name in one widget updates the booking summary automatically.
+
+**Say it like this:** "Normalisation means one copy per object, so an update anywhere shows up everywhere."
+
+---
+
+**Q30. How do you implement query cost analysis?**
+
+**Short answer:** Assign a cost to each field (higher for lists and expensive resolvers), multiply by list size arguments, and reject or throttle queries above a budget.
+
+**Explanation:** Rate limit by cost per minute instead of request count.
+
+**Example:** `calls(first: 100) { scorecards(first: 10) { … } }` costs 100 × 10 = 1,000 points.
+
+**Say it like this:** "Each query gets a price before it runs, and clients have a budget, which stops expensive queries without blocking normal use."
+
+---
+
+**Q31. What is the difference between schema stitching and federation?**
+
+**Short answer:** Stitching merges schemas at a gateway with manual configuration; federation has subgraphs declare how types connect (`@key`), and a router composes them.
+
+**Explanation:** Federation is the modern standard for multi-team graphs.
+
+**Example:** `type Booking @key(fields: "id")` extended by the Loyalty subgraph with `points`.
+
+**Say it like this:** "Federation lets each team own part of the graph declaratively; stitching needs the gateway to know everything."
+
+---
+
+**Q32. How do you handle errors in federated graphs?**
+
+**Short answer:** Each subgraph returns errors with codes; the router merges partial data and errors; nullable fields from flaky subgraphs keep responses usable.
+
+**Explanation:** Timeouts per subgraph prevent one slow team's service from stalling everything.
+
+**Example:** Loyalty subgraph down → `points: null` with an error, booking still displayed.
+
+**Say it like this:** "Subgraph failures should degrade one field, not the whole page."
+
+---
+
+## 🧩 More Scenarios
+
+**Q33. A mobile app on an old version breaks after a schema change. What went wrong?**
+
+**Short answer:** A field was removed or changed while old clients still used it; the schema check didn't use real client operations.
+
+**Explanation:** Mobile apps live for months, so deprecate and track usage before removal.
+
+**Example:** Removing `Booking.seat` broke app version 3.2, still used by 15% of users.
+
+**Say it like this:** "Mobile clients stick around, so removals wait until usage data shows nobody still queries the field."
+
+---
+
+**Q34. Response times vary hugely between identical-looking queries. Why?**
+
+**Short answer:** Different variables (list sizes, user data volume), cache hits vs misses, or DataLoader batching not kicking in for some paths.
+
+**Explanation:** Trace with variables (redacted) to compare.
+
+**Example:** Users with thousands of bookings hit an unpaginated nested list.
+
+**Say it like this:** "Same query, different data: unbounded nested lists usually explain it, so every list gets pagination."
+
+---
+
+**Q35. The team wants to expose the database schema directly as GraphQL (auto-generated). Is that a good idea?**
+
+**Short answer:** Fine for internal prototyping; risky for public APIs because it couples clients to tables and makes authorisation harder.
+
+**Explanation:** Design the schema around client needs and domain concepts.
+
+**Example:** Hasura or PostGraphile with strict permission rules for an internal admin tool.
+
+**Say it like this:** "Generated APIs are quick for internal tools, but a public schema should model the domain, not mirror tables."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q16. "Why did the airline site use GraphQL, and what were the challenges?"**
+**Q36. "Why did the airline site use GraphQL, and what were the challenges?"**
 
 **Short answer:** It aggregated many backend services into the exact shape each widget needed; challenges were N+1 on the server, caching, partial errors and query cost.
 
@@ -278,7 +526,7 @@ calls(first: 20, after: "Y3Vyc29y") { edges { node { id score } } pageInfo { has
 
 ---
 
-**Q17. "How did you build GraphQL APIs with NestJS at Slaylink?"**
+**Q37. "How did you build GraphQL APIs with NestJS at Slaylink?"**
 
 **Short answer:** Code-first resolvers with NestJS decorators, services behind them, MongoDB through Mongoose, and guards for auth.
 

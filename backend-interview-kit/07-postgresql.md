@@ -348,9 +348,364 @@ CREATE POLICY tenant_isolation ON calls USING (tenant_id = current_setting('app.
 
 ---
 
+## 🟢 More Basics
+
+**Q21. What is the difference between DELETE, TRUNCATE and DROP?**
+
+**Short answer:** DELETE removes chosen rows (logged, can be filtered and rolled back); TRUNCATE removes all rows quickly; DROP removes the table itself.
+
+**Explanation:** TRUNCATE is transactional in PostgreSQL but takes a strong lock.
+
+**Example:** `DELETE FROM sessions WHERE expires_at < now();` for cleanup.
+
+**Say it like this:** "DELETE for specific rows, TRUNCATE to empty a table, DROP to remove it, and none of them in production without a backup."
+
+---
+
+**Q22. What are the main aggregate functions?**
+
+**Short answer:** `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, plus `string_agg`, `array_agg`, `json_agg` and `percentile_cont` in PostgreSQL.
+
+**Explanation:** `COUNT(*)` counts rows; `COUNT(col)` ignores NULLs.
+
+**Example:** `SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_s) FROM calls;`.
+
+**Say it like this:** "Beyond the basics, Postgres has percentiles and JSON aggregation, which save a lot of application code."
+
+---
+
+**Q23. How does NULL behave in SQL?**
+
+**Short answer:** NULL means unknown: comparisons with NULL are unknown (not true), so use `IS NULL`; aggregates skip NULLs; `COALESCE` provides defaults.
+
+**Explanation:** `WHERE col != 'x'` silently excludes NULL rows.
+
+**Example:** `WHERE status IS DISTINCT FROM 'done'` includes NULLs.
+
+**Say it like this:** "NULL isn't a value, it's unknown, so I'm careful with comparisons and use COALESCE or IS DISTINCT FROM."
+
+---
+
+**Q24. UNION vs UNION ALL?**
+
+**Short answer:** UNION removes duplicates (extra sort or hash); UNION ALL keeps all rows and is faster.
+
+**Explanation:** Use UNION ALL unless you need deduplication.
+
+**Example:** Combining audit events from two tables with UNION ALL.
+
+**Say it like this:** "UNION ALL by default; UNION only when duplicates are actually possible and unwanted."
+
+---
+
+**Q25. What is a subquery vs a CTE?**
+
+**Short answer:** Both are queries inside queries; a CTE (`WITH`) names it for readability and can be recursive.
+
+**Explanation:** Since PostgreSQL 12, CTEs are inlined unless marked `MATERIALIZED`.
+
+**Example:**
+
+```sql
+WITH recent AS (SELECT * FROM calls WHERE started_at > now() - interval '7 days')
+SELECT agent_id, count(*) FROM recent GROUP BY agent_id;
+```
+
+**Say it like this:** "CTEs make complex queries readable, and modern Postgres optimises them like subqueries."
+
+---
+
+**Q26. What data types should you use for IDs, timestamps and text?**
+
+**Short answer:** `uuid` or `bigint` identity for IDs, `timestamptz` for timestamps, `text` for strings (with check constraints if needed), `numeric` for money or integers in minor units.
+
+**Explanation:** `timestamp` without a time zone causes bugs across regions.
+
+**Example:** `created_at timestamptz NOT NULL DEFAULT now()`.
+
+**Say it like this:** "timestamptz always, text over varchar, and money never as float."
+
+---
+
+**Q27. What is an upsert?**
+
+**Short answer:** Insert or update in one statement: `INSERT ... ON CONFLICT (key) DO UPDATE` or `DO NOTHING`.
+
+**Explanation:** Needs a unique constraint on the conflict target. Great for idempotent writes.
+
+**Example:**
+
+```sql
+INSERT INTO agent_daily_stats (agent_id, day, calls) VALUES ($1, $2, 1)
+ON CONFLICT (agent_id, day) DO UPDATE SET calls = agent_daily_stats.calls + 1;
+```
+
+**Say it like this:** "Upserts make writes idempotent and race-free, backed by a unique constraint."
+
+---
+
+**Q28. What are views and materialised views?**
+
+**Short answer:** A view is a saved query run each time; a materialised view stores the result and must be refreshed.
+
+**Explanation:** `REFRESH MATERIALIZED VIEW CONCURRENTLY` avoids blocking reads (needs a unique index).
+
+**Example:** A materialised view of monthly scores per tenant, refreshed nightly.
+
+**Say it like this:** "Views for reuse, materialised views for expensive reports that can be a little stale."
+
+---
+
+## 🟡 More Intermediate
+
+**Q29. What index types does PostgreSQL offer?**
+
+**Short answer:** B-tree (default, equality and range), Hash, GIN (arrays, JSONB, full-text), GiST (geometric, ranges), BRIN (huge naturally ordered tables).
+
+**Explanation:** Pick by query operator.
+
+**Example:** GIN on `ai_output jsonb` for `@>` queries; BRIN on `events.created_at` for an append-only log.
+
+**Say it like this:** "B-tree covers most cases; GIN for JSONB and search, BRIN for huge time-ordered tables."
+
+---
+
+**Q30. What are partial and covering indexes?**
+
+**Short answer:** A partial index covers only rows matching a condition; a covering index (`INCLUDE`) stores extra columns so queries can be answered from the index alone.
+
+**Explanation:** Partial indexes are small and fast for hot subsets.
+
+**Example:** `CREATE INDEX ON calls (tenant_id, started_at) WHERE status = 'flagged';`.
+
+**Say it like this:** "If queries only touch a small subset, a partial index makes them fast without indexing the whole table."
+
+---
+
+**Q31. Why might PostgreSQL ignore your index?**
+
+**Short answer:** Low selectivity (it's cheaper to scan), functions or casts on the column, leading column not used, stale statistics, or type mismatches.
+
+**Explanation:** Use expression indexes for `lower(email)`, and run `ANALYZE`.
+
+**Example:** `WHERE lower(email) = $1` needs `CREATE INDEX ON users (lower(email));`.
+
+**Say it like this:** "The planner skips indexes when they don't help or can't be used; EXPLAIN tells me which case it is."
+
+---
+
+**Q32. How does full-text search work in PostgreSQL?**
+
+**Short answer:** Convert text to `tsvector`, query with `tsquery`, index with GIN, and rank with `ts_rank`.
+
+**Explanation:** Good enough for many apps before adding OpenSearch.
+
+**Example:**
+
+```sql
+ALTER TABLE transcripts ADD COLUMN search tsvector GENERATED ALWAYS AS (to_tsvector('english', body)) STORED;
+CREATE INDEX ON transcripts USING gin (search);
+SELECT call_id FROM transcripts WHERE search @@ websearch_to_tsquery('english', 'refund policy');
+```
+
+**Say it like this:** "Postgres full-text search with a GIN index handles transcript search well before we'd need a separate search engine."
+
+---
+
+**Q33. What is the N+1 query problem with ORMs?**
+
+**Short answer:** Loading a list, then lazily loading a relation per item, producing N extra queries.
+
+**Explanation:** Fix with eager loading (`JOIN` or `IN` queries) or DataLoader.
+
+**Example:** Prisma `include: { agent: true }` or SQLAlchemy `selectinload(Call.agent)`.
+
+**Say it like this:** "I watch query counts per request; N+1 is the most common ORM performance bug."
+
+---
+
+**Q34. How do you paginate efficiently in SQL?**
+
+**Short answer:** Keyset pagination: `WHERE (sort_key, id) < ($1, $2) ORDER BY sort_key DESC, id DESC LIMIT n`, with an index on `(sort_key, id)`.
+
+**Explanation:** `OFFSET` scans and discards rows, so it gets slower with depth.
+
+**Example:** Page 1,000 with OFFSET reads 50,000 rows; keyset reads 50.
+
+**Say it like this:** "Keyset pagination costs the same on page 1 and page 1,000; OFFSET doesn't."
+
+---
+
+**Q35. How do you count rows efficiently on large tables?**
+
+**Short answer:** Exact `count(*)` scans; use estimates (`pg_class.reltuples`), cached counters, or show "1,000+" instead of exact totals.
+
+**Explanation:** Many UIs don't need exact totals.
+
+**Example:** Maintain `tenant_stats.call_count` with a trigger or job.
+
+**Say it like this:** "Exact counts on big tables are expensive, so I use estimates or maintained counters unless exactness matters."
+
+---
+
+**Q36. How do triggers work, and when should you use them?**
+
+**Short answer:** Functions run automatically on insert, update or delete; useful for audit logs, `updated_at` and derived data, but they hide logic.
+
+**Explanation:** Keep them simple and documented.
+
+**Example:** A trigger that sets `updated_at = now()` on every update.
+
+**Say it like this:** "Triggers are great for invariants like timestamps and audit trails; business logic stays in the application."
+
+---
+
+**Q37. How do you store hierarchical data?**
+
+**Short answer:** Adjacency list (`parent_id`) with recursive CTEs, materialised path, nested sets, or the `ltree` extension.
+
+**Explanation:** Adjacency lists are simplest; `ltree` is fast for subtree queries.
+
+**Example:**
+
+```sql
+WITH RECURSIVE thread AS (
+  SELECT * FROM comments WHERE id = $1
+  UNION ALL SELECT c.* FROM comments c JOIN thread t ON c.parent_id = t.id)
+SELECT * FROM thread;
+```
+
+**Say it like this:** "parent_id plus a recursive CTE covers most trees; ltree when subtree queries are hot."
+
+---
+
+**Q38. How do you back up and restore PostgreSQL?**
+
+**Short answer:** Managed snapshots plus point-in-time recovery (WAL archiving), logical dumps for portability, and regular restore tests.
+
+**Explanation:** A backup you haven't restored is a hope, not a backup.
+
+**Example:** RDS automated backups with 7-day PITR; monthly restore drill to staging.
+
+**Say it like this:** "Point-in-time recovery for disasters, logical dumps for portability, and restore drills to prove they work."
+
+---
+
+## 🔴 More Advanced
+
+**Q39. What is table partitioning, and when do you use it?**
+
+**Short answer:** Splitting a big table into child tables by range, list or hash; queries prune irrelevant partitions, and old data can be dropped instantly.
+
+**Explanation:** Good for time-series data with retention rules.
+
+**Example:** `calls` partitioned by month; dropping last year's partition removes data without a huge DELETE.
+
+**Say it like this:** "Partitioning time-based data makes queries prune old months and makes retention a cheap DROP."
+
+---
+
+**Q40. How does replication work, and what is replication lag?**
+
+**Short answer:** Primary streams WAL changes to replicas; lag is how far behind replicas are. Reads from replicas can return stale data.
+
+**Explanation:** Synchronous replication avoids data loss at the cost of write latency.
+
+**Example:** After a user writes, read their data from the primary for a few seconds.
+
+**Say it like this:** "Replicas scale reads but lag behind, so read-your-writes paths go to the primary."
+
+---
+
+**Q41. What locks does PostgreSQL take on schema changes?**
+
+**Short answer:** Many `ALTER TABLE` operations take an ACCESS EXCLUSIVE lock, blocking all reads and writes; even waiting for that lock blocks queries queued behind it.
+
+**Explanation:** Set `lock_timeout`, use `CONCURRENTLY` for indexes, and split risky changes into steps.
+
+**Example:** `SET lock_timeout = '3s'; ALTER TABLE calls ADD COLUMN …;` and retry if it times out.
+
+**Say it like this:** "A migration waiting for a lock can block the whole table, so I set a lock timeout and design changes to be lock-friendly."
+
+---
+
+**Q42. What is advisory locking?**
+
+**Short answer:** Application-defined locks in PostgreSQL (`pg_advisory_lock`) that coordinate work without locking rows.
+
+**Explanation:** Useful to ensure only one instance runs a job.
+
+**Example:** `SELECT pg_try_advisory_lock(hashtext('nightly-aggregates'));`.
+
+**Say it like this:** "Advisory locks are a simple way to elect one worker for a job, using the database we already trust."
+
+---
+
+**Q43. How do you tune PostgreSQL configuration at a high level?**
+
+**Short answer:** `shared_buffers` (~25% of RAM), `work_mem` for sorts, `effective_cache_size`, `max_connections` with pooling, autovacuum settings for busy tables.
+
+**Explanation:** Managed services set sensible defaults; query and index fixes usually matter more.
+
+**Example:** Raising `work_mem` for a reporting role stopped sorts spilling to disk.
+
+**Say it like this:** "Config tuning helps at the margins; most wins come from queries and indexes."
+
+---
+
+## 🧩 More Scenarios
+
+**Q44. Writes become slow as the table grows. What could cause it?**
+
+**Short answer:** Too many indexes, index bloat, foreign key checks without indexes, triggers, lock contention or long transactions.
+
+**Explanation:** Check each index's usage (`pg_stat_user_indexes`) and drop unused ones.
+
+**Example:** Seven indexes on `calls`, two never used; dropping them cut insert time by 30%.
+
+**Say it like this:** "Every index costs on write, so I check which ones are actually used."
+
+---
+
+**Q45. A migration locked a busy table in production. How do you prevent it next time?**
+
+**Short answer:** Lock timeouts, `CREATE INDEX CONCURRENTLY`, adding constraints as `NOT VALID` then validating, batching backfills, and running risky migrations off-peak.
+
+**Explanation:** Review migrations for lock level in code review.
+
+**Example:** `ALTER TABLE … ADD CONSTRAINT … NOT VALID; ALTER TABLE … VALIDATE CONSTRAINT …;`.
+
+**Say it like this:** "Every migration is reviewed for the lock it takes, and anything heavy is done concurrently or in batches."
+
+---
+
+**Q46. You suspect a slow query only in production. How do you find it?**
+
+**Short answer:** `pg_stat_statements` for total and mean time per query, slow query logs, and `auto_explain` for plans of slow queries.
+
+**Explanation:** Sort by total time, not just mean; a fast query called a million times can dominate.
+
+**Example:** The top query by total time was a 4 ms permission lookup called on every request; caching it saved 20% of database time.
+
+**Say it like this:** "pg_stat_statements shows where database time really goes, and it's often a fast query called too often."
+
+---
+
+**Q47. A report query blocks the production database. What do you do?**
+
+**Short answer:** Move reporting to a read replica or analytics store, add timeouts for heavy queries, and pre-aggregate.
+
+**Explanation:** Separate OLTP (app) and OLAP (reports) workloads.
+
+**Example:** Reports run on a replica with `statement_timeout = 60s`.
+
+**Say it like this:** "Reports and the live app shouldn't compete for the same database, so reporting moves to a replica or warehouse."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q21. "How would you model BpoBox's data in PostgreSQL?"**
+**Q48. "How would you model BpoBox's data in PostgreSQL?"**
 
 **Short answer:** Tenants, users with roles, calls, transcripts, scorecard templates (sections and questions), scorecards with answers, and AI scores, all carrying `tenant_id`.
 

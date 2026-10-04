@@ -352,9 +352,316 @@ UPDATE scorecards SET ... WHERE id = $1 AND tenant_id = $2 AND reviewer_id = $3
 
 ---
 
+## 🟢 More Basics
+
+**Q20. What is `app.use` vs `app.get` vs `app.all`?**
+
+**Short answer:** `app.use` mounts middleware for a path prefix and every method; `app.get` handles GET on an exact route; `app.all` handles every method on an exact route.
+
+**Explanation:** `app.use('/api', fn)` runs for `/api`, `/api/calls` and so on.
+
+**Example:** `app.use('/api', authenticate)` protects every API route.
+
+**Say it like this:** "use is for middleware on a prefix, get/post are for exact routes."
+
+---
+
+**Q21. How do you serve static files in Express?**
+
+**Short answer:** `express.static('public')`, ideally behind a CDN, with cache headers for hashed assets.
+
+**Explanation:** In production, static assets usually live on S3 and CloudFront, not the API.
+
+**Example:** `app.use('/assets', express.static('dist/assets', { immutable: true, maxAge: '1y' }))`.
+
+**Say it like this:** "Express can serve static files, but in production I put them on a CDN and keep the API for data."
+
+---
+
+**Q22. What does `res.send` vs `res.json` vs `res.end` do?**
+
+**Short answer:** `send` sends a body with an inferred content type, `json` serialises an object with `application/json`, `end` ends the response with no body.
+
+**Explanation:** Use `res.status(204).end()` for empty responses.
+
+**Example:** `res.json({ id })` vs `res.status(204).end()`.
+
+**Say it like this:** "json for API responses, end for empty ones, and status codes set explicitly."
+
+---
+
+**Q23. How do you read headers and cookies?**
+
+**Short answer:** `req.get('Header-Name')` for headers, `req.cookies` after `cookie-parser`, `req.signedCookies` for signed ones.
+
+**Explanation:** Header names are case-insensitive.
+
+**Example:** `const requestId = req.get('x-request-id') ?? crypto.randomUUID()`.
+
+**Say it like this:** "Headers through req.get, cookies through cookie-parser, and both treated as untrusted input."
+
+---
+
+**Q24. How do you set cookies securely in Express?**
+
+**Short answer:** `res.cookie(name, value, { httpOnly: true, secure: true, sameSite: 'lax' or 'strict', maxAge, path })`.
+
+**Explanation:** Behind a proxy, set `trust proxy` so `secure` cookies work.
+
+**Example:** `res.cookie('refresh', token, { httpOnly: true, secure: true, sameSite: 'strict', path: '/auth/refresh', maxAge: 7 * 864e5 })`.
+
+**Say it like this:** "Session cookies are HttpOnly, Secure and SameSite, and scoped to the path that needs them."
+
+---
+
+**Q25. What is `next('route')` and `next(err)`?**
+
+**Short answer:** `next()` continues to the next middleware; `next('route')` skips remaining handlers for this route; `next(err)` jumps to error middleware.
+
+**Explanation:** Any non-`'route'` argument to `next` is treated as an error.
+
+**Example:** `if (!valid) return next(new BadRequest('Invalid'))`.
+
+**Say it like this:** "Calling next with an error skips everything to the error handler, which is how I keep error handling in one place."
+
+---
+
+**Q26. How do you handle 404s for unknown routes?**
+
+**Short answer:** Add a catch-all middleware after all routes that responds 404 in your standard error format.
+
+**Explanation:** It must come after routes but before the error handler.
+
+**Example:** `app.use((req, res) => res.status(404).json({ error: 'not_found', path: req.path }))`.
+
+**Say it like this:** "A final catch-all returns a consistent 404, so unknown routes don't fall through to HTML error pages."
+
+---
+
+**Q27. What is `express.Router` mergeParams?**
+
+**Short answer:** It lets a nested router access params from its parent route, such as `:callId` in `/calls/:callId/scorecards`.
+
+**Explanation:** Without it, `req.params.callId` is undefined in the child router.
+
+**Example:** `const scorecards = express.Router({ mergeParams: true }); calls.use('/:callId/scorecards', scorecards)`.
+
+**Say it like this:** "Nested resources need mergeParams so the child router sees the parent's IDs."
+
+---
+
+## 🟡 More Intermediate
+
+**Q28. How do you add request timeouts in Express?**
+
+**Short answer:** Set `server.requestTimeout` and `headersTimeout`, add a timeout middleware for slow handlers, and put timeouts on every outbound call.
+
+**Explanation:** Without timeouts, slow dependencies tie up connections indefinitely.
+
+**Example:** `server.requestTimeout = 30_000; server.keepAliveTimeout = 65_000;` (longer than the ALB idle timeout).
+
+**Say it like this:** "Every layer has a timeout, and keep-alive is set longer than the load balancer's so connections don't get cut unexpectedly."
+
+---
+
+**Q29. How do you compress responses?**
+
+**Short answer:** The `compression` middleware (gzip or Brotli) for text responses, or let the proxy or CDN do it.
+
+**Explanation:** Skip compression for already-compressed content and tiny responses.
+
+**Example:** `app.use(compression({ threshold: 1024 }))`.
+
+**Say it like this:** "Compression is cheap and saves bandwidth, but usually the CDN or proxy handles it better than Node."
+
+---
+
+**Q30. How do you implement health and readiness endpoints?**
+
+**Short answer:** `/healthz` returns 200 if the process is alive; `/readyz` checks dependencies and returns 503 when the instance shouldn't get traffic.
+
+**Explanation:** Don't let liveness depend on the database, or a database blip restarts every container.
+
+**Example:** `/readyz` runs `SELECT 1` and `PING` with short timeouts.
+
+**Say it like this:** "Liveness says 'restart me', readiness says 'don't send me traffic'. Mixing them causes cascading restarts."
+
+---
+
+**Q31. How do you handle multipart form data?**
+
+**Short answer:** `multer` or `busboy`, with limits on file size, count and types, streaming to storage.
+
+**Explanation:** Validate the actual content type, not just the extension.
+
+**Example:** `multer({ limits: { fileSize: 10 * 1024 * 1024, files: 1 } })`.
+
+**Say it like this:** "Uploads get strict limits and are streamed to storage; anything big uses presigned URLs instead."
+
+---
+
+**Q32. How do you prevent CSRF in an Express app that uses cookies?**
+
+**Short answer:** SameSite cookies, CSRF tokens (double-submit or synchroniser), and checking the `Origin` header on state-changing requests.
+
+**Explanation:** Pure bearer-token APIs (no cookies) aren't vulnerable to CSRF.
+
+**Example:** Reject POST requests whose `Origin` isn't in the allowlist.
+
+**Say it like this:** "With cookie auth, SameSite plus an Origin check stops CSRF; a token adds defence in depth."
+
+---
+
+**Q33. How do you structure dependency injection without a framework?**
+
+**Short answer:** Build dependencies in one composition root and pass them into route factories, instead of importing singletons everywhere.
+
+**Explanation:** This makes testing easy: pass fakes into the factory.
+
+**Example:**
+
+```ts
+export const callsRouter = ({ callsService }: { callsService: CallsService }) =>
+  express.Router().get('/:id', async (req, res) => res.json(await callsService.get(req.params.id, req.user)));
+app.use('/api/calls', callsRouter({ callsService: new CallsService(repo, queue) }));
+```
+
+**Say it like this:** "Route factories receive their dependencies, so tests can inject fakes without any mocking library."
+
+---
+
+**Q34. How do you write integration tests for an Express app?**
+
+**Short answer:** Export the app without calling `listen`, use Supertest to send requests, and run against a test database.
+
+**Explanation:** Test status codes, response shape, auth and side effects.
+
+**Example:**
+
+```ts
+const res = await request(app).get('/api/calls/123').set('Cookie', sessionCookie(agent));
+expect(res.status).toBe(404);
+```
+
+**Say it like this:** "Supertest drives the real app in-process, so tests cover middleware, routing and the database together."
+
+---
+
+**Q35. How do you secure an Express app's error output?**
+
+**Short answer:** Never return stack traces or internal messages in production; log them with a request ID and return a generic message.
+
+**Explanation:** `NODE_ENV=production` also disables Express's verbose default error pages.
+
+**Example:** Return `{ error: 'internal', requestId }` for 500s.
+
+**Say it like this:** "Clients get a request ID, not a stack trace. The details stay in our logs."
+
+---
+
+**Q36. How do you implement API key authentication for partners?**
+
+**Short answer:** Issue random keys, store only their hashes, look them up by a prefix, scope them to permissions, rate limit per key, and support rotation.
+
+**Explanation:** Send keys in a header, never in URLs (they leak into logs).
+
+**Example:** Key `pk_live_8f2a…`; store `sha256(key)`; header `Authorization: Bearer pk_live_…`.
+
+**Say it like this:** "API keys are treated like passwords: hashed at rest, scoped, rate limited and rotatable."
+
+---
+
+## 🔴 More Advanced
+
+**Q37. How do you run Express behind a reverse proxy correctly?**
+
+**Short answer:** Set `trust proxy` to the number of proxies so `req.ip`, `req.protocol` and secure cookies use the forwarded headers.
+
+**Explanation:** Trusting all proxies lets clients spoof `X-Forwarded-For` and bypass IP rate limits.
+
+**Example:** `app.set('trust proxy', 1)` behind a single ALB.
+
+**Say it like this:** "trust proxy should match the real number of proxies, otherwise rate limiting by IP can be bypassed."
+
+---
+
+**Q38. How would you migrate from Express 4 to Express 5?**
+
+**Short answer:** Update the dependency, fix removed APIs (`req.param`, `res.send(status)`), update path syntax for wildcards, and drop async wrappers since rejections are handled.
+
+**Explanation:** Run the full test suite; path-to-regexp changes can silently change route matching.
+
+**Example:** `app.get('/*', …)` becomes `app.get('/*splat', …)`.
+
+**Say it like this:** "The main wins are native async error handling and stricter routing; the risk is route-matching changes, so tests matter."
+
+---
+
+**Q39. How do you stream large responses from Express?**
+
+**Short answer:** Write chunks with `res.write` or pipe a stream into `res`, set the right headers, handle client disconnects, and respect backpressure.
+
+**Explanation:** Use `pipeline` so errors and disconnects clean up properly.
+
+**Example:** CSV export: database cursor → CSV transform → `res`.
+
+**Say it like this:** "Large responses are streamed with pipeline, so memory stays flat and a disconnected client stops the work."
+
+---
+
+**Q40. How do you implement multi-tenancy in Express?**
+
+**Short answer:** Resolve the tenant from the verified token in auth middleware, store it on `req` or in AsyncLocalStorage, and enforce it in every query.
+
+**Explanation:** Never trust a tenant ID from the body, query or header.
+
+**Example:** `req.tenantId = req.user.tid;` repositories require `tenantId` as an argument.
+
+**Say it like this:** "The tenant comes only from the verified token, and the data layer requires it, so it can't be forgotten."
+
+---
+
+## 🧩 More Scenarios
+
+**Q41. Users behind the same office IP keep getting rate-limited. Why?**
+
+**Short answer:** Limits are keyed only by IP, and many users share one NAT address.
+
+**Explanation:** Key authenticated routes by user or API key; use IP only for unauthenticated endpoints, with higher limits.
+
+**Example:** Login limited per IP and per account; API limited per user.
+
+**Say it like this:** "IP is a bad identity behind NAT, so authenticated traffic is limited per user instead."
+
+---
+
+**Q42. Memory grows steadily in an Express app. Where do you look first?**
+
+**Short answer:** In-memory caches or maps without limits, listeners added per request, and session stores kept in memory.
+
+**Explanation:** The default `express-session` MemoryStore leaks and isn't for production.
+
+**Example:** Switching sessions to Redis stopped the growth.
+
+**Say it like this:** "Anything stored in process memory per user or per request is the first suspect, especially the default session store."
+
+---
+
+**Q43. A route works locally but returns 413 in production. Why?**
+
+**Short answer:** The body exceeds a size limit somewhere: Express's `json({ limit })`, Nginx `client_max_body_size`, or the load balancer.
+
+**Explanation:** Raise the limit deliberately or switch large payloads to uploads.
+
+**Example:** Nginx defaults to 1 MB; the import file was 3 MB.
+
+**Say it like this:** "413 means some layer's body limit was hit, so I check each hop, not just Express."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q20. "How did the Blood Bank app enforce different roles?"**
+**Q44. "How did the Blood Bank app enforce different roles?"**
 
 **Short answer:** JWT authentication plus role middleware per route group: donors, hospitals and organisations each had their own allowed routes and data scope.
 

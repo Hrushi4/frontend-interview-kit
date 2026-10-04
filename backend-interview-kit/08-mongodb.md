@@ -262,9 +262,269 @@ await Inventory.updateOne({ _id: bankId, units: { $gte: 2 } }, { $inc: { units: 
 
 ---
 
+## 🟢 More Basics
+
+**Q16. What is the `_id` field, and what is an ObjectId?**
+
+**Short answer:** Every document has a unique `_id`; by default it's an ObjectId containing a timestamp, a random value and a counter.
+
+**Explanation:** ObjectIds are roughly time-ordered, so sorting by `_id` approximates insertion order.
+
+**Example:** `ObjectId("66f1…").getTimestamp()` returns its creation time.
+
+**Say it like this:** "ObjectIds are unique and roughly time-ordered, which makes _id handy for cursor pagination."
+
+---
+
+**Q17. What are the basic CRUD operations?**
+
+**Short answer:** `insertOne/insertMany`, `find/findOne`, `updateOne/updateMany` with operators, `deleteOne/deleteMany`, and `replaceOne`.
+
+**Explanation:** Always use update operators (`$set`), not full replacement, unless intended.
+
+**Example:** `db.donors.updateOne({ _id }, { $set: { phone } })`.
+
+**Say it like this:** "Updates use operators like $set, so I change only the fields I mean to."
+
+---
+
+**Q18. What query operators should you know?**
+
+**Short answer:** Comparison (`$eq`, `$gt`, `$in`), logical (`$and`, `$or`, `$not`), element (`$exists`), array (`$all`, `$elemMatch`) and evaluation (`$regex`, `$expr`).
+
+**Explanation:** `$elemMatch` applies several conditions to the same array element.
+
+**Example:** `find({ questions: { $elemMatch: { type: 'mcq', points: { $gt: 5 } } } })`.
+
+**Say it like this:** "elemMatch is the one people miss: it makes conditions apply to the same array element."
+
+---
+
+**Q19. What are projections?**
+
+**Short answer:** Choosing which fields to return (`{ name: 1, email: 1 }`), reducing data transferred and memory used.
+
+**Explanation:** Never return sensitive fields like password hashes; exclude them by default in the schema (`select: false`).
+
+**Example:** `User.find().select('name role')`.
+
+**Say it like this:** "I only fetch fields I need, and sensitive fields are excluded at the schema level."
+
+---
+
+**Q20. What are update operators like `$inc`, `$push` and `$addToSet`?**
+
+**Short answer:** `$inc` adds to a number, `$push` appends to an array, `$addToSet` appends only if not present, `$pull` removes matching items.
+
+**Explanation:** They're atomic on a single document.
+
+**Example:** `updateOne({ _id: quizId }, { $inc: { attempts: 1 } })`.
+
+**Say it like this:** "Atomic operators let concurrent updates work safely without read-modify-write races."
+
+---
+
+**Q21. How does Mongoose validation work?**
+
+**Short answer:** Schema types and validators (`required`, `min`, `enum`, custom) run on save and, with `runValidators: true`, on updates.
+
+**Explanation:** Update validators are off by default for `updateOne`.
+
+**Example:** `Donation.updateOne(filter, update, { runValidators: true })`.
+
+**Say it like this:** "Mongoose validates on save by default, but updates need runValidators, which is an easy thing to miss."
+
+---
+
+## 🟡 More Intermediate
+
+**Q22. What are Mongoose middleware (hooks)?**
+
+**Short answer:** Functions that run before or after operations (`pre('save')`, `post('find')`), for hashing passwords, timestamps or audit logs.
+
+**Explanation:** Query middleware and document middleware behave differently; `updateOne` doesn't trigger `save` hooks.
+
+**Example:** `userSchema.pre('save', async function () { if (this.isModified('password')) this.password = await hash(this.password); })`.
+
+**Say it like this:** "Hooks are handy for things like hashing passwords, but I remember that bulk updates skip document hooks."
+
+---
+
+**Q23. What does `populate` do, and what's the cost?**
+
+**Short answer:** Replaces referenced IDs with the referenced documents, using extra queries.
+
+**Explanation:** Populating large lists or nested levels gets slow; select only needed fields.
+
+**Example:** `Donation.find().populate('donor', 'name bloodGroup')`.
+
+**Say it like this:** "populate is a client-side join, so I limit fields and avoid it on big lists."
+
+---
+
+**Q24. What is a TTL index?**
+
+**Short answer:** An index on a date field that makes MongoDB delete documents automatically after a time.
+
+**Explanation:** Deletion runs about once a minute, so it's not precise.
+
+**Example:** `db.sessions.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 })`.
+
+**Say it like this:** "TTL indexes clean up sessions and temporary data automatically."
+
+---
+
+**Q25. How do unique indexes behave with missing fields?**
+
+**Short answer:** Documents missing the field are treated as null, so only one can be missing unless you use a partial or sparse index.
+
+**Explanation:** Partial indexes are more flexible than sparse ones.
+
+**Example:** `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`.
+
+**Say it like this:** "Optional unique fields need a partial index, or the second document without that field fails."
+
+---
+
+**Q26. How do you model many-to-many relationships?**
+
+**Short answer:** Arrays of references on one or both sides for small sets, or a separate linking collection for large or attributed relationships.
+
+**Explanation:** Linking collections can hold extra data (role, joined date).
+
+**Example:** `enrolments { studentId, courseId, enrolledAt }`.
+
+**Say it like this:** "Small, stable sets as arrays of IDs; anything large or with attributes gets a linking collection."
+
+---
+
+**Q27. What are common MongoDB schema design patterns?**
+
+**Short answer:** Bucket (group time-series data), computed (store precomputed values), subset (embed recent items, reference the rest), extended reference (copy a few fields from a related document), and outlier patterns.
+
+**Explanation:** They trade write complexity for read speed.
+
+**Example:** Embed the 10 most recent donations in the donor; keep full history in `donations`.
+
+**Say it like this:** "Patterns like subset and computed fields shape documents around the screens that read them."
+
+---
+
+**Q28. How do you do text search in MongoDB?**
+
+**Short answer:** A text index with `$text` queries for basic search, or Atlas Search (Lucene-based) for relevance, fuzzy matching and autocomplete.
+
+**Explanation:** Only one text index per collection.
+
+**Example:** `db.quizzes.createIndex({ title: 'text', description: 'text' })`.
+
+**Say it like this:** "Text indexes cover basic search; anything richer goes to Atlas Search or a dedicated search engine."
+
+---
+
+**Q29. What are change streams?**
+
+**Short answer:** A real-time feed of inserts, updates and deletes on a collection or database, resumable with a token.
+
+**Explanation:** Useful for syncing to search indexes, caches or notifying clients.
+
+**Example:** Watch `donations` inserts to update a live inventory dashboard.
+
+**Say it like this:** "Change streams turn database writes into events without polling."
+
+---
+
+## 🔴 More Advanced
+
+**Q30. How do you choose between `w: 1` and `w: "majority"`?**
+
+**Short answer:** `majority` waits until most replicas have the write, so it survives failover; `w: 1` is faster but can roll back on failover.
+
+**Explanation:** Combine `majority` writes with `majority` reads for consistent results.
+
+**Example:** Inventory changes with `majority`; page-view counters with `w: 1`.
+
+**Say it like this:** "Important data waits for a majority; low-value data can trade durability for speed."
+
+---
+
+**Q31. What is the working set, and why does it matter?**
+
+**Short answer:** The data and indexes accessed frequently; if it doesn't fit in RAM, performance drops sharply due to disk reads.
+
+**Explanation:** Monitor cache usage and page faults.
+
+**Example:** Archiving old attempts to another collection brought the working set back into memory.
+
+**Say it like this:** "Mongo is fast when hot data and indexes fit in memory, so I size and archive with that in mind."
+
+---
+
+**Q32. How do you migrate from MongoDB to PostgreSQL?**
+
+**Short answer:** Model the relational schema, build a migration script with transformations, run a dual-write or change-stream sync, verify counts and samples, then switch reads and writes.
+
+**Explanation:** Do it per collection to limit risk.
+
+**Example:** Inventory moved first because it needed transactions and reporting.
+
+**Say it like this:** "Migrate incrementally with a sync and verification step, starting with the data that benefits most from SQL."
+
+---
+
+**Q33. How do you secure MongoDB?**
+
+**Short answer:** Authentication on, role-based database users, network isolation, TLS, encryption at rest, no public exposure, and input sanitisation against operator injection.
+
+**Explanation:** Many breaches were open MongoDB instances on the internet.
+
+**Example:** `express-mongo-sanitize` strips `$` keys from request bodies.
+
+**Say it like this:** "Never exposed publicly, always authenticated, and request input is sanitised so users can't inject query operators."
+
+---
+
+## 🧩 More Scenarios
+
+**Q34. Two requests update the same document and one change is lost. How do you fix it?**
+
+**Short answer:** Use atomic update operators instead of read-modify-save, or optimistic concurrency with a version field.
+
+**Explanation:** Mongoose has `optimisticConcurrency: true`.
+
+**Example:** `updateOne({ _id, __v: 3 }, { $set: {...}, $inc: { __v: 1 } })` → 0 matched means conflict.
+
+**Say it like this:** "Read-modify-save races; atomic operators or a version check make updates safe."
+
+---
+
+**Q35. An aggregation runs out of memory. What do you do?**
+
+**Short answer:** Filter earlier with `$match`, project fewer fields, use indexes for the first stages, and allow disk use for large sorts.
+
+**Explanation:** Stages have a 100 MB memory limit without `allowDiskUse`.
+
+**Example:** Moving `$match` before `$lookup` cut processed documents by 95%.
+
+**Say it like this:** "Filter first, then transform. Most heavy pipelines are doing work on documents they later throw away."
+
+---
+
+**Q36. Users see each other's data in a multi-tenant MongoDB app. How did it happen, and how do you prevent it?**
+
+**Short answer:** A query was missing the tenant filter; prevent it with a repository layer or Mongoose plugin that adds `tenantId` to every query, plus tests.
+
+**Explanation:** Never take tenant IDs from request input.
+
+**Example:** A Mongoose plugin adds `tenantId` from AsyncLocalStorage to every `find` and `update`.
+
+**Say it like this:** "Tenant filtering must be automatic, not remembered per query, with tests proving isolation."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q16. "How did you model the Blood Bank data in MongoDB?"**
+**Q37. "How did you model the Blood Bank data in MongoDB?"**
 
 **Short answer:** Separate collections for donors, hospitals, organisations, donations and inventory, with references, because donation history grows without bound.
 
@@ -276,7 +536,7 @@ await Inventory.updateOne({ _id: bankId, units: { $gte: 2 } }, { $inc: { units: 
 
 ---
 
-**Q17. "Would you use MongoDB again for those projects?"**
+**Q38. "Would you use MongoDB again for those projects?"**
 
 **Short answer:** For quick prototypes, yes; for the inventory and reporting side, PostgreSQL would give stronger guarantees and easier reporting.
 

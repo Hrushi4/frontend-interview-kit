@@ -186,7 +186,7 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 **Explanation:** Say clearly what was designed versus implemented.
 
-**Example:** See 12 — Real-Time Backends, Q16.
+**Example:** See 12 — Real-Time Backends, the "self-hosted LiveKit design on AWS" question.
 
 **Say it like this:** "Media nodes scale horizontally with Redis routing, hospitals connect through TURN on 443, deploys drain rooms instead of dropping calls, and it's all observable in Grafana."
 

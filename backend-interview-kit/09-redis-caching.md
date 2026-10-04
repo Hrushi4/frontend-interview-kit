@@ -269,9 +269,257 @@ if (n > 100) throw new TooManyRequests();
 
 ---
 
+## 🟢 More Basics
+
+**Q17. What are the most common Redis commands?**
+
+**Short answer:** `GET/SET` (with `EX`, `NX`), `DEL`, `EXPIRE/TTL`, `INCR`, `HSET/HGETALL`, `LPUSH/RPOP`, `SADD/SMEMBERS`, `ZADD/ZRANGE`, `SCAN`.
+
+**Explanation:** `SET key value NX EX 60` sets only if missing, with a TTL, in one atomic step.
+
+**Example:** `SET otp:user:42 739201 EX 300`.
+
+**Say it like this:** "SET with NX and EX in one command covers locks, OTPs and one-time keys."
+
+---
+
+**Q18. When would you use a hash instead of a JSON string?**
+
+**Short answer:** When you read or update individual fields; a JSON string is simpler when you always read the whole object.
+
+**Explanation:** Hashes let you `HINCRBY` a single field atomically.
+
+**Example:** `HINCRBY agent:12:today calls 1`.
+
+**Say it like this:** "Hashes for objects I update field by field, JSON strings for objects I always read whole."
+
+---
+
+**Q19. How do you build a leaderboard with Redis?**
+
+**Short answer:** A sorted set: `ZINCRBY` to update scores, `ZREVRANGE` with scores for the top N, `ZREVRANK` for a user's position.
+
+**Explanation:** All operations are O(log n).
+
+**Example:** `ZADD tenant:1:leaderboard 92 agent:12`; `ZREVRANGE tenant:1:leaderboard 0 9 WITHSCORES`.
+
+**Say it like this:** "Sorted sets are built for leaderboards: updates and top-N reads are both fast."
+
+---
+
+**Q20. How do you avoid `KEYS *` in production?**
+
+**Short answer:** Use `SCAN` with a cursor and `MATCH`, which iterates in small batches without blocking Redis.
+
+**Explanation:** `KEYS` scans everything in one blocking command.
+
+**Example:** `SCAN 0 MATCH session:* COUNT 1000`.
+
+**Say it like this:** "KEYS blocks Redis; SCAN does the same job in safe, small steps."
+
+---
+
+**Q21. What is pipelining?**
+
+**Short answer:** Sending many commands without waiting for each reply, cutting network round trips.
+
+**Explanation:** Not atomic; use `MULTI` or Lua for atomicity.
+
+**Example:** Loading 500 cache keys in one pipeline instead of 500 round trips.
+
+**Say it like this:** "Pipelining batches round trips, which is often the biggest Redis latency win."
+
+---
+
+**Q22. Redis vs Memcached?**
+
+**Short answer:** Memcached is a simple, multithreaded key-value cache; Redis adds data structures, persistence, replication, pub/sub, scripting and streams.
+
+**Explanation:** Redis is the default choice today unless you only need a plain cache.
+
+**Example:** Rate limiting and leaderboards need Redis data structures.
+
+**Say it like this:** "Memcached is a plain cache; Redis is a toolbox, which is why it's usually chosen."
+
+---
+
+## 🟡 More Intermediate
+
+**Q23. What is read-through and write-through caching?**
+
+**Short answer:** Read-through: the cache layer loads from the database on a miss itself. Write-through: writes go to the cache and database together, keeping the cache fresh.
+
+**Explanation:** Write-through adds write latency but avoids stale reads.
+
+**Example:** A caching library wraps the repository so services just call `getConfig()`.
+
+**Say it like this:** "Read-through hides cache logic from callers; write-through keeps the cache fresh at the cost of slower writes."
+
+---
+
+**Q24. What is cache penetration, and how do you stop it?**
+
+**Short answer:** Repeated requests for keys that don't exist bypass the cache and hit the database every time; cache "not found" results briefly, or use a Bloom filter.
+
+**Explanation:** Attackers can use random IDs to overload the database.
+
+**Example:** Cache `null` for a missing short code for 60 seconds.
+
+**Say it like this:** "Missing data should be cached too, briefly, so repeated misses don't all hit the database."
+
+---
+
+**Q25. What is a cache avalanche?**
+
+**Short answer:** Many keys expiring at the same time (or the cache going down), sending a flood of requests to the database.
+
+**Explanation:** Add TTL jitter, keep hot keys warm, and have the database protected by rate limits or circuit breakers.
+
+**Example:** Keys all set at deploy time with TTL 3600 expired together an hour later.
+
+**Say it like this:** "Jittered TTLs stop keys expiring together, and fallbacks protect the database if the cache disappears."
+
+---
+
+**Q26. What is a local (in-process) cache, and when do you add one?**
+
+**Short answer:** A small LRU cache in each app instance for very hot, rarely changing data, in front of Redis.
+
+**Explanation:** Saves network round trips; invalidate with short TTLs or pub/sub messages.
+
+**Example:** Tenant feature flags cached in memory for 30 seconds.
+
+**Say it like this:** "For tiny, hot data, an in-process cache avoids even the Redis round trip."
+
+---
+
+**Q27. How do you store sessions or tokens safely in Redis?**
+
+**Short answer:** Random, unguessable keys, TTLs matching session lifetime, minimal data, network isolation, and AUTH/TLS enabled.
+
+**Explanation:** Index sessions per user (a set) so you can revoke all of a user's sessions.
+
+**Example:** `SADD user:42:sessions s_9f2c`; on password change, delete all listed sessions.
+
+**Say it like this:** "Sessions expire on their own, and a per-user index lets us log someone out everywhere instantly."
+
+---
+
+**Q28. What are Redis Streams?**
+
+**Short answer:** An append-only log with consumer groups, acknowledgements and pending entries, giving durable, at-least-once messaging.
+
+**Explanation:** A lighter alternative to Kafka for moderate workloads.
+
+**Example:** `XADD events * type call.scored id c_42`; workers `XREADGROUP` and `XACK`.
+
+**Say it like this:** "Streams give Redis durable queues with consumer groups, unlike fire-and-forget pub/sub."
+
+---
+
+**Q29. How do you use Redis for distributed rate limiting with a sliding window?**
+
+**Short answer:** A sorted set per key with timestamps as scores: remove entries older than the window, count the rest, add the new one, all in a Lua script.
+
+**Explanation:** More accurate than fixed windows, costs more memory.
+
+**Example:** `ZREMRANGEBYSCORE key 0 now-60000; ZCARD key; ZADD key now now`.
+
+**Say it like this:** "A sliding window counts exactly the last 60 seconds, which avoids burst loopholes at window edges."
+
+---
+
+## 🔴 More Advanced
+
+**Q30. What is the Redlock algorithm, and is it safe?**
+
+**Short answer:** Acquiring a lock on a majority of independent Redis nodes; it's debated for correctness because of clock and pause issues.
+
+**Explanation:** For correctness-critical locks, use fencing tokens or a consensus system (etcd, ZooKeeper, database locks).
+
+**Example:** Use Postgres advisory locks for "only one billing run".
+
+**Say it like this:** "Redis locks are fine for efficiency; when correctness depends on the lock, I use fencing tokens or a stronger system."
+
+---
+
+**Q31. How do you handle Redis failover in your application?**
+
+**Short answer:** Use a client that understands Sentinel or Cluster topology, set connection and command timeouts, retry briefly, and degrade gracefully when the cache is unavailable.
+
+**Explanation:** Cache misses should fall back to the database, with limits.
+
+**Example:** `ioredis` with Sentinel config and `maxRetriesPerRequest: 2`.
+
+**Say it like this:** "The app treats the cache as optional: short timeouts, quick retries, then fall back."
+
+---
+
+**Q32. How do you find hot keys and big keys?**
+
+**Short answer:** `redis-cli --hotkeys` (with LFU policy), `--bigkeys`, `MEMORY USAGE key`, and monitoring per-command latency.
+
+**Explanation:** Big keys slow commands; hot keys overload one shard.
+
+**Example:** A 50 MB hash of all agents' stats split into one hash per agent.
+
+**Say it like this:** "Big and hot keys cause most Redis performance problems, and Redis has built-in tools to find them."
+
+---
+
+**Q33. How do you secure Redis?**
+
+**Short answer:** Private network only, AUTH with ACL users, TLS, disabled dangerous commands (`FLUSHALL`, `CONFIG`), and no public exposure.
+
+**Explanation:** Unprotected Redis instances are regularly exploited.
+
+**Example:** ElastiCache in private subnets with in-transit encryption and AUTH.
+
+**Say it like this:** "Redis is never reachable from the internet, and access uses ACL users over TLS."
+
+---
+
+## 🧩 More Scenarios
+
+**Q34. Redis memory usage keeps growing. What do you check?**
+
+**Short answer:** Keys without TTLs, growing collections, eviction policy, fragmentation, and big keys.
+
+**Explanation:** Every cache key should have a TTL.
+
+**Example:** A bug wrote rate-limit keys without `EXPIRE`, so they lived forever.
+
+**Say it like this:** "Unbounded growth usually means keys without TTLs. Every cache and counter key gets one."
+
+---
+
+**Q35. After Redis restarts, the database is overwhelmed. How do you prevent this?**
+
+**Short answer:** Warm critical keys gradually, use request coalescing, rate limit cache rebuilds, and keep replicas so the cache isn't empty after failover.
+
+**Explanation:** A cold cache is a predictable incident; plan for it.
+
+**Example:** A startup job pre-loads tenant configs and permissions.
+
+**Say it like this:** "A cold cache can take down the database, so critical data is pre-warmed and rebuilds are throttled."
+
+---
+
+**Q36. Users sometimes see permissions that were already revoked. Why?**
+
+**Short answer:** Permissions are cached and not invalidated on change, or a JWT still carries old roles.
+
+**Explanation:** Invalidate permission cache keys on role changes and keep token lifetimes short.
+
+**Example:** On role change: `DEL perms:user:42` and bump the user's token version.
+
+**Say it like this:** "Revoked access must take effect quickly, so permission caches are invalidated on change and tokens are short-lived."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q17. "Where did Redis fit in your systems?"**
+**Q37. "Where did Redis fit in your systems?"**
 
 **Short answer:** As the Celery broker for AI scoring jobs, for room routing across self-hosted LiveKit nodes, and for caching in the AWS design. [Adjust to your real uses.]
 

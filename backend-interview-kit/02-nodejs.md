@@ -425,9 +425,362 @@ logger.info('scored', als.getStore());   // anywhere downstream
 
 ---
 
+## 🟢 More Basics
+
+**Q25. What is V8, and what does it do for Node?**
+
+**Short answer:** Google's JavaScript engine that compiles JavaScript to machine code (with a JIT), manages memory and runs garbage collection.
+
+**Explanation:** V8 executes your code; libuv provides the event loop and I/O. Node glues them together and adds APIs like `fs`, `http` and `crypto`.
+
+**Example:** Hot functions get optimised by V8's TurboFan compiler; changing object shapes often can de-optimise them.
+
+**Say it like this:** "V8 runs the JavaScript, libuv handles the I/O, and Node is the layer that connects them with server-side APIs."
+
+---
+
+**Q26. What is the difference between `require` caching and re-importing?**
+
+**Short answer:** Modules are loaded once and cached; later `require` or `import` calls return the same instance.
+
+**Explanation:** That makes modules natural singletons (a DB pool exported from a module is shared). Clearing `require.cache` is rarely a good idea.
+
+**Example:** `db.js` exports one `Pool`; every file that imports it uses the same pool.
+
+**Say it like this:** "Modules are evaluated once and cached, so an exported pool or client is effectively a singleton."
+
+---
+
+**Q27. What is `package.json` used for?**
+
+**Short answer:** Project metadata, dependencies and devDependencies, scripts, the module type, engines and entry points.
+
+**Explanation:** `engines` documents the Node version; `scripts` standardise commands like `test` and `build`; `exports` controls what a package exposes.
+
+**Example:** `"scripts": { "dev": "tsx watch src/main.ts", "test": "vitest run" }`.
+
+**Say it like this:** "package.json is the project's manifest: what it needs, how to run it, and which Node version it expects."
+
+---
+
+**Q28. dependencies vs devDependencies vs peerDependencies?**
+
+**Short answer:** dependencies are needed at runtime, devDependencies only for building and testing, peerDependencies must be provided by the host project.
+
+**Explanation:** Production images install with `--omit=dev` to stay small. Plugins declare the framework they extend as a peer dependency.
+
+**Example:** `express` is a dependency, `vitest` is a devDependency, a NestJS plugin lists `@nestjs/core` as a peer dependency.
+
+**Say it like this:** "Runtime needs go in dependencies, tooling in devDependencies, and libraries that extend a host framework declare it as a peer."
+
+---
+
+**Q29. How do callbacks, promises and async/await relate?**
+
+**Short answer:** They're three styles for async code: callbacks are the original pattern, promises represent a future value, and async/await is syntax on top of promises.
+
+**Explanation:** `util.promisify` converts callback APIs; most Node APIs now have promise versions (`fs/promises`).
+
+**Example:**
+
+```js
+import { readFile } from 'node:fs/promises';
+const config = JSON.parse(await readFile('config.json', 'utf8'));
+```
+
+**Say it like this:** "I write async/await everywhere; it's promises underneath, and I promisify any old callback APIs."
+
+---
+
+**Q30. What is the `Buffer` class?**
+
+**Short answer:** A fixed-size chunk of raw binary data in Node, used for files, network data and encodings.
+
+**Explanation:** Convert with `buf.toString('utf8')` or `Buffer.from(str, 'base64')`. Beware of building huge buffers in memory; stream instead.
+
+**Example:** Verifying a webhook signature requires the raw body as a Buffer, not parsed JSON.
+
+**Say it like this:** "Buffers hold raw bytes. Anything binary, or anything where exact bytes matter like signatures, uses them."
+
+---
+
+**Q31. How do you read command-line arguments and environment variables?**
+
+**Short answer:** `process.argv` for arguments, `process.env` for environment variables; use a parser (commander, yargs) for real CLIs.
+
+**Explanation:** Node 20+ supports `--env-file=.env` natively for local development.
+
+**Example:** `node --env-file=.env dist/main.js`.
+
+**Say it like this:** "Config comes from process.env, validated on start; for local dev, Node can load a .env file directly now."
+
+---
+
+**Q32. What does `process.exit()` do, and why avoid calling it casually?**
+
+**Short answer:** It ends the process immediately, without waiting for pending I/O, which can cut off logs and in-flight requests.
+
+**Explanation:** Prefer setting `process.exitCode` and letting the event loop drain, or a graceful shutdown routine.
+
+**Example:** A script that writes a file then calls `process.exit(0)` may exit before the write completes.
+
+**Say it like this:** "process.exit is abrupt. I let the process finish naturally or go through a graceful shutdown."
+
+---
+
+## 🟡 More Intermediate
+
+**Q33. How do timers behave under load?**
+
+**Short answer:** Timers fire *no earlier* than their delay; if the event loop is busy, they fire late.
+
+**Explanation:** Never rely on `setTimeout` for precise timing; compute elapsed time from timestamps.
+
+**Example:** A `setTimeout(fn, 100)` firing after 900 ms is a sign of event loop lag.
+
+**Say it like this:** "A timer delay is a minimum, not a promise. Late timers are a useful signal that the loop is blocked."
+
+---
+
+**Q34. How do you implement a timeout around a promise?**
+
+**Short answer:** Use `AbortSignal.timeout(ms)` for APIs that accept a signal, or `Promise.race` with a rejecting timer and clear it afterwards.
+
+**Explanation:** Aborting also cancels the underlying work (like an HTTP request), which `Promise.race` alone doesn't.
+
+**Example:**
+
+```js
+const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+```
+
+**Say it like this:** "Every outbound call has a timeout, and I prefer AbortSignal because it actually cancels the request."
+
+---
+
+**Q35. What is the difference between `Promise.all`, `allSettled`, `race` and `any`?**
+
+**Short answer:** `all` fails fast on the first rejection; `allSettled` waits for every result; `race` settles with the first to settle; `any` resolves with the first success.
+
+**Explanation:** `allSettled` suits batch work where partial success is fine.
+
+**Example:** Fetching three optional widgets for a dashboard with `allSettled`, showing whichever succeeded.
+
+**Say it like this:** "all when everything must succeed, allSettled when partial results are fine, race for timeouts, any for the first good mirror."
+
+---
+
+**Q36. How do you handle errors inside streams?**
+
+**Short answer:** Use `stream.pipeline` (or its promise version), which propagates errors from any stage and destroys all streams.
+
+**Explanation:** With `.pipe()`, errors don't propagate and streams can leak.
+
+**Example:** A gzip error mid-export rejects the `pipeline` promise, so the handler can log and end the response.
+
+**Say it like this:** "pipeline handles errors and cleanup for every stage, which .pipe doesn't."
+
+---
+
+**Q37. What is the `http.Agent` and keep-alive?**
+
+**Short answer:** The agent pools TCP connections for outbound HTTP; keep-alive reuses them instead of opening a new connection (and TLS handshake) per request.
+
+**Explanation:** Node 19+ enables keep-alive by default; tune `maxSockets` for high-throughput clients.
+
+**Example:** Calling the transcription API thousands of times an hour with keep-alive saves a TLS handshake on each call.
+
+**Say it like this:** "Reusing connections removes handshake latency on every outbound call, which adds up fast in pipelines."
+
+---
+
+**Q38. How do you handle uploads of large files in Node without running out of memory?**
+
+**Short answer:** Stream the request body to storage (S3 multipart upload or disk) instead of buffering it, with size limits.
+
+**Explanation:** Better still, use presigned URLs so files go straight to S3.
+
+**Example:** `busboy` streams a multipart file into `@aws-sdk/lib-storage` `Upload`.
+
+**Say it like this:** "Files are streamed, never buffered, and ideally they skip the API entirely with presigned URLs."
+
+---
+
+**Q39. How does `child_process` work, and when do you use it?**
+
+**Short answer:** It runs other programs: `spawn` streams output, `exec` buffers it in a shell, `execFile` runs without a shell, `fork` runs Node scripts with an IPC channel.
+
+**Explanation:** Prefer `execFile` or `spawn` with an argument array to avoid shell injection.
+
+**Example:** `spawn('ffmpeg', ['-i', input, '-ac', '1', output])` to convert recordings.
+
+**Say it like this:** "For external tools like ffmpeg I use spawn with an argument array, never a shell string."
+
+---
+
+**Q40. What are Node's built-in test runner and other modern features?**
+
+**Short answer:** `node:test` and `node --test`, `--watch` mode, `--env-file`, native `fetch`, `AbortSignal.timeout`, and permission flags.
+
+**Explanation:** For small services the built-in runner removes a dependency; bigger projects still use Vitest or Jest.
+
+**Example:** `node --test --watch src/**/*.test.js`.
+
+**Say it like this:** "Modern Node covers a lot natively: fetch, a test runner, watch mode and env files, so I add fewer dependencies."
+
+---
+
+**Q41. How do you structure logging in Node?**
+
+**Short answer:** A fast structured logger (pino) writing JSON to stdout, with request IDs, levels and redaction; the platform ships logs.
+
+**Explanation:** Don't write log files inside containers; stdout is collected by the platform.
+
+**Example:** `pino({ redact: ['req.headers.authorization', '*.password'] })`.
+
+**Say it like this:** "JSON to stdout with redaction and request IDs; the platform handles shipping and storage."
+
+---
+
+**Q42. How do you make outbound HTTP calls resilient?**
+
+**Short answer:** Timeouts, retries with backoff and jitter for safe requests, circuit breakers, and connection pooling.
+
+**Explanation:** Only retry idempotent requests or ones with an idempotency key.
+
+**Example:** `got` or `undici` with a 5 s timeout, 3 retries on 502/503/504, and `opossum` as a circuit breaker.
+
+**Say it like this:** "Every outbound call has a timeout, safe retries, and a circuit breaker, so one bad dependency can't take us down."
+
+---
+
+## 🔴 More Advanced
+
+**Q43. How does garbage collection work in V8?**
+
+**Short answer:** Generational: short-lived objects are collected quickly in the young generation (scavenge); survivors move to the old generation, collected by mark-sweep-compact.
+
+**Explanation:** Long GC pauses show up as latency spikes; allocating less and avoiding huge heaps helps. `--max-old-space-size` sets the heap limit.
+
+**Example:** Container memory 1 GB → set `--max-old-space-size=768` so Node collects before the container is OOM-killed.
+
+**Say it like this:** "Most objects die young and are cheap to collect. I size the heap below the container limit so GC runs before the kernel kills us."
+
+---
+
+**Q44. What is the cost of `async/await` in hot paths?**
+
+**Short answer:** Small but real: each await schedules a microtask; in very hot loops, batching work or avoiding unnecessary awaits helps.
+
+**Explanation:** Sequential awaits in a loop are the bigger problem: they serialise independent work.
+
+**Example:** Replacing `for (const id of ids) await load(id)` with a concurrency-limited `Promise.all`.
+
+**Say it like this:** "The real cost is usually awaiting in sequence when the work could run in parallel, not the await itself."
+
+---
+
+**Q45. How do you share state between worker threads?**
+
+**Short answer:** Pass messages (copied with structured clone), transfer ArrayBuffers, or share memory with `SharedArrayBuffer` and `Atomics`.
+
+**Explanation:** Messaging is simpler and safer; shared memory is for high-performance numeric work.
+
+**Example:** A worker pool (Piscina) processes images; results are posted back as messages.
+
+**Say it like this:** "Workers talk by messages by default; shared memory is a specialised tool I'd use only with a clear need."
+
+---
+
+**Q46. How would you build a CPU-heavy feature in a Node API?**
+
+**Short answer:** Offload it: a worker thread pool for short tasks, or a background job queue and a separate service for long or heavy ones.
+
+**Explanation:** Keep request latency predictable; return 202 for long work.
+
+**Example:** PDF report generation moved to a BullMQ worker; the API returns 202 with a job ID.
+
+**Say it like this:** "CPU work never runs on the request thread. Short tasks go to a worker pool; long ones become background jobs."
+
+---
+
+**Q47. How do you upgrade Node versions safely?**
+
+**Short answer:** Read the changelog for breaking changes, update CI first, run the full test suite, deploy to staging, watch metrics, then roll out.
+
+**Explanation:** Use even-numbered LTS versions in production.
+
+**Example:** Upgrading from Node 18 to 22 changed default keep-alive behaviour, which surfaced in load tests.
+
+**Say it like this:** "LTS only, CI first, then staging with load tests, because runtime upgrades change subtle defaults."
+
+---
+
+**Q48. What is `AbortController` used for on the server?**
+
+**Short answer:** Cancelling in-flight work when it's no longer needed: client disconnects, timeouts, or shutdown.
+
+**Explanation:** Pass the signal down to fetch calls, database queries (where supported) and LLM streams.
+
+**Example:** When an SSE client disconnects, abort the upstream LLM stream to stop paying for tokens.
+
+**Say it like this:** "If nobody's waiting for the result, I cancel the work. AbortController carries that signal through the call chain."
+
+---
+
+## 🧩 More Scenarios
+
+**Q49. A Node service crashes with "JavaScript heap out of memory" during a large export. What do you do?**
+
+**Short answer:** Stream the export instead of building it in memory: cursor through the database and pipe rows to the response or to S3.
+
+**Explanation:** Raising the heap limit only delays the crash.
+
+**Example:** `pg-query-stream` → CSV transform → gzip → S3 upload stream.
+
+**Say it like this:** "The fix is streaming, not more memory. Rows flow from the database to the destination without ever being held all at once."
+
+---
+
+**Q50. CPU on one Node instance is 100% while others are idle. Why?**
+
+**Short answer:** Uneven load balancing (sticky sessions, long-lived connections), or one expensive request pattern routed to it.
+
+**Explanation:** Check load balancer algorithm, WebSocket distribution and per-instance request rates.
+
+**Example:** WebSocket connections pinned to the first instances after a deploy; enabling least-connections balancing fixed it.
+
+**Say it like this:** "Uneven CPU usually means uneven traffic, often long-lived connections that never rebalanced."
+
+---
+
+**Q51. Requests time out only during deploys. What's happening?**
+
+**Short answer:** Old instances are killed before draining, or new ones receive traffic before they're ready.
+
+**Explanation:** Add readiness checks, graceful shutdown on SIGTERM and a deregistration delay.
+
+**Example:** ALB deregistration delay of 30 s plus a SIGTERM handler that finishes in-flight requests.
+
+**Say it like this:** "Deploy-time errors mean the handover isn't graceful. Readiness checks and draining fix both ends."
+
+---
+
+**Q52. A third-party SDK logs secrets to the console. How do you handle it?**
+
+**Short answer:** Configure or patch its logger, redact at the logging layer, report the issue upstream, and rotate any leaked secrets.
+
+**Explanation:** Check log storage for exposure and restrict access.
+
+**Example:** Wrap the SDK's logger option with a redacting function.
+
+**Say it like this:** "Rotate first, then stop the leak at the logging layer, then fix it upstream."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q25. "Tell me about the Express backends in your Blood Bank and Quiz projects."**
+**Q53. "Tell me about the Express backends in your Blood Bank and Quiz projects."**
 
 **Short answer:** Express REST APIs with Mongoose and MongoDB, role-based routes for donors, hospitals and organisations (Blood Bank) or teachers and students (Quiz), with JWT authentication.
 
@@ -439,7 +792,7 @@ logger.info('scored', als.getStore());   // anywhere downstream
 
 ---
 
-**Q26. "Your resume says full-stack. What backend work do you own day to day?"**
+**Q54. "Your resume says full-stack. What backend work do you own day to day?"**
 
 **Short answer:** Describe your real backend ownership: FastAPI RBAC and security fixes, the Celery scoring pipeline, AWS infrastructure for LiveKit, and Node/NestJS services.
 
