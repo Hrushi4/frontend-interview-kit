@@ -2,7 +2,7 @@
 import re, glob, sys
 LABELS = ['**Short answer:**', '**Explanation:**', '**Example:**', '**Say it like this:**']
 bad_total = 0
-for f in sorted(glob.glob('frontend-interview-kit/*.md')):
+for f in sorted(glob.glob('frontend-interview-kit/*.md') + glob.glob('backend-interview-kit/*.md')):
     s = open(f, encoding='utf-8').read()
     parts = re.split(r'(?m)^(?=\*\*Q\d+\.|### Q\d+\.|### Design \d+)', s)
     qs = [p for p in parts if re.match(r'(\*\*|### )Q\d+\.|### Design \d+', p)]

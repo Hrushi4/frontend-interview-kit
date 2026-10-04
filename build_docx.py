@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Convert the Markdown study files into .docx files that upload cleanly to Google Docs.
 
-Usage:  python3 build_docx.py            # converts every frontend-interview-kit/*.md
-        python3 build_docx.py 05         # converts only files starting with 05
+Usage:  python3 build_docx.py                    # frontend kit: every frontend-interview-kit/*.md
+        python3 build_docx.py 05                 # frontend kit: only files starting with 05
+        python3 build_docx.py --kit backend      # backend kit: every backend-interview-kit/*.md
 
 Requires: pip install python-docx markdown-it-py
-Output:   google-docs/<same-name>.docx
+Output:   google-docs/<same-name>.docx (frontend) or backend-google-docs/<same-name>.docx (backend),
+          plus one combined <Kit>-Interview-Kit-ALL.docx when no prefix is given.
 """
 import re
 import sys
@@ -20,8 +22,11 @@ from docx.shared import Pt, RGBColor, Cm
 from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).parent
-SRC = ROOT / "frontend-interview-kit"
-OUT = ROOT / "google-docs"
+KITS = {
+    "frontend": (ROOT / "frontend-interview-kit", ROOT / "google-docs", "Frontend Interview Kit"),
+    "backend": (ROOT / "backend-interview-kit", ROOT / "backend-google-docs", "Backend Interview Kit"),
+}
+SRC, OUT, KIT_TITLE = KITS["frontend"]
 
 BODY_FONT = "Arial"
 CODE_FONT = "Courier New"
@@ -241,7 +246,7 @@ def convert(md_path: Path, out_path: Path):
     setup_styles(doc)
     core = doc.core_properties
     core.title = text.splitlines()[0].lstrip("# ").strip()
-    core.author = "Frontend Interview Kit"
+    core.author = KIT_TITLE
     render(doc, text)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(out_path)
@@ -251,9 +256,9 @@ def combine(paths, out_path: Path):
     """All files in one document: a contents list, then each file on a new page."""
     doc = Document()
     setup_styles(doc)
-    doc.core_properties.title = "Frontend Interview Kit"
-    doc.core_properties.author = "Frontend Interview Kit"
-    doc.add_heading("Frontend Interview Kit", level=0)
+    doc.core_properties.title = KIT_TITLE
+    doc.core_properties.author = KIT_TITLE
+    doc.add_heading(KIT_TITLE, level=0)
     doc.add_paragraph(
         "Every topic file in one document. Each file starts on a new page with its own "
         "top-level heading. In Google Docs, open View → Show outline (or the outline "
@@ -342,14 +347,22 @@ def render(doc, text: str):
 
 
 def main():
-    prefix = sys.argv[1] if len(sys.argv) > 1 else ""
+    global SRC, OUT, KIT_TITLE
+    args = sys.argv[1:]
+    kit = "frontend"
+    if "--kit" in args:
+        i = args.index("--kit")
+        kit = args[i + 1]
+        del args[i:i + 2]
+    SRC, OUT, KIT_TITLE = KITS[kit]
+    prefix = args[0] if args else ""
     files = sorted(p for p in SRC.glob("*.md") if p.name.startswith(prefix))
     for path in files:
         out = OUT / (path.stem + ".docx")
         convert(path, out)
         print(f"built {out.relative_to(ROOT)}")
     if not prefix:
-        out = OUT / "Frontend-Interview-Kit-ALL.docx"
+        out = OUT / (KIT_TITLE.replace(" ", "-") + "-ALL.docx")
         combine(files, out)
         print(f"built {out.relative_to(ROOT)}")
 
