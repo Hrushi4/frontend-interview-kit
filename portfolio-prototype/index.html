@@ -1,0 +1,737 @@
+<title>Hrushikesh Chavan Portfolio Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a "session console" — a sticky top bar, then stacked instrument panels;
+   each panel is a live demo of one resume claim, with presenter notes for interviews. */
+:root {
+  --bg: #eef2f0; --surface: #ffffff; --surface-2: #e4eae7; --ink: #10201b; --muted: #52625c;
+  --line: #cfd8d4; --accent: #0b7a63; --accent-ink: #ffffff; --accent-soft: #d5ece5;
+  --ok: #1d8a4c; --warn: #b07800; --bad: #c2382c; --note: #fff4cf; --note-ink: #4a3b00; --note-line: #e8cf72;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1613; --surface: #15201c; --surface-2: #1c2a25; --ink: #e2ece8; --muted: #93a49e;
+  --line: #2a3a34; --accent: #4cc3a4; --accent-ink: #062018; --accent-soft: #173a31;
+  --ok: #4ccf86; --warn: #e3b341; --bad: #f2776c; --note: #3a3216; --note-ink: #f6e7b0; --note-line: #6b5a1f;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1613; --surface: #15201c; --surface-2: #1c2a25; --ink: #e2ece8; --muted: #93a49e;
+  --line: #2a3a34; --accent: #4cc3a4; --accent-ink: #062018; --accent-soft: #173a31;
+  --ok: #4ccf86; --warn: #e3b341; --bad: #f2776c; --note: #3a3216; --note-ink: #f6e7b0; --note-line: #6b5a1f;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body); padding-inline: 18px; padding-block: 0 80px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 1180px; margin-inline: auto; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font: 500 0.72rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); margin-inline: -18px; padding: 10px 18px; }
+.bar .wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 800; font-size: 1.05rem; text-decoration: none; color: var(--ink); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent); }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.nav a { text-decoration: none; color: var(--muted); padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; }
+.nav a:hover { background: var(--surface-2); color: var(--ink); }
+.tools { display: flex; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 0.9rem; display: inline-flex; gap: 6px; align-items: center; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.btn.primary[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+kbd { font: 500 0.75rem var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: var(--surface-2); }
+
+/* sections */
+section { padding-block: 64px 8px; scroll-margin-top: 70px; }
+.sec-head { display: grid; gap: 10px; margin-bottom: 26px; max-width: 760px; }
+.sec-head p { color: var(--muted); font-size: 1.02rem; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+
+/* interview notes */
+.note { display: none; background: var(--note); color: var(--note-ink); border: 1px dashed var(--note-line); border-radius: var(--radius); padding: 14px 16px; margin-top: 18px; font-size: 0.93rem; }
+.note b { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.note ul { margin: 6px 0 0; padding-left: 18px; }
+body.interview .note { display: block; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 34px; padding-block: 48px 10px; align-items: start; }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 800; letter-spacing: -0.02em; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.lede { font-size: 1.1rem; color: var(--muted); max-width: 56ch; margin-top: 16px; }
+.cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 30px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.metric { text-align: left; border: 0; background: transparent; padding: 14px 14px 12px; cursor: pointer; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.metric:nth-child(3n) { border-right: 0; }
+.metric:nth-last-child(-n+3) { border-bottom: 0; }
+.metric:hover, .metric[aria-expanded="true"] { background: var(--accent-soft); }
+.metric .v { font: 700 1.6rem/1.1 var(--display); display: block; }
+.metric .l { font-size: 0.8rem; color: var(--muted); display: block; margin-top: 4px; }
+.measured { margin-top: 10px; font-size: 0.9rem; border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--surface); border-radius: 0 8px 8px 0; }
+
+/* reconnect sim */
+.sim-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.live { display: inline-flex; gap: 8px; align-items: center; font: 500 0.75rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); animation: pulse 1.6s infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; position: relative; }
+.tile { aspect-ratio: 4 / 3; max-width: 100%; border-radius: 8px; background: linear-gradient(160deg, var(--surface-2), color-mix(in srgb, var(--accent) 18%, var(--surface-2)));
+  border: 2px solid var(--ok); display: flex; flex-direction: column; justify-content: flex-end; padding: 8px; transition: border-color .3s; position: relative; }
+.tile .who { font-weight: 600; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.tile .st { font: 0.7rem var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.tile .av { position: absolute; top: 14%; left: 0; right: 0; margin-inline: auto; width: 34%; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--accent) 40%, var(--surface)); display: grid; place-items: center; font: 700 1.1rem var(--display); color: var(--ink); }
+.tile.reconnecting { border-color: var(--warn); }
+.tile.failed { border-color: var(--bad); opacity: 0.6; }
+.tile.relay { border-color: var(--accent); }
+.banner { margin-top: 8px; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; background: color-mix(in srgb, var(--warn) 18%, var(--surface)); border: 1px solid var(--warn); }
+.sim-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 0.85rem; color: var(--muted); }
+.log { margin-top: 12px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; height: 150px; overflow: auto; font: 0.78rem/1.55 var(--mono); }
+.log div span { color: var(--muted); }
+.log .ok { color: var(--ok); } .log .warn { color: var(--warn); } .log .bad { color: var(--bad); }
+.stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 0.85rem; color: var(--muted); }
+.stats b { color: var(--ink); font-family: var(--mono); }
+
+/* case studies */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.tab { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.case { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; }
+.case h3 { font-size: 1.5rem; margin-bottom: 8px; }
+.kv { display: grid; gap: 14px; margin-top: 16px; }
+.kv h4 { margin: 0 0 4px; font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.kv ul { margin: 0; padding-left: 18px; }
+.flow { display: flex; flex-direction: column; gap: 6px; }
+.node { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; background: var(--surface-2); font-size: 0.88rem; }
+.node small { display: block; color: var(--muted); font-family: var(--mono); font-size: 0.72rem; }
+.arrow { text-align: center; color: var(--muted); font: 0.8rem var(--mono); }
+.results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.res { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.res b { font: 700 1.25rem var(--display); display: block; }
+.res span { font-size: 0.78rem; color: var(--muted); }
+
+/* pipeline lab */
+.lab { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); gap: 22px; }
+.control { display: grid; gap: 14px; }
+.range { width: 100%; accent-color: var(--accent); }
+.readout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.readout div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.readout b { font: 700 1.4rem var(--display); display: block; }
+.readout span { font-size: 0.78rem; color: var(--muted); }
+.warnline { font-size: 0.85rem; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
+.jobs { display: grid; gap: 5px; }
+.job { display: grid; grid-template-columns: 62px minmax(0, 1fr) 48px; gap: 8px; align-items: center; font: 0.75rem var(--mono); }
+.track { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; position: relative; }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); border-radius: 6px; }
+.fill.wait { background: var(--line); }
+.stages { display: flex; gap: 6px; flex-wrap: wrap; font: 0.72rem var(--mono); color: var(--muted); margin-bottom: 10px; }
+.stages span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; }
+
+/* security matrix */
+.mx-wrap { overflow-x: auto; }
+table.mx { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 0.88rem; }
+.mx th, .mx td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; }
+.mx th { font: 500 0.72rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mx td.code { font-family: var(--mono); font-weight: 500; text-align: center; }
+.chip { display: inline-block; min-width: 46px; padding: 3px 8px; border-radius: 999px; }
+.chip.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.chip.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.seg button { border: 0; background: transparent; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.findings { font: 700 2.2rem var(--display); }
+
+/* a11y demo */
+.a11y { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.callbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px; background: var(--surface-2); border-radius: 10px; }
+.cb { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 10px 14px; cursor: pointer; font-weight: 500; }
+.cb[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.cb.leave { border-color: var(--bad); color: var(--bad); }
+.srlog { font: 0.8rem/1.6 var(--mono); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; min-height: 150px; }
+.srlog div::before { content: "🔈 "; }
+
+/* timeline + skills */
+.timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+.tl { position: relative; padding: 0 0 22px 22px; }
+.tl::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.tl:first-child::before { background: var(--accent); }
+.tl .when { font: 0.78rem var(--mono); color: var(--muted); }
+.skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.skill h4 { margin: 0 0 8px; font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 0.84rem; background: var(--surface); }
+.pill.proof { border-color: var(--accent); cursor: pointer; }
+
+/* playbook */
+.play { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.step h3 { margin-bottom: 6px; }
+.step .when { font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.step ul { margin: 8px 0 0; padding-left: 18px; font-size: 0.93rem; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.idea { border-top: 3px solid var(--accent); }
+.idea p { font-size: 0.92rem; color: var(--muted); margin-top: 6px; }
+.contact { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.copyfield { font-family: var(--mono); padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); user-select: all; }
+
+/* presenter bar */
+.presenter { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  display: none; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 999px; box-shadow: 0 8px 30px rgb(0 0 0 / .25); max-width: calc(100vw - 24px); }
+body.interview .presenter { display: flex; }
+.presenter button { background: transparent; color: inherit; border: 1px solid color-mix(in srgb, var(--bg) 35%, transparent); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.presenter .t { font-family: var(--mono); min-width: 52px; text-align: center; }
+.presenter .where { font-size: 0.85rem; }
+
+/* command palette */
+dialog.cmd { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+dialog.cmd::backdrop { background: rgb(0 0 0 / .35); }
+.cmd input { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 14px 16px; background: transparent; outline: none; font-size: 1rem; }
+.cmd ul { list-style: none; margin: 0; padding: 6px; max-height: 320px; overflow: auto; }
+.cmd li { padding: 9px 12px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+.cmd li[aria-selected="true"] { background: var(--accent-soft); }
+.cmd li small { color: var(--muted); font-family: var(--mono); }
+.toast { position: fixed; top: calc(70px + env(safe-area-inset-top, 0px)); right: 18px; background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 8px; z-index: 40; font-size: 0.9rem; }
+
+@media (max-width: 860px) {
+  .hero, .case, .lab, .a11y { grid-template-columns: minmax(0, 1fr); }
+  .nav { display: none; }
+  .tools { margin-left: auto; }
+}
+@media (max-width: 460px) {
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric:nth-child(3n) { border-right: 1px solid var(--line); }
+  .metric:nth-child(2n) { border-right: 0; }
+  .tile { aspect-ratio: 3 / 4; }
+  .tile .st { display: none; }
+  .tools .label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="dot" aria-hidden="true"></span>Hrushikesh Chavan</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#work">Work</a><a href="#lab">Pipeline lab</a><a href="#security">Security</a><a href="#a11y">Accessibility</a><a href="#about">About</a><a href="#interview">Interview playbook</a>
+    </nav>
+    <div class="tools">
+      <button class="btn" id="cmdBtn" aria-label="Open command palette"><kbd>⌘K</kbd><span class="label">Jump</span></button>
+      <button class="btn" id="themeBtn" aria-label="Toggle colour theme">◐</button>
+      <button class="btn primary" id="ivBtn" aria-pressed="false">Interview mode</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Senior Software Engineer · Full-stack · Mumbai</p>
+      <h1 style="margin-top:12px">I build real-time products that keep working on <em style="white-space:nowrap">hospital Wi&#8209;Fi</em> and at <em style="white-space:nowrap">call&#8209;centre scale</em>.</h1>
+      <p class="lede">4+ years with React, Next.js, Node.js and NestJS. I own frontend architecture for a WCAG-compliant medical interpretation PWA with live video, and a multi-tenant AI QA platform scoring 40,000+ calls a month.</p>
+      <div class="cta">
+        <a class="btn primary" href="#work">See the case studies</a>
+        <button class="btn" id="tourBtn">2-minute tour</button>
+      </div>
+      <div class="metrics" role="group" aria-label="Key results; select one to see how it was measured" id="metrics"></div>
+      <div class="measured" id="measured" hidden></div>
+      <div class="note"><b>Interview: opening (30 s)</b>"This site is a small version of what I build at work. Every number up here opens to show how it was measured. Pick any one and I'll go deep." Let them choose; it shows confidence and puts you on your strongest ground.</div>
+    </div>
+
+    <div class="panel" aria-labelledby="simTitle">
+      <div class="sim-head">
+        <div><p class="eyebrow">Live demo</p><h3 id="simTitle">Break the call, watch it recover</h3></div>
+        <span class="live"><i aria-hidden="true"></i>Session 4821</span>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="banner" id="banner" hidden role="status"></div>
+      <div class="sim-actions">
+        <button class="btn" data-scn="drop">Drop network 2 s</button>
+        <button class="btn" data-scn="switch">Wi-Fi → 4G</button>
+        <button class="btn" data-scn="hospital">Hospital firewall (UDP blocked)</button>
+        <label class="check"><input type="checkbox" id="turn" checked> TURN over TLS :443</label>
+      </div>
+      <div class="log" id="log" aria-live="off"></div>
+      <div class="stats"><span>Reconnect attempts <b id="sAtt">0</b></span><span>Recovered <b id="sOk">0</b></span><span>Success rate <b id="sRate">—</b></span></div>
+      <div class="note"><b>Interview: use this for "how does reconnection work?"</b>
+        <ul><li>Click <i>Drop network</i>: "LiveKit first tries to resume with an ICE restart; the video tiles never unmount."</li>
+        <li>Click <i>Wi-Fi → 4G</i>: "If resume fails, a full rejoin with backoff and a fresh token."</li>
+        <li>Untick TURN, click <i>Hospital firewall</i>: "This is the bug we saw in clinics. TURN over 443 is why reconnects reached 99%."</li></ul></div>
+    </div>
+  </div>
+
+  <!-- CASE STUDIES -->
+  <section id="work" aria-labelledby="workH">
+    <div class="sec-head">
+      <p class="eyebrow">Selected work</p>
+      <h2 id="workH">Four systems, told as decisions and trade-offs</h2>
+      <p>Each case study follows the same shape interviewers probe: context, what I owned, how it works, the numbers and how they were measured, and what I'd change.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Case studies" id="caseTabs"></div>
+    <div class="panel" role="tabpanel" id="casePanel" tabindex="0"></div>
+  </section>
+
+  <!-- PIPELINE LAB -->
+  <section id="lab" aria-labelledby="labH">
+    <div class="sec-head">
+      <p class="eyebrow">Interactive · AI scoring pipeline</p>
+      <h2 id="labH">Why concurrency gave the scoring pipeline 5x throughput</h2>
+      <p>Each call waits on transcription and LLM APIs, so the work is I/O-bound. Drag the worker concurrency and run a batch of 12 calls. The provider's rate limit caps useful concurrency.</p>
+    </div>
+    <div class="lab">
+      <div class="panel control">
+        <label for="conc"><span class="eyebrow">Concurrent chunks per worker</span> <b class="mono" id="concV">1</b></label>
+        <input class="range" type="range" id="conc" min="1" max="10" value="1">
+        <div class="readout">
+          <div><b class="mono" id="tph">80</b><span>calls per hour</span></div>
+          <div><b class="mono" id="mult">1.0×</b><span>vs sequential</span></div>
+          <div><b class="mono" id="lat">45 s</b><span>avg latency per call</span></div>
+          <div><b class="mono" id="eff">1</b><span>effective in flight</span></div>
+        </div>
+        <div class="warnline" id="rlWarn" hidden>Above 5 in flight, the LLM provider returns 429s. Extra concurrency only adds retries, so the useful limit is 5.</div>
+        <button class="btn primary" id="runBtn">Run 12 calls</button>
+        <p class="muted" style="font-size:.85rem">Illustrative model: 45 s per call, provider limit of 5 concurrent requests. Replace with your measured numbers.</p>
+      </div>
+      <div class="panel">
+        <div class="stages"><span>webhook</span><span>→ transcribe</span><span>→ chunk</span><span>→ score (LLM)</span><span>→ validate</span><span>→ save + SSE</span></div>
+        <div class="jobs" id="jobs"></div>
+      </div>
+    </div>
+    <div class="note"><b>Interview: system design or "how did you get 5x?"</b>"Most of the time was waiting on APIs, not CPU. Watch: at 1 in flight it's sequential. At 5 we're at the provider's limit, about 5x. Past that we only create 429s, which is why we added a shared rate limiter instead of just adding workers." Then open the AI pipeline case study for retries, idempotency and dead letters.</div>
+  </section>
+
+  <!-- SECURITY -->
+  <section id="security" aria-labelledby="secH">
+    <div class="sec-head">
+      <p class="eyebrow">Interactive · Security audit</p>
+      <h2 id="secH">What changed when permissions moved from the UI to the server</h2>
+      <p>An illustrative role × endpoint matrix, the same kind of test that now runs in CI. Red means an endpoint answered a role it should have refused.</p>
+    </div>
+    <div class="panel">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="seg" role="group" aria-label="Audit state">
+          <button aria-pressed="true" data-audit="before">Before audit</button>
+          <button aria-pressed="false" data-audit="after">After fixes</button>
+        </div>
+        <div style="text-align:right"><span class="findings mono" id="findCount">8</span> <span class="muted">critical findings</span></div>
+      </div>
+      <div class="mx-wrap"><table class="mx" id="matrix"></table></div>
+      <p class="muted" style="font-size:.85rem;margin-top:10px">Example endpoints for illustration. Your real findings: RBAC enforced only in the UI, token handling, PHI in logs. 85% fewer findings on re-audit.</p>
+    </div>
+    <div class="note"><b>Interview: ownership and security questions</b>"Nobody assigned this. I mapped every role and tested every endpoint as each role and tenant. Before, the UI hid buttons but the API accepted the calls. After, every FastAPI route declares a permission and every query is scoped by tenant. This matrix runs in CI so it can't regress." Toggle before/after while you talk.</div>
+  </section>
+
+  <!-- A11Y -->
+  <section id="a11y" aria-labelledby="a11yH">
+    <div class="sec-head">
+      <p class="eyebrow">Interactive · WCAG 2.1 AA</p>
+      <h2 id="a11yH">Accessibility you can hear</h2>
+      <p>Tab into the call controls, or press <kbd>M</kbd> and <kbd>V</kbd> while focused inside them. The right side shows what a screen reader announces.</p>
+    </div>
+    <div class="a11y">
+      <div class="panel">
+        <div class="callbar" id="callbar" role="toolbar" aria-label="Call controls">
+          <button class="cb" aria-pressed="false" data-c="mic" aria-keyshortcuts="M">Mute microphone</button>
+          <button class="cb" aria-pressed="false" data-c="cam" aria-keyshortcuts="V">Turn off camera</button>
+          <button class="cb" aria-pressed="false" data-c="cc">Show captions</button>
+          <button class="cb leave" data-c="leave">Leave call</button>
+        </div>
+        <div id="sr" class="sr-only" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
+        <ul class="muted" style="font-size:.9rem;margin:14px 0 0;padding-left:18px">
+          <li>Real buttons with <code>aria-pressed</code>; labels change with state.</li>
+          <li>The live region exists on page load, so announcements are reliable.</li>
+          <li>Leave asks for confirmation inside the page, not a browser dialog.</li>
+        </ul>
+      </div>
+      <div class="panel"><p class="eyebrow" style="margin-bottom:8px">Screen reader output</p><div class="srlog" id="srlog"><div>Call controls, toolbar</div></div></div>
+    </div>
+    <div class="note"><b>Interview: accessibility and React questions</b>"InterpretIQ had to meet WCAG 2.1 AA. A real bug I fixed: the reconnect banner showed visually but was never announced, because its live region was created at the same moment as the text. Rendering the region on load fixed it." Then press M to show the announcement.</div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" aria-labelledby="aboutH">
+    <div class="sec-head">
+      <p class="eyebrow">About</p>
+      <h2 id="aboutH">From airline widgets to healthcare video</h2>
+    </div>
+    <div class="case">
+      <div class="timeline" id="timeline"></div>
+      <div class="skills" id="skills"></div>
+    </div>
+    <div class="note"><b>Interview: "walk me through your resume"</b>Scroll this timeline top to bottom in under 2 minutes: current scope, two products, the audit and mentoring, then one line per earlier role, ending with what you want next. Skills with a green border link to proof; click one if asked "where have you used X?".</div>
+  </section>
+
+  <!-- IDEAS -->
+  <section id="ideas" aria-labelledby="ideasH">
+    <div class="sec-head">
+      <p class="eyebrow">Ideas for the real site</p>
+      <h2 id="ideasH">Features that make interviewers remember you</h2>
+      <p>Each idea turns a resume line into something an interviewer can try. Build two or three well rather than all of them.</p>
+    </div>
+    <div class="ideas" id="ideaList"></div>
+  </section>
+
+  <!-- PLAYBOOK -->
+  <section id="interview" aria-labelledby="ivH">
+    <div class="sec-head">
+      <p class="eyebrow">Interview playbook</p>
+      <h2 id="ivH">How to use the site before, during and after an interview</h2>
+      <p>Turn on <b>Interview mode</b> (top right) to see presenter notes in every section and a timer for your walkthrough.</p>
+    </div>
+    <div class="play" id="playbook"></div>
+    <div class="panel" style="margin-top:14px">
+      <h3>Contact</h3>
+      <div class="contact" style="margin-top:10px">
+        <span class="copyfield" id="emailText">hrushikeshchavan257@gmail.com</span>
+        <button class="btn" id="copyEmail">Copy email</button>
+        <a class="btn" href="https://github.com/Hrushi4" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn" href="https://linkedin.com/in/hrushikeshchavan" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="presenter" role="region" aria-label="Presenter controls">
+  <button id="pPrev" aria-label="Previous section">←</button>
+  <span class="where" id="pWhere">Hero</span>
+  <button id="pNext" aria-label="Next section">→</button>
+  <span class="t" id="pTimer">2:00</span>
+  <button id="pStart">Start timer</button>
+</div>
+
+<dialog class="cmd" id="cmd" aria-label="Command palette">
+  <input id="cmdInput" placeholder="Jump to a section or run an action…" aria-label="Search commands" autocomplete="off">
+  <ul id="cmdList" role="listbox"></ul>
+</dialog>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 1800); }
+
+/* ---------- metrics ---------- */
+const METRICS = [
+  { v: '< 5 s', l: 'call join latency', how: 'Measured from clicking Join to the first remote video frame, with User Timing marks in client telemetry. [Add your period and p95.]' },
+  { v: '99%', l: 'reconnect success', how: 'Reconnecting events that reached Reconnected within [N] s without user action, over [period]. Denominator: all reconnect events.' },
+  { v: '150', l: 'concurrent sessions', how: '[Production peak / load test] measured from LiveKit server metrics in Grafana over [window].' },
+  { v: '−85%', l: 'security findings', how: 'Open findings on re-audit vs the initial audit: [X → Y], [raw count / severity-weighted]. 8 critical issues fixed.' },
+  { v: '−60%', l: 'QA review time', how: 'Average minutes per reviewed call before vs after role-based portals and AI pre-scoring, from review start and submit timestamps.' },
+  { v: '40k+', l: 'calls scored / month', how: 'Twilio recordings processed by the Celery + LangChain pipeline per month; 5x throughput, 45 s average latency.' },
+];
+$('#metrics').innerHTML = METRICS.map((m, i) => `<button class="metric" aria-expanded="false" data-i="${i}"><span class="v mono">${m.v}</span><span class="l">${m.l}</span></button>`).join('');
+$('#metrics').addEventListener('click', (e) => {
+  const b = e.target.closest('.metric'); if (!b) return;
+  const open = b.getAttribute('aria-expanded') === 'true';
+  $$('.metric').forEach((x) => x.setAttribute('aria-expanded', 'false'));
+  const box = $('#measured');
+  if (open) { box.hidden = true; return; }
+  b.setAttribute('aria-expanded', 'true');
+  const m = METRICS[b.dataset.i];
+  box.innerHTML = `<b>How "${m.v} ${m.l}" was measured.</b> ${m.how}`; box.hidden = false;
+});
+
+/* ---------- reconnect simulator ---------- */
+const PEOPLE = [['Patient', 'PT'], ['Provider', 'DR'], ['Interpreter', 'IN']];
+$('#tiles').innerHTML = PEOPLE.map(([n, a], i) => `<div class="tile" id="tile${i}"><div class="av" aria-hidden="true">${a}</div><span class="who">${n}</span><span class="st">connected · 720p</span></div>`).join('');
+let simTimers = [], sim = { att: 0, ok: 0 }, simStart = 0;
+function log(msg, cls = '') {
+  const d = document.createElement('div');
+  const ms = simStart ? `+${String(Date.now() - simStart).padStart(4, ' ')}ms` : '';
+  d.innerHTML = `<span>${ms}</span> <b class="${cls}">${msg}</b>`;
+  const l = $('#log'); l.appendChild(d); l.scrollTop = l.scrollHeight;
+}
+function setTiles(state, label) {
+  PEOPLE.forEach((_, i) => { const t = $('#tile' + i); t.className = 'tile ' + state; $('.st', t).textContent = label; });
+}
+function banner(msg) { const b = $('#banner'); b.hidden = !msg; b.textContent = msg || ''; }
+function stats() { $('#sAtt').textContent = sim.att; $('#sOk').textContent = sim.ok; $('#sRate').textContent = sim.att ? Math.round((sim.ok / sim.att) * 100) + '%' : '—'; }
+function runScenario(scn) {
+  simTimers.forEach(clearTimeout); simTimers = []; simStart = Date.now(); $('#log').innerHTML = '';
+  const at = (ms, fn) => simTimers.push(setTimeout(fn, ms));
+  sim.att++; stats();
+  setTiles('reconnecting', 'reconnecting…'); banner('Reconnecting… your call will resume automatically.');
+  log('RoomEvent.Reconnecting', 'warn');
+  const done = (label, cls = '') => { sim.ok++; stats(); setTiles(cls, label); banner(''); };
+  if (scn === 'drop') {
+    at(350, () => log('ICE restart on existing session'));
+    at(1300, () => { log('RoomEvent.Reconnected · resumed (tiles never unmounted)', 'ok'); done('connected · 720p'); });
+  } else if (scn === 'switch') {
+    at(400, () => log('ICE restart on existing session'));
+    at(2600, () => log('resume failed: network path changed', 'warn'));
+    at(2900, () => log('full rejoin · fetching fresh token · backoff 300 ms'));
+    at(3900, () => { log('Connected · tracks re-subscribed', 'ok'); done('connected · 4G · 540p'); });
+  } else {
+    at(300, () => log('UDP 50000–60000 blocked by network', 'warn'));
+    if ($('#turn').checked) {
+      at(1200, () => log('falling back to TURN over TLS on port 443'));
+      at(2500, () => { log('Connected via relay (TURN/TLS)', 'ok'); done('connected · relay', 'relay'); });
+    } else {
+      at(1500, () => log('no TURN server configured', 'bad'));
+      at(3600, () => { log('Disconnected · could not establish media', 'bad'); setTiles('failed', 'failed'); banner('Call failed. This is why TURN on 443 matters in hospitals.'); stats(); });
+    }
+  }
+}
+$$('[data-scn]').forEach((b) => b.addEventListener('click', () => runScenario(b.dataset.scn)));
+log('Connected · 3 participants · simulcast on', 'ok');
+
+/* ---------- case studies ---------- */
+const CASES = [
+  { id: 'iq', tab: 'InterpretIQ', title: 'InterpretIQ — real-time medical interpretation',
+    ctx: 'A WCAG-compliant PWA connecting patients, providers and interpreters on live video, often on hospital Wi-Fi and shared tablets. A dropped call delays care.',
+    role: 'Owned the frontend architecture: React 19, TypeScript, Redux, LiveKit, accessibility and the PWA.',
+    built: ['Call lifecycle as a state machine; LiveKit Room kept in a ref, outside React state', 'Resume-first reconnect: ICE restart, then full rejoin with backoff and a fresh token', 'Pre-join screen that prefetches the token and warms up devices', 'Audio levels drawn via CSS variables in requestAnimationFrame, not React state'],
+    flow: [['Pre-join', 'token prefetch · device check'], ['LiveKit SFU', 'WSS signalling · simulcast'], ['TURN/TLS :443', 'fallback for blocked UDP'], ['Telemetry', 'join time · reconnect events']],
+    res: [['< 5 s', 'join latency'], ['99%', 'reconnect success'], ['150', 'concurrent sessions'], ['AA', 'WCAG 2.1']],
+    change: 'Model the call lifecycle in XState and add a BFF so tokens never touch the browser.',
+    say: 'Start with the patient impact, then the two hard parts: keeping the Room out of React state, and resume-first reconnection. Point at the live demo above.',
+    follow: ['How do you define 99%?', 'What happens when camera permission is denied?', 'Why Redux over Zustand here?'] },
+  { id: 'bpo', tab: 'BpoBox', title: 'BpoBox — multi-tenant AI QA platform',
+    ctx: 'Call centres review agent calls for quality and compliance. 5 tenants and 1,500 users across admin, QA reviewer and agent roles.',
+    role: 'Owned the frontend architecture: React, TypeScript and Radix UI, with role-based portals and scorecards.',
+    built: ['Role-based portals with permission-driven navigation and server-side RBAC', 'Tenant-scoped API client, cache keys and theming', 'Scorecards configured per tenant, with drafts, overrides and audit trail', 'Review screen that jumps straight to AI-flagged moments'],
+    flow: [['Tenant from token', 'never from user input'], ['Portals', 'admin · QA · agent'], ['Scorecards', 'per-tenant templates'], ['AI flags', 'jump to evidence']],
+    res: [['−60%', 'QA review time'], ['5', 'tenants'], ['1,500', 'users'], ['3', 'role portals']],
+    change: 'Add row-level security in Postgres as a second isolation layer and generate types from OpenAPI.',
+    say: 'Lead with the outcome (review time −60%), then explain what drove it: AI pre-scoring with evidence, plus portals built for each role.',
+    follow: ['How is tenant isolation enforced?', 'How was the 60% measured?', 'Why Radix UI?'] },
+  { id: 'ai', tab: 'AI pipeline', title: 'AI compliance scoring over 40,000+ calls a month',
+    ctx: 'Every Twilio recording is transcribed and scored for sentiment and compliance, and reviewers see results live.',
+    role: 'Built the scoring pipeline with LangChain, OpenAI and Celery, plus an SSE compliance chat.',
+    built: ['Webhook → Celery stages: transcribe, chunk, score, validate, save', 'Structured JSON output validated with Pydantic; evidence required for every violation', 'Retries with backoff, idempotent tasks, dead-letter queue and human review fallback', 'SSE compliance chat with tenant-filtered retrieval'],
+    flow: [['Twilio webhook', 'verify · enqueue · 200 fast'], ['Celery workers', 'concurrent chunk scoring'], ['Validate', 'schema + evidence check'], ['Save + SSE', 'reviewer sees it live']],
+    res: [['40k+', 'calls / month'], ['5×', 'throughput'], ['45 s', 'avg latency'], ['−30%', 'prod bugs (testing standards)']],
+    change: 'Per-stage metrics, an outbox for notifications, and prompt evals as a CI gate.',
+    say: 'Use the pipeline lab: show sequential vs concurrent, then explain retries, idempotency and why invalid AI output goes to humans.',
+    follow: ['What happens when OpenAI rate-limits you?', 'How did you know scores were trustworthy?', 'What dominates the 45 s?'] },
+  { id: 'sec', tab: 'Security audit', title: 'Security and reliability audit across React and FastAPI',
+    ctx: 'A healthcare app handling PHI, where access control had grown feature by feature without an end-to-end review.',
+    role: 'Initiated and led the audit; fixed issues with backend developers; designed self-hosted LiveKit on AWS.',
+    built: ['Threat model of roles, tenants and PHI data flows', 'Every endpoint tested as every role and tenant', 'Permission dependency on every FastAPI route; tenant-scoped queries', 'Token handling and PHI scrubbing in logs and Sentry; authorisation matrix in CI'],
+    flow: [['Map roles + data', 'threat model'], ['Test every endpoint', 'role × tenant'], ['Fix + regression test', 'per finding'], ['CI matrix', 'can\'t regress']],
+    res: [['8', 'critical issues found'], ['−85%', 'findings on re-audit'], ['−40%', 'projected video cost (self-hosted)'], ['10×', 'projected capacity']],
+    change: 'Automate the matrix from day one and treat the 40% / 10x as projections to validate with load tests.',
+    say: 'This is your ownership story: unassigned, high-stakes, measurable. Toggle the matrix while you tell it.',
+    follow: ['Describe three of the critical issues.', '85% of what?', 'Was self-hosting built or designed?'] },
+];
+let caseIdx = 0;
+$('#caseTabs').innerHTML = CASES.map((c, i) => `<button class="tab" role="tab" id="tab-${c.id}" aria-controls="casePanel" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${c.tab}</button>`).join('');
+function renderCase(i) {
+  caseIdx = i; const c = CASES[i];
+  $$('.tab').forEach((t, j) => { t.setAttribute('aria-selected', j === i); t.tabIndex = j === i ? 0 : -1; });
+  $('#casePanel').setAttribute('aria-labelledby', 'tab-' + c.id);
+  $('#casePanel').innerHTML = `
+    <div class="case">
+      <div>
+        <h3>${c.title}</h3>
+        <p class="muted">${c.ctx}</p>
+        <div class="kv">
+          <div><h4>My role</h4><p>${c.role}</p></div>
+          <div><h4>What I built</h4><ul>${c.built.map((b) => `<li>${b}</li>`).join('')}</ul></div>
+          <div><h4>What I'd change now</h4><p>${c.change}</p></div>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow" style="margin-bottom:8px">How it works</p>
+        <div class="flow">${c.flow.map(([a, b], k) => `${k ? '<div class="arrow" aria-hidden="true">↓</div>' : ''}<div class="node">${a}<small>${b}</small></div>`).join('')}</div>
+        <div class="results">${c.res.map(([a, b]) => `<div class="res"><b class="mono">${a}</b><span>${b}</span></div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="note"><b>Interview: how to present this case</b>${c.say}<ul>${c.follow.map((f) => `<li>Likely follow-up: ${f}</li>`).join('')}</ul></div>`;
+}
+$('#caseTabs').addEventListener('click', (e) => { const t = e.target.closest('.tab'); if (t) renderCase($$('.tab').indexOf(t)); });
+$('#caseTabs').addEventListener('keydown', (e) => {
+  const n = CASES.length; let i = caseIdx;
+  if (e.key === 'ArrowRight') i = (i + 1) % n; else if (e.key === 'ArrowLeft') i = (i - 1 + n) % n;
+  else if (e.key === 'Home') i = 0; else if (e.key === 'End') i = n - 1; else return;
+  e.preventDefault(); renderCase(i); $$('.tab')[i].focus();
+});
+renderCase(0);
+
+/* ---------- pipeline lab ---------- */
+const LIMIT = 5, BASE = 45, N = 12;
+function labReadout() {
+  const c = +$('#conc').value, eff = Math.min(c, LIMIT);
+  $('#concV').textContent = c; $('#eff').textContent = eff;
+  $('#tph').textContent = Math.round((3600 / BASE) * eff);
+  $('#mult').textContent = eff.toFixed(1) + '×';
+  $('#lat').textContent = (c > LIMIT ? BASE + (c - LIMIT) * 4 : BASE) + ' s';
+  $('#rlWarn').hidden = c <= LIMIT;
+}
+function drawJobs(progress) {
+  $('#jobs').innerHTML = progress.map((p, i) => `<div class="job"><span>call ${String(i + 1).padStart(2, '0')}</span><div class="track"><div class="fill ${p.state === 'wait' ? 'wait' : ''}" style="width:${Math.round(p.pct * 100)}%"></div></div><span>${p.state === 'done' ? 'saved' : p.state === 'run' ? 'scoring' : 'queued'}</span></div>`).join('');
+}
+let labRaf = 0;
+function runLab() {
+  cancelAnimationFrame(labRaf);
+  const eff = Math.min(+$('#conc').value, LIMIT);
+  const dur = Array.from({ length: N }, (_, i) => BASE * (0.85 + ((i * 37) % 30) / 100));
+  const slots = Array(eff).fill(0), jobs = dur.map((d) => { const s = slots.indexOf(Math.min(...slots)); const start = slots[s]; slots[s] = start + d; return { start, end: start + d }; });
+  const total = Math.max(...jobs.map((j) => j.end)), animMs = 2500 + 2500 * (total / (BASE * N)), t0 = performance.now();
+  $('#runBtn').disabled = true;
+  const tick = (now) => {
+    const simT = Math.min(1, (now - t0) / animMs) * total;
+    drawJobs(jobs.map((j) => simT >= j.end ? { pct: 1, state: 'done' } : simT >= j.start ? { pct: (simT - j.start) / (j.end - j.start), state: 'run' } : { pct: 0, state: 'wait' }));
+    if (simT < total) labRaf = requestAnimationFrame(tick);
+    else { $('#runBtn').disabled = false; toast(`12 calls in ${Math.round(total / 60)} min of pipeline time`); }
+  };
+  labRaf = requestAnimationFrame(tick);
+}
+$('#conc').addEventListener('input', labReadout);
+$('#runBtn').addEventListener('click', runLab);
+labReadout(); drawJobs(Array.from({ length: N }, () => ({ pct: 0, state: 'wait' })));
+
+/* ---------- security matrix ---------- */
+const ROLES = ['Admin', 'QA reviewer', 'Agent'];
+const ROWS = [
+  { ep: 'GET /tenants/2/calls/42', note: 'another tenant\'s call', before: [200, 200, 200], after: [404, 404, 404], bad: [1, 1, 1] },
+  { ep: 'DELETE /tenants/1', note: 'admin only', before: [204, 204, 204], after: [204, 403, 403], bad: [0, 1, 1] },
+  { ep: 'PATCH /scorecards/7', note: 'reviewers only', before: [200, 200, 200], after: [200, 200, 403], bad: [0, 0, 1] },
+  { ep: 'GET /sessions/9/notes', note: 'PHI, assigned staff', before: [200, 200, 200], after: [200, 403, 403], bad: [0, 1, 1] },
+  { ep: 'GET /calls?agent=me', note: 'own calls', before: [200, 200, 200], after: [200, 200, 200], bad: [0, 0, 0] },
+];
+function renderMatrix(mode) {
+  const findings = mode === 'before' ? ROWS.reduce((n, r) => n + r.bad.reduce((a, b) => a + b, 0), 0) : 0;
+  $('#findCount').textContent = findings;
+  $('#matrix').innerHTML = `<thead><tr><th scope="col">Endpoint</th>${ROLES.map((r) => `<th scope="col" style="text-align:center">${r}</th>`).join('')}</tr></thead><tbody>${ROWS.map((r) => `<tr><th scope="row" style="text-transform:none;letter-spacing:0;font:500 .85rem var(--mono);color:var(--ink)">${r.ep}<br><span class="muted" style="font-family:var(--body);font-size:.78rem">${r.note}</span></th>${r[mode].map((code, i) => { const bad = mode === 'before' && r.bad[i]; return `<td class="code"><span class="chip ${bad ? 'bad' : 'ok'}" aria-label="${code}${bad ? ', should have been refused' : ''}">${code}</span></td>`; }).join('')}</tr>`).join('')}</tbody>`;
+}
+$$('[data-audit]').forEach((b) => b.addEventListener('click', () => { $$('[data-audit]').forEach((x) => x.setAttribute('aria-pressed', x === b)); renderMatrix(b.dataset.audit); }));
+renderMatrix('before');
+
+/* ---------- a11y demo ---------- */
+const LABELS = { mic: ['Mute microphone', 'Unmute microphone', 'Microphone muted', 'Microphone on'], cam: ['Turn off camera', 'Turn on camera', 'Camera off', 'Camera on'], cc: ['Show captions', 'Hide captions', 'Captions on', 'Captions off'] };
+let leaveArmed = false;
+function announce(msg) { $('#sr').textContent = msg; const d = document.createElement('div'); d.textContent = msg; $('#srlog').appendChild(d); while ($('#srlog').children.length > 7) $('#srlog').firstElementChild.remove(); }
+function press(btn) {
+  const k = btn.dataset.c;
+  if (k === 'leave') {
+    if (!leaveArmed) { leaveArmed = true; btn.textContent = 'Confirm leave'; announce('Press again to leave the call'); setTimeout(() => { leaveArmed = false; btn.textContent = 'Leave call'; }, 4000); }
+    else { leaveArmed = false; btn.textContent = 'Leave call'; announce('You left the call. Rejoin available.'); }
+    return;
+  }
+  const on = btn.getAttribute('aria-pressed') !== 'true';
+  btn.setAttribute('aria-pressed', on); btn.textContent = LABELS[k][on ? 1 : 0];
+  announce(LABELS[k][on ? 2 : 3]);
+}
+$('#callbar').addEventListener('click', (e) => { const b = e.target.closest('.cb'); if (b) { const msg = b.textContent; press(b); } });
+$('#callbar').addEventListener('focusin', (e) => { const b = e.target.closest('.cb'); if (b) announce(`${b.textContent}, ${b.hasAttribute('aria-pressed') ? 'toggle button, ' + (b.getAttribute('aria-pressed') === 'true' ? 'pressed' : 'not pressed') : 'button'}`); });
+$('#callbar').addEventListener('keydown', (e) => {
+  const map = { m: 'mic', v: 'cam' }; const k = map[e.key.toLowerCase()];
+  if (k && !e.metaKey && !e.ctrlKey) { e.preventDefault(); press($(`[data-c="${k}"]`)); }
+});
+
+/* ---------- timeline + skills ---------- */
+const TL = [
+  ['01/2026 – now', 'Senior Software Engineer · Arcitech', 'InterpretIQ and BpoBox architecture, security audit, AI scoring pipeline, mentoring 15 developers.'],
+  ['12/2023 – 12/2025', 'Software Engineer · Arcitech', 'AI interview platform, frontend lead on a Revit design-compliance checker, AI education platform.'],
+  ['09/2022 – 11/2023', 'Software Engineer · LTIMindtree', 'Booking, account and profile features plus headless widgets for a major North American airline (React, Redux, GraphQL).'],
+  ['03/2022 – 09/2022', 'Full-Stack Developer · Slaylink', 'Creator and brand platform with Next.js, NestJS, GraphQL and MongoDB; coordinated interns.'],
+  ['2018 – 2022', 'B.E. Information Technology', 'Dr. D Y Patil College of Engineering, Pune.'],
+];
+$('#timeline').innerHTML = TL.map(([w, t, d]) => `<div class="tl"><div class="when">${w}</div><h3 style="margin:2px 0 4px">${t}</h3><p class="muted" style="font-size:.93rem">${d}</p></div>`).join('');
+const SK = [
+  ['Frontend', [['React 19', 'iq'], ['TypeScript', 'bpo'], ['Next.js'], ['Redux', 'iq'], ['React Query'], ['Zustand'], ['Tailwind'], ['Radix UI', 'bpo'], ['RTL', 'ai']]],
+  ['Real-time', [['LiveKit / WebRTC', 'iq'], ['SSE', 'ai'], ['WebSocket']]],
+  ['Backend', [['Node.js'], ['NestJS'], ['Express'], ['FastAPI', 'sec'], ['GraphQL'], ['Celery', 'ai'], ['LangChain', 'ai']]],
+  ['Data & infra', [['PostgreSQL'], ['Redis', 'ai'], ['MongoDB'], ['AWS', 'sec'], ['Docker', 'sec'], ['GitHub Actions'], ['Sentry'], ['Grafana / Prometheus']]],
+];
+$('#skills').innerHTML = SK.map(([g, items]) => `<div class="panel skill"><h4>${g}</h4><div class="pills">${items.map(([n, c]) => c ? `<button class="pill proof" data-case="${c}" title="See where I used it">${n}</button>` : `<span class="pill">${n}</span>`).join('')}</div></div>`).join('');
+$('#skills').addEventListener('click', (e) => { const p = e.target.closest('[data-case]'); if (!p) return; renderCase(CASES.findIndex((c) => c.id === p.dataset.case)); $('#work').scrollIntoView({ behavior: 'smooth' }); });
+
+/* ---------- ideas + playbook ---------- */
+const IDEAS = [
+  ['Break-the-call demo', 'A sandbox LiveKit room (or a simulation like the one above) where visitors trigger network drops and watch your reconnect logic. Proves the 99% claim by letting them try it.'],
+  ['"How measured" on every number', 'Every metric expands into its definition and method. Interviewers probe numbers; answering before they ask builds trust.'],
+  ['Architecture you can click', 'Case-study diagrams where each box opens the decision behind it: why Redux, why SSE, why Celery. Turns system-design questions into a guided tour.'],
+  ['Interview mode', 'A toggle that reveals presenter notes and a timer, so screen-sharing your site becomes a rehearsed 2-minute walkthrough.'],
+  ['Accessibility you can hear', 'A visible screen-reader log for your components. Few portfolios show WCAG work; yours can demonstrate it.'],
+  ['Open-source video room kit', 'Publish the pre-join, reconnect and accessible call-control pieces as a small library. A public repo backs up your private-company work.'],
+  ['Engineering notes', 'Three short posts: "Keeping the LiveKit Room out of React state", "Our authorisation test matrix", "Making LLM output safe to store". Each one doubles as interview prep.'],
+  ['Command palette and keyboard-first navigation', 'Cmd/Ctrl+K and full keyboard support signal frontend craft within seconds of opening the site.'],
+];
+$('#ideaList').innerHTML = IDEAS.map(([t, d]) => `<div class="panel idea"><h3>${t}</h3><p>${d}</p></div>`).join('');
+const PLAY = [
+  ['Before', 'Send it and set the agenda', ['Put the link at the top of your resume and in your email signature.', 'Before each interview, pin the case study that matches the job description.', 'Run the demos once on the network you\'ll interview from.']],
+  ['First 2 minutes', 'Give the tour', ['Turn on Interview mode and start the 2:00 timer.', 'Hero → one metric → break the call → one case study.', 'End with: "Which of these would you like to go deeper on?"']],
+  ['System design', 'Draw on your own systems', ['Open the pipeline lab for queues, concurrency and rate limits.', 'Open a case-study diagram as your starting architecture.', 'Say what you\'d change; it shows judgement.']],
+  ['Behavioural', 'Show, then tell', ['Ownership: toggle the security matrix while telling the audit story.', 'Quality: testing standards and the −30% production bugs.', 'Mentoring: link a note you wrote for your team.']],
+  ['After', 'Follow up with proof', ['Send a thank-you with a deep link to the case study you discussed (e.g. #work).', 'Add a question you struggled with as a new note on the site.', 'Keep numbers consistent with your resume everywhere.']],
+];
+$('#playbook').innerHTML = PLAY.map(([w, t, l]) => `<div class="panel step"><span class="when">${w}</span><h3 style="margin-top:6px">${t}</h3><ul>${l.map((x) => `<li>${x}</li>`).join('')}</ul></div>`).join('');
+
+/* ---------- interview mode + presenter ---------- */
+const SECTIONS = [['top', 'Hero'], ['work', 'Case studies'], ['lab', 'Pipeline lab'], ['security', 'Security'], ['a11y', 'Accessibility'], ['about', 'About'], ['interview', 'Playbook']];
+let secIdx = 0, timerId = 0, left = 120;
+function setInterview(on) {
+  document.body.classList.toggle('interview', on); $('#ivBtn').setAttribute('aria-pressed', on);
+  store.set('iv', on ? '1' : '0');
+}
+function goSec(i) { secIdx = (i + SECTIONS.length) % SECTIONS.length; $('#pWhere').textContent = SECTIONS[secIdx][1]; document.getElementById(SECTIONS[secIdx][0]).scrollIntoView({ behavior: 'smooth' }); }
+function fmt(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function startTimer() {
+  clearInterval(timerId); left = 120; $('#pTimer').textContent = fmt(left); $('#pStart').textContent = 'Restart';
+  timerId = setInterval(() => { left--; $('#pTimer').textContent = fmt(Math.max(0, left)); if (left <= 0) { clearInterval(timerId); toast('Two minutes: ask which part they want to go deeper on'); } }, 1000);
+}
+$('#ivBtn').addEventListener('click', () => setInterview(!document.body.classList.contains('interview')));
+$('#pPrev').addEventListener('click', () => goSec(secIdx - 1));
+$('#pNext').addEventListener('click', () => goSec(secIdx + 1));
+$('#pStart').addEventListener('click', startTimer);
+$('#tourBtn').addEventListener('click', () => { setInterview(true); goSec(0); startTimer(); toast('Interview mode on: notes visible, timer running'); });
+if (store.get('iv') === '1') setInterview(true);
+
+/* ---------- theme ---------- */
+const savedTheme = store.get('theme'); if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+$('#themeBtn').addEventListener('click', () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = next; store.set('theme', next);
+});
+
+/* ---------- copy email ---------- */
+$('#copyEmail').addEventListener('click', () => {
+  const text = $('#emailText').textContent;
+  navigator.clipboard?.writeText(text).then(() => toast('Email copied'), () => { const r = document.createRange(); r.selectNodeContents($('#emailText')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Press Ctrl+C to copy'); });
+});
+
+/* ---------- command palette ---------- */
+const CMDS = [
+  ...SECTIONS.map(([id, n], i) => ({ label: `Go to ${n}`, hint: 'section', run: () => goSec(i) })),
+  ...CASES.map((c, i) => ({ label: `Open case: ${c.tab}`, hint: 'case study', run: () => { renderCase(i); $('#work').scrollIntoView({ behavior: 'smooth' }); } })),
+  { label: 'Toggle interview mode', hint: 'action', run: () => setInterview(!document.body.classList.contains('interview')) },
+  { label: 'Start 2-minute tour', hint: 'action', run: () => $('#tourBtn').click() },
+  { label: 'Break the call', hint: 'demo', run: () => { goSec(0); runScenario('drop'); } },
+  { label: 'Run pipeline at 5 in flight', hint: 'demo', run: () => { $('#conc').value = 5; labReadout(); goSec(2); runLab(); } },
+  { label: 'Toggle theme', hint: 'action', run: () => $('#themeBtn').click() },
+  { label: 'Copy email', hint: 'action', run: () => $('#copyEmail').click() },
+];
+let cmdSel = 0, cmdView = CMDS;
+function renderCmd() {
+  const q = $('#cmdInput').value.toLowerCase();
+  cmdView = CMDS.filter((c) => c.label.toLowerCase().includes(q)); cmdSel = Math.min(cmdSel, Math.max(0, cmdView.length - 1));
+  $('#cmdList').innerHTML = cmdView.map((c, i) => `<li role="option" aria-selected="${i === cmdSel}" data-i="${i}">${c.label}<small>${c.hint}</small></li>`).join('') || '<li>No matches</li>';
+}
+function openCmd() { const d = $('#cmd'); if (d.open) return; $('#cmdInput').value = ''; cmdSel = 0; renderCmd(); d.showModal(); $('#cmdInput').focus(); }
+function runCmd(i) { const c = cmdView[i]; if (!c) return; $('#cmd').close(); c.run(); }
+$('#cmdBtn').addEventListener('click', openCmd);
+document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmd(); } });
+$('#cmdInput').addEventListener('input', () => { cmdSel = 0; renderCmd(); });
+$('#cmdInput').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); cmdSel = Math.min(cmdSel + 1, cmdView.length - 1); renderCmd(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSel = Math.max(cmdSel - 1, 0); renderCmd(); }
+  else if (e.key === 'Enter') { e.preventDefault(); runCmd(cmdSel); }
+});
+$('#cmdList').addEventListener('click', (e) => { const li = e.target.closest('[data-i]'); if (li) runCmd(+li.dataset.i); });
+$('#cmd').addEventListener('click', (e) => { if (e.target === $('#cmd')) $('#cmd').close(); });
+</script>
