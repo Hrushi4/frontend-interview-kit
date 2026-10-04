@@ -236,9 +236,251 @@ async def stream(request):
 
 ---
 
+## 🟢 More Basics
+
+**Q15. What is long polling, and when is it still useful?**
+
+**Short answer:** The client sends a request and the server holds it open until there's data or a timeout, then the client immediately asks again.
+
+**Explanation:** Works through any proxy or firewall; a fallback when WebSockets are blocked.
+
+**Example:** `GET /events?after=120` waits up to 30 s for new events.
+
+**Say it like this:** "Long polling is the universal fallback: slower than sockets, but it works everywhere."
+
+---
+
+**Q16. What is a heartbeat or ping/pong, and why is it needed?**
+
+**Short answer:** Small periodic messages that keep connections alive through proxies and detect dead peers.
+
+**Explanation:** Many load balancers close idle connections after 60 seconds.
+
+**Example:** Server sends a ping every 25 s; no pong in 60 s → close the socket.
+
+**Say it like this:** "Heartbeats keep connections open through proxies and let us clean up clients that silently disappeared."
+
+---
+
+**Q17. What is presence, and how do you implement it?**
+
+**Short answer:** Knowing who's online; store presence in Redis with a TTL refreshed by heartbeats, and publish join/leave events.
+
+**Explanation:** TTL handles crashed clients that never send "leave".
+
+**Example:** `SET presence:tenant1:user42 1 EX 60` refreshed every 20 s.
+
+**Say it like this:** "Presence is a key with a TTL: if heartbeats stop, the user goes offline automatically."
+
+---
+
+**Q18. What is the difference between an SFU, MCU and mesh for video?**
+
+**Short answer:** Mesh: everyone sends to everyone (fine for 2–3 people). SFU: server forwards streams without mixing (scales well). MCU: server mixes streams into one (heavy CPU, simple for clients).
+
+**Explanation:** SFUs are the modern default.
+
+**Example:** LiveKit is an SFU.
+
+**Say it like this:** "Mesh for tiny calls, MCU when clients are very weak, SFU for nearly everything else."
+
+---
+
+**Q19. What is simulcast?**
+
+**Short answer:** The sender encodes several quality layers; the SFU forwards the layer that suits each receiver's bandwidth and display size.
+
+**Explanation:** Saves bandwidth and keeps weak connections stable.
+
+**Example:** A thumbnail tile receives the low layer; the speaker view receives the high layer.
+
+**Say it like this:** "Simulcast lets the server send each viewer only the quality they need."
+
+---
+
+**Q20. How are WebRTC access tokens issued in LiveKit?**
+
+**Short answer:** Your backend creates a short-lived signed JWT with the room name, identity and grants (publish, subscribe, data), after checking the user's permissions.
+
+**Explanation:** Never generate tokens on the client; the API secret stays on the server.
+
+**Example:**
+
+```ts
+const at = new AccessToken(apiKey, apiSecret, { identity: user.id, ttl: '10m' });
+at.addGrant({ room: sessionId, roomJoin: true, canPublish: user.role !== 'observer', canSubscribe: true });
+return at.toJwt();
+```
+
+**Say it like this:** "The backend decides who joins and what they can do, and encodes it in a short-lived token signed with a secret only the server has."
+
+---
+
+## 🟡 More Intermediate
+
+**Q21. How do you deliver a message to a specific user across many servers?**
+
+**Short answer:** Publish to a channel for that user or room in the backplane; the server holding that user's connection forwards it.
+
+**Explanation:** Optionally keep a connection registry (user → server) to target directly.
+
+**Example:** Publish to `user:42`; whichever gateway has user 42 subscribed delivers it.
+
+**Say it like this:** "Messages go to a user channel, and the server that holds the user's socket delivers them."
+
+---
+
+**Q22. How do you handle message ordering and delivery guarantees over WebSocket?**
+
+**Short answer:** Add sequence numbers per channel, acknowledge messages, and let clients request missed ranges after reconnecting.
+
+**Explanation:** WebSocket over TCP preserves order per connection, but not across reconnects or servers.
+
+**Example:** Client reconnects with `lastSeq=120`; server replays 121 onward from storage.
+
+**Say it like this:** "Sequence numbers let clients detect gaps and ask for what they missed after reconnecting."
+
+---
+
+**Q23. How do you scale SSE?**
+
+**Short answer:** Same as WebSockets: many instances, a pub/sub backplane, heartbeats, and HTTP/2 to avoid the browser's per-domain connection limit.
+
+**Explanation:** With HTTP/1.1, browsers allow about 6 connections per domain, which SSE tabs can exhaust.
+
+**Example:** Serve SSE over HTTP/2 through the load balancer.
+
+**Say it like this:** "SSE scales like sockets, and HTTP/2 avoids the browser connection limit when users open many tabs."
+
+---
+
+**Q24. How do you record calls in an SFU setup?**
+
+**Short answer:** Use the SFU's recording service (LiveKit Egress) to compose or record tracks to files and upload them to S3.
+
+**Explanation:** Recording needs consent and secure storage, especially for healthcare.
+
+**Example:** Start a room composite egress when the session starts; save MP4 to an encrypted bucket.
+
+**Say it like this:** "Recording runs as a separate egress service writing to encrypted storage, with consent tracked per session."
+
+---
+
+**Q25. What is TURN, and how do you deploy it?**
+
+**Short answer:** A relay server for media when direct connections fail; deploy with TLS on 443 and UDP, short-lived credentials, and in each region.
+
+**Explanation:** TURN carries all media for relayed users, so bandwidth costs matter.
+
+**Example:** coturn or LiveKit's built-in TURN with credentials issued per session.
+
+**Say it like this:** "TURN is the safety net for blocked networks; it must run on 443 and be sized for its bandwidth."
+
+---
+
+**Q26. How do you handle multi-region real-time?**
+
+**Short answer:** Route users to the nearest region, keep rooms in one region (or cascade SFUs across regions), and use a global routing layer.
+
+**Explanation:** Cross-region latency (100 ms+) hurts calls.
+
+**Example:** Indian users connect to Mumbai nodes; a cross-region call is relayed between regions.
+
+**Say it like this:** "Users connect to the closest region; rooms span regions only when participants are far apart."
+
+---
+
+**Q27. How do you test real-time systems?**
+
+**Short answer:** Unit tests for state logic, integration tests with real sockets, load tests that simulate thousands of connections, and network chaos (packet loss, latency).
+
+**Explanation:** LiveKit has a load-testing CLI; k6 supports WebSockets.
+
+**Example:** `lk load-test --rooms 20 --publishers 3 --duration 5m`.
+
+**Say it like this:** "Real-time needs load and network-condition testing, not just functional tests."
+
+---
+
+## 🔴 More Advanced
+
+**Q28. How do you design a collaborative editing backend?**
+
+**Short answer:** Use CRDTs (Yjs, Automerge) or operational transforms; a sync server relays updates, persists document state, and handles awareness (cursors).
+
+**Explanation:** CRDTs merge concurrent edits without a central lock.
+
+**Example:** y-websocket server with document snapshots saved to Postgres every 30 seconds.
+
+**Say it like this:** "CRDTs let edits merge in any order, and the server mainly relays and persists, which keeps it simple to scale."
+
+---
+
+**Q29. How do you protect real-time systems from abuse?**
+
+**Short answer:** Authenticate connections, authorise subscriptions, limit connection count, message rate and size per user, and drop slow consumers.
+
+**Explanation:** Also validate every incoming message against a schema.
+
+**Example:** Max 10 messages per second per socket; larger bursts close the connection.
+
+**Say it like this:** "Every socket has limits and every message is validated, because one bad client shouldn't affect everyone."
+
+---
+
+**Q30. How do you estimate capacity for an SFU?**
+
+**Short answer:** Measure CPU and bandwidth per forwarded stream in load tests, then multiply by expected rooms, participants and quality layers, with headroom.
+
+**Explanation:** Bandwidth is usually the limit before CPU.
+
+**Example:** A 3-person call at 720p might use ~6 Mbps per room on the server; a node with 1 Gbps supports far fewer rooms than its CPU suggests.
+
+**Say it like this:** "Capacity comes from load tests per stream, and for video it's usually bandwidth, not CPU, that runs out first."
+
+---
+
+## 🧩 More Scenarios
+
+**Q31. Users report messages arriving twice after reconnects. Why?**
+
+**Short answer:** The client re-subscribed and the server replayed messages the client had already processed, without dedupe.
+
+**Explanation:** Use message IDs or sequence numbers and ignore duplicates on the client.
+
+**Example:** Client tracks the last processed sequence per channel.
+
+**Say it like this:** "Replays after reconnect are expected, so clients dedupe by message ID."
+
+---
+
+**Q32. Calls drop exactly every 60 seconds for some users. What's happening?**
+
+**Short answer:** A proxy or load balancer idle timeout is closing the signalling connection because no heartbeat is sent within 60 seconds.
+
+**Explanation:** Raise the idle timeout or send heartbeats more often.
+
+**Example:** ALB idle timeout 60 s; heartbeats every 25 s fixed it.
+
+**Say it like this:** "A drop on a regular interval is almost always an idle timeout somewhere in the path."
+
+---
+
+**Q33. One LiveKit node is overloaded while others are idle. How do you fix it?**
+
+**Short answer:** Check room placement (load-based selection in the config), whether large rooms are concentrated on it, and whether autoscaling and draining are working.
+
+**Explanation:** Rooms stay on their node, so placement decisions matter.
+
+**Example:** Placement was "random"; switching to CPU-load-based selection balanced new rooms.
+
+**Say it like this:** "Rooms are sticky, so placement must be load-aware; otherwise one node gets the busy rooms."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q15. "How did your SSE compliance chat work on the backend?"**
+**Q34. "How did your SSE compliance chat work on the backend?"**
 
 **Short answer:** The backend authenticated the user, retrieved tenant- and role-filtered call data in the query, built the prompt, and streamed LLM tokens as SSE events, stopping when the client disconnected.
 
@@ -250,7 +492,7 @@ async def stream(request):
 
 ---
 
-**Q16. "Explain your self-hosted LiveKit design on AWS."**
+**Q35. "Explain your self-hosted LiveKit design on AWS."**
 
 **Short answer:** SFU nodes on EC2 with host networking and a UDP port range, Redis for room routing, a load balancer for WSS signalling, TURN/TLS on 443, autoscaling on CPU and participants, Prometheus and Grafana, and Docker images deployed through CI/CD with draining.
 
@@ -268,7 +510,7 @@ Prometheus ◀─ metrics ─ nodes → Grafana dashboards + alerts
 
 ---
 
-**Q17. "How did you get 99% reconnect success?"**
+**Q36. "How did you get 99% reconnect success?"**
 
 **Short answer:** Mostly client-side resume-first logic, supported by the server side: TURN over TLS, stable node routing, short reconnect windows, and fresh tokens on full rejoin.
 

@@ -254,9 +254,221 @@ def test_access(client, role, method, path, status):
 
 ---
 
+## 🟢 More Basics
+
+**Q16. What are test doubles: mocks, stubs, fakes and spies?**
+
+**Short answer:** Stubs return canned answers, mocks also verify calls, fakes are working lightweight implementations (in-memory repository), spies record calls on real objects.
+
+**Explanation:** Fakes often give the most realistic, least brittle tests.
+
+**Example:** An in-memory `FakeEmailSender` that stores sent messages for assertions.
+
+**Say it like this:** "I prefer fakes over heavy mocking, because they behave like the real thing and don't break on refactors."
+
+---
+
+**Q17. What is TDD, and do you use it?**
+
+**Short answer:** Test-driven development: write a failing test, make it pass, refactor. It's especially useful for business rules and bug fixes.
+
+**Explanation:** At minimum, write the regression test first for bugs.
+
+**Example:** A failing test for "score above 100 is rejected" before adding validation.
+
+**Say it like this:** "I use TDD for logic and always for bug fixes: reproduce with a test first, then fix."
+
+---
+
+**Q18. What is the Arrange-Act-Assert pattern?**
+
+**Short answer:** Set up data, perform one action, check the outcome, keeping each test focused and readable.
+
+**Explanation:** One behaviour per test.
+
+**Example:** Arrange a draft scorecard → act: finalise → assert status is final and audit entry exists.
+
+**Say it like this:** "Every test reads as setup, action, check, so failures are easy to understand."
+
+---
+
+**Q19. How do you test time-dependent code?**
+
+**Short answer:** Inject a clock or use fake timers and time-freezing libraries (`vi.useFakeTimers`, `freezegun`).
+
+**Explanation:** Never rely on real time or sleeps in tests.
+
+**Example:** `@freeze_time("2026-03-01")` to test monthly report boundaries.
+
+**Say it like this:** "Time is a dependency, so tests control it instead of waiting for it."
+
+---
+
+**Q20. What makes a test suite trustworthy?**
+
+**Short answer:** Tests are deterministic, fast enough to run often, test real behaviour, fail for real bugs, and are maintained like production code.
+
+**Explanation:** Flaky or slow suites get ignored.
+
+**Example:** CI is required, green on main, and under 10 minutes.
+
+**Say it like this:** "A suite people trust is fast, deterministic and catches real bugs; anything else gets skipped."
+
+---
+
+## 🟡 More Intermediate
+
+**Q21. How do you test database transactions and rollbacks?**
+
+**Short answer:** Trigger a failure mid-operation (fake dependency that throws) and assert nothing was partially saved.
+
+**Explanation:** Proves atomicity of multi-step operations.
+
+**Example:** Audit insert fails → assert scorecard status is still draft.
+
+**Say it like this:** "I force a failure in the middle and check that the database shows no half-finished state."
+
+---
+
+**Q22. How do you test concurrency and race conditions?**
+
+**Short answer:** Run the operation concurrently (e.g. 20 parallel requests) against a real database and assert invariants hold.
+
+**Explanation:** Races rarely show up in single-threaded tests.
+
+**Example:** 20 reviewers claim the same call concurrently → exactly one succeeds.
+
+**Say it like this:** "For claim or stock logic, I hammer it in parallel in a test and check the invariant."
+
+---
+
+**Q23. What is snapshot testing, and when is it useful on the backend?**
+
+**Short answer:** Comparing output to a saved snapshot; useful for API response shapes, generated SQL or schema outputs, but risky if snapshots are approved blindly.
+
+**Explanation:** Keep snapshots small and reviewed.
+
+**Example:** Snapshot of the GraphQL schema to catch unintended changes.
+
+**Say it like this:** "Snapshots are good for detecting change, as long as reviewers actually read the diff."
+
+---
+
+**Q24. How do you test API error handling?**
+
+**Short answer:** Assert status codes and error format for invalid input, missing auth, forbidden access, not found, conflicts and downstream failures.
+
+**Explanation:** Error paths are where users and attackers spend time.
+
+**Example:** Downstream timeout → API returns 503 with `retryable: true`.
+
+**Say it like this:** "Every endpoint is tested for how it fails, not just how it succeeds."
+
+---
+
+**Q25. What is mutation testing?**
+
+**Short answer:** Tools make small changes to your code (mutants) and check that tests fail; surviving mutants reveal weak tests.
+
+**Explanation:** Expensive; use on critical modules.
+
+**Example:** Stryker on the scoring module found tests that didn't check rounding.
+
+**Say it like this:** "Mutation testing measures whether tests actually catch bugs, which coverage alone can't tell you."
+
+---
+
+**Q26. How do you test with realistic data safely?**
+
+**Short answer:** Generate synthetic data or anonymise production data (masking PHI), never copy real sensitive data into test environments.
+
+**Explanation:** Healthcare data in test systems is a compliance risk.
+
+**Example:** Faker-generated patients and transcripts with realistic distributions.
+
+**Say it like this:** "Test data is synthetic or properly anonymised; real patient data never leaves production."
+
+---
+
+**Q27. What is property-based testing?**
+
+**Short answer:** Generating many random inputs to check that properties always hold (Hypothesis, fast-check).
+
+**Explanation:** Finds edge cases humans miss.
+
+**Example:** For any set of scores and weights, the weighted total stays between 0 and 100.
+
+**Say it like this:** "Instead of a few examples, I state a rule and let the tool try thousands of inputs to break it."
+
+---
+
+## 🔴 More Advanced
+
+**Q28. How do you test a system with many services end to end?**
+
+**Short answer:** Contract tests between services, a small set of E2E tests in a production-like environment, and synthetic monitoring in production.
+
+**Explanation:** Full E2E suites across many services are slow and flaky.
+
+**Example:** Three critical journeys tested E2E nightly; everything else covered by contract tests.
+
+**Say it like this:** "Contracts catch most integration bugs cheaply; a few E2E journeys guard the critical paths."
+
+---
+
+**Q29. How do you test performance regressions in CI?**
+
+**Short answer:** Benchmarks or short load tests on key endpoints with thresholds, compared against a baseline.
+
+**Explanation:** Run in a stable environment to reduce noise.
+
+**Example:** k6 thresholds: p95 < 300 ms on `/api/calls` or the job fails.
+
+**Say it like this:** "Performance is tested like behaviour: a threshold that fails the build when crossed."
+
+---
+
+**Q30. How do you test infrastructure and deployments?**
+
+**Short answer:** Validate infrastructure as code (plan reviews, policy checks), smoke tests after deploy, and canary metrics with automatic rollback.
+
+**Explanation:** Deploy-time checks catch configuration bugs tests can't.
+
+**Example:** After deploy, a smoke test creates and deletes a test scorecard in a test tenant.
+
+**Say it like this:** "Infrastructure is validated before applying, and every deploy runs a smoke test before taking full traffic."
+
+---
+
+## 🧩 More Scenarios
+
+**Q31. A test passes locally but fails in CI. How do you debug it?**
+
+**Short answer:** Look for environment differences: time zone, locale, missing env vars, test order, parallelism, database state, or network access.
+
+**Explanation:** Reproduce with the CI container locally.
+
+**Example:** CI runs in UTC; the test assumed IST.
+
+**Say it like this:** "Local-only passes usually mean a hidden environment assumption like time zone or test order."
+
+---
+
+**Q32. Mocks made a test pass while production broke. How do you prevent it?**
+
+**Short answer:** Replace mocks of internal components with real ones, verify mocks against contracts, and add integration tests for that path.
+
+**Explanation:** Mocks drift from reality.
+
+**Example:** A mocked repository returned data the real query couldn't.
+
+**Say it like this:** "When a mock lies, I replace it with the real thing or a contract-checked fake."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q16. "What backend testing standards did you introduce?"**
+**Q33. "What backend testing standards did you introduce?"**
 
 **Short answer:** Describe your real standards: [integration tests against a real database, an authorisation test matrix from the security audit, regression tests for every bug fix, mocked external APIs, CI gates].
 

@@ -273,9 +273,269 @@ recording.ready → transcribe queue → transcript saved → score queue (chunk
 
 ---
 
+## 🟢 More Basics
+
+**Q17. What is the difference between a queue and pub/sub?**
+
+**Short answer:** In a queue, each message is processed by one consumer; in pub/sub, each message is delivered to every subscriber.
+
+**Explanation:** Many systems combine them: an SNS topic fans out to several SQS queues.
+
+**Example:** "Call scored" goes to a topic; notifications and analytics each have their own queue.
+
+**Say it like this:** "Queues share work among workers; pub/sub broadcasts events to every interested service."
+
+---
+
+**Q18. What is a message broker?**
+
+**Short answer:** Middleware that receives, stores and delivers messages between producers and consumers: RabbitMQ, Redis, SQS, Kafka.
+
+**Explanation:** Brokers provide buffering, routing, retries and persistence.
+
+**Example:** RabbitMQ routes messages by exchange and routing key to queues.
+
+**Say it like this:** "The broker decouples producers from consumers, so either side can slow down or scale independently."
+
+---
+
+**Q19. What is a cron job, and how is it different from a queue job?**
+
+**Short answer:** A cron job runs on a schedule; a queue job runs when something enqueues it. Often a cron enqueues jobs.
+
+**Explanation:** Schedulers must avoid running twice across instances.
+
+**Example:** Celery Beat at 02:00 enqueues "aggregate yesterday's scores" for each tenant.
+
+**Say it like this:** "Cron decides when, the queue decides who does it and handles retries."
+
+---
+
+**Q20. What is a poison message?**
+
+**Short answer:** A message that always fails (bad data, bug), which would retry forever without a limit.
+
+**Explanation:** Cap retries and move it to a dead-letter queue.
+
+**Example:** A transcript with invalid encoding crashes the parser every time.
+
+**Say it like this:** "Poison messages are why every queue needs a retry limit and a dead-letter queue."
+
+---
+
+**Q21. What is the visibility timeout in SQS?**
+
+**Short answer:** After a consumer receives a message, it's hidden for that period; if not deleted in time, it becomes visible again for another consumer.
+
+**Explanation:** Set it longer than the maximum processing time, or extend it while working.
+
+**Example:** Processing takes up to 3 minutes → visibility timeout 5 minutes.
+
+**Say it like this:** "If the timeout is shorter than the job, the same job runs twice, so I size it to the slowest case."
+
+---
+
+**Q22. What does "eventual consistency" mean in async systems?**
+
+**Short answer:** After a change, other parts of the system catch up shortly, not instantly.
+
+**Explanation:** The UI must handle in-between states ("processing").
+
+**Example:** A scorecard is saved, but the leaderboard updates a few seconds later.
+
+**Say it like this:** "Async systems are eventually consistent, so the UI shows pending states instead of pretending things are instant."
+
+---
+
+## 🟡 More Intermediate
+
+**Q23. How do you prioritise jobs?**
+
+**Short answer:** Separate queues per priority with dedicated or weighted workers, or priority queues where supported.
+
+**Explanation:** Prevent low-priority floods from delaying urgent work.
+
+**Example:** `score-live` for new calls, `score-backfill` for re-scoring history, with more workers on `score-live`.
+
+**Say it like this:** "Urgent and bulk work never share a queue, so a backfill can't delay new calls."
+
+---
+
+**Q24. How do you schedule a job for the future?**
+
+**Short answer:** Delayed messages (SQS delay, BullMQ `delay`, Celery `eta`/`countdown`), or a scheduled-jobs table polled by a worker for long delays.
+
+**Explanation:** Very long delays are better in a database than in the broker.
+
+**Example:** Send a reminder 24 hours before a session: store `remind_at` and let a poller enqueue it.
+
+**Say it like this:** "Short delays use the queue; anything far in the future lives in a table that a scheduler checks."
+
+---
+
+**Q25. How do you chain or fan out jobs?**
+
+**Short answer:** Chains run steps in sequence; fan-out runs many in parallel and a final step aggregates results (Celery `chain`, `group`, `chord`; BullMQ flows).
+
+**Explanation:** Store intermediate results durably so a failed step can resume.
+
+**Example:** `chord([score_chunk.s(c) for c in chunks], combine_scores.s(call_id))`.
+
+**Say it like this:** "Chunks are scored in parallel and a final step combines them, which is exactly a fan-out and fan-in."
+
+---
+
+**Q26. How do you monitor queues?**
+
+**Short answer:** Queue depth, age of the oldest message, processing rate, failure and retry rate, DLQ size, and per-job duration.
+
+**Explanation:** Age is the best alert: it reflects user impact.
+
+**Example:** Alert if the oldest message in `score-live` is older than 10 minutes.
+
+**Say it like this:** "I alert on how old the oldest job is, because that's how late users get their results."
+
+---
+
+**Q27. How do you handle very large job payloads?**
+
+**Short answer:** Store the data in S3 or the database and put only a reference (ID or key) in the message.
+
+**Explanation:** Brokers have size limits (SQS 256 KB) and large messages slow everything.
+
+**Example:** Message `{ callId: "c_42" }`; the worker loads the transcript from storage.
+
+**Say it like this:** "Messages carry IDs, not data. The data lives in storage."
+
+---
+
+**Q28. What is backpressure in queue-based systems?**
+
+**Short answer:** Slowing producers when consumers can't keep up, by rejecting or delaying new work, or limiting in-flight jobs.
+
+**Explanation:** Without it, queues grow until timeouts and costs explode.
+
+**Example:** The API returns 429 for bulk re-score requests when the backlog exceeds a threshold.
+
+**Say it like this:** "When the system is full, it should say so early rather than accept work it can't finish in time."
+
+---
+
+**Q29. How do you make a consumer idempotent when the side effect is external (like sending an email)?**
+
+**Short answer:** Record the intent with a unique key before or atomically with sending, check it before sending, and use provider idempotency keys if available.
+
+**Explanation:** Perfect exactly-once to external systems isn't possible; minimise duplicates.
+
+**Example:** `INSERT INTO sent_emails (event_id) ON CONFLICT DO NOTHING RETURNING id` → send only if inserted.
+
+**Say it like this:** "A unique record per event decides whether to send, so retries don't spam users."
+
+---
+
+**Q30. Kafka basics: topics, partitions, consumer groups and offsets?**
+
+**Short answer:** Topics are split into partitions (ordered logs); consumers in a group share partitions; each group tracks its offset (position) per partition.
+
+**Explanation:** Ordering is per partition; parallelism is limited by the number of partitions.
+
+**Example:** `call-events` with 12 partitions keyed by `call_id`; analytics and notifications are separate groups.
+
+**Say it like this:** "Partitions give order and parallelism, consumer groups let several services read the same events independently."
+
+---
+
+## 🔴 More Advanced
+
+**Q31. What is event sourcing?**
+
+**Short answer:** Storing every change as an immutable event and deriving current state by replaying them.
+
+**Explanation:** Great audit trail and time travel; complex to build and query (needs projections).
+
+**Example:** Scorecard events: created, answered, overridden, finalised.
+
+**Say it like this:** "Event sourcing keeps a perfect history, but it's a big complexity cost. I'd use it only where history is central."
+
+---
+
+**Q32. What is CQRS?**
+
+**Short answer:** Command Query Responsibility Segregation: separate models (and sometimes stores) for writes and reads.
+
+**Explanation:** Reads can be denormalised projections updated from events.
+
+**Example:** Writes go to normalised scorecard tables; a read model powers the dashboard.
+
+**Say it like this:** "CQRS lets the read side be shaped for screens while the write side protects the rules."
+
+---
+
+**Q33. How do you replay or reprocess events safely?**
+
+**Short answer:** Idempotent consumers, versioned processing (store which version produced a result), and running replays on separate consumer groups or queues.
+
+**Explanation:** Re-scoring with a new prompt version should create new results, not overwrite old ones blindly.
+
+**Example:** Results keyed by `(call_id, prompt_version)`.
+
+**Say it like this:** "Reprocessing is safe when results are keyed by version and consumers are idempotent."
+
+---
+
+**Q34. How do you guarantee ordering and exactly-once effects in Kafka?**
+
+**Short answer:** Key messages so related events share a partition; use idempotent producers and transactions for Kafka-to-Kafka; idempotent sinks for external systems.
+
+**Explanation:** End-to-end exactly-once needs idempotent writes at the destination.
+
+**Example:** Consumer writes with upserts keyed by event ID.
+
+**Say it like this:** "Kafka gives ordering per key, and exactly-once really comes from idempotent writes at the end."
+
+---
+
+## 🧩 More Scenarios
+
+**Q35. A worker deploy caused half-finished jobs. How do you make deploys safe?**
+
+**Short answer:** Graceful worker shutdown (finish current jobs, stop fetching new ones), late acks for redelivery, and idempotent jobs.
+
+**Explanation:** Celery handles SIGTERM with a warm shutdown.
+
+**Example:** ECS stop timeout set longer than the longest job.
+
+**Say it like this:** "Workers finish what they started before exiting, and anything interrupted is safely retried."
+
+---
+
+**Q36. The dead-letter queue has 2,000 messages after a provider outage. What do you do?**
+
+**Short answer:** Fix or confirm the root cause, inspect a sample, then redrive them in controlled batches with rate limits.
+
+**Explanation:** Redriving everything at once can cause a second outage.
+
+**Example:** Redrive 100 messages a minute while watching error rates.
+
+**Say it like this:** "Understand why they failed, then replay gradually, so recovery doesn't become a new incident."
+
+---
+
+**Q37. Jobs are processed but users never see results. How do you debug it?**
+
+**Short answer:** Trace one job end to end: was the result saved, was the event published, did the API receive it, and did the client get the push?
+
+**Explanation:** Correlation IDs across the pipeline make this quick.
+
+**Example:** Results were saved, but the notification publish failed silently; the outbox pattern fixed it.
+
+**Say it like this:** "Follow one job ID through every stage; the gap is usually between saving and notifying."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q17. "How did you get 5x throughput in the scoring pipeline?"**
+**Q38. "How did you get 5x throughput in the scoring pipeline?"**
 
 **Short answer:** The work was I/O-bound, so we moved from processing chunks one at a time to concurrent processing across tuned workers, with batching and rate-limit-aware concurrency. [Use your real changes.]
 
@@ -287,7 +547,7 @@ recording.ready → transcribe queue → transcript saved → score queue (chunk
 
 ---
 
-**Q18. "What happens when the OpenAI call fails in your pipeline?"**
+**Q39. "What happens when the OpenAI call fails in your pipeline?"**
 
 **Short answer:** Transient errors retry with backoff and jitter; invalid output is validated and retried once with the error, then sent to human review; repeated failures go to a dead-letter queue with an alert.
 
@@ -299,7 +559,7 @@ recording.ready → transcribe queue → transcript saved → score queue (chunk
 
 ---
 
-**Q19. "Why 45 seconds average latency, and how would you reduce it?"**
+**Q40. "Why 45 seconds average latency, and how would you reduce it?"**
 
 **Short answer:** Transcription and LLM calls dominated; I'd stream transcription, score chunks in parallel, and use a smaller model for first-pass triage.
 

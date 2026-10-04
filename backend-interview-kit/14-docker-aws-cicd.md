@@ -297,9 +297,281 @@ jobs:
 
 ---
 
+## 🐳 More Docker
+
+**Q17. What is the difference between `CMD` and `ENTRYPOINT`?**
+
+**Short answer:** `ENTRYPOINT` sets the executable; `CMD` sets default arguments (or the default command) that can be overridden at runtime.
+
+**Explanation:** Use the exec form (`["node", "main.js"]`) so signals reach your process.
+
+**Example:** `ENTRYPOINT ["node"]` + `CMD ["dist/main.js"]`; run `docker run img dist/worker.js` for the worker.
+
+**Say it like this:** "Exec form matters: with the shell form, SIGTERM doesn't reach Node and graceful shutdown breaks."
+
+---
+
+**Q18. Why does PID 1 matter in containers?**
+
+**Short answer:** The process with PID 1 must handle signals and reap zombie processes; Node and Python don't do that by default.
+
+**Explanation:** Use `--init` or `tini` when the app spawns child processes.
+
+**Example:** `docker run --init api` or `ENTRYPOINT ["/sbin/tini", "--", "node", "main.js"]`.
+
+**Say it like this:** "PID 1 has special duties; tini handles them so signals and child processes behave."
+
+---
+
+**Q19. What is a `.dockerignore` file?**
+
+**Short answer:** It excludes files from the build context, making builds faster and keeping secrets and junk out of images.
+
+**Explanation:** Always exclude `node_modules`, `.git`, `.env` and test output.
+
+**Example:** `node_modules\n.git\n.env*\ncoverage\n`.
+
+**Say it like this:** ".dockerignore keeps builds fast and stops a local .env from ending up inside an image."
+
+---
+
+**Q20. What are Docker volumes and bind mounts?**
+
+**Short answer:** Volumes are Docker-managed persistent storage; bind mounts map a host directory into the container.
+
+**Explanation:** In production, keep containers stateless; data goes to managed services.
+
+**Example:** Bind mount source code for hot reload in development; a volume for local Postgres data.
+
+**Say it like this:** "Mounts are for development and local databases; production containers are stateless."
+
+---
+
+**Q21. How do container health checks work?**
+
+**Short answer:** A command or HTTP check the orchestrator runs periodically; failing checks restart the container or remove it from load balancing.
+
+**Explanation:** Keep liveness checks cheap and independent of dependencies.
+
+**Example:** `HEALTHCHECK CMD wget -qO- http://localhost:3000/healthz || exit 1`.
+
+**Say it like this:** "Health checks let the platform heal itself, but they must check the process, not every dependency."
+
+---
+
+**Q22. How do you reduce Docker image size?**
+
+**Short answer:** Multi-stage builds, slim or distroless base images, production dependencies only, and cleaning package caches in the same layer.
+
+**Explanation:** Smaller images deploy faster and have fewer vulnerabilities.
+
+**Example:** Moving from `node:22` (1 GB) to `node:22-alpine` multi-stage (150 MB).
+
+**Say it like this:** "Small images mean faster deploys and less attack surface."
+
+---
+
+## ☁️ More AWS
+
+**Q23. What are the main S3 storage classes?**
+
+**Short answer:** Standard, Intelligent-Tiering, Standard-IA, One Zone-IA, Glacier Instant/Flexible/Deep Archive, trading access cost and speed against storage cost.
+
+**Explanation:** Lifecycle rules move data automatically.
+
+**Example:** Recordings: Standard for 30 days → IA → Glacier after 90 days.
+
+**Say it like this:** "Storage class follows access patterns, and lifecycle rules make it automatic."
+
+---
+
+**Q24. What is CloudFront, and how do you use it with an API?**
+
+**Short answer:** AWS's CDN; it caches static content at the edge and can front APIs for TLS, compression, WAF and caching of public GETs.
+
+**Explanation:** Forward auth headers and disable caching for personalised responses.
+
+**Example:** `/assets/*` cached for a year; `/api/*` passed through with no caching.
+
+**Say it like this:** "CloudFront caches what's public and protects the rest with TLS and WAF at the edge."
+
+---
+
+**Q25. What is RDS vs Aurora?**
+
+**Short answer:** RDS runs standard PostgreSQL or MySQL on managed instances; Aurora is AWS's compatible engine with distributed storage, faster failover and up to 15 replicas.
+
+**Explanation:** Aurora costs more but scales reads and recovers faster.
+
+**Example:** Aurora PostgreSQL for a growing multi-tenant SaaS.
+
+**Say it like this:** "RDS for standard needs, Aurora when we need fast failover and many read replicas."
+
+---
+
+**Q26. What is SQS vs SNS vs EventBridge?**
+
+**Short answer:** SQS is a queue (one consumer per message), SNS is pub/sub fan-out, EventBridge is an event bus with content-based routing and SaaS integrations.
+
+**Explanation:** SNS → multiple SQS queues is a common fan-out pattern.
+
+**Example:** `call.scored` published to SNS, delivered to notification and analytics queues.
+
+**Say it like this:** "SQS for work, SNS for fan-out, EventBridge for routing events by content across services."
+
+---
+
+**Q27. What is AWS Lambda good and bad at?**
+
+**Short answer:** Good for event-driven, spiky, short tasks with no servers to manage; bad for long-running work, steady heavy load, and connection-heavy workloads (database connections, WebSockets).
+
+**Explanation:** Cold starts and 15-minute limits matter; use RDS Proxy for database access.
+
+**Example:** S3 upload → Lambda generates a waveform preview.
+
+**Say it like this:** "Lambda shines for small event-driven tasks; steady or long-running workloads fit containers better."
+
+---
+
+**Q28. How do you give an EC2 or ECS workload access to AWS services?**
+
+**Short answer:** IAM roles (instance profiles or task roles) that provide temporary credentials automatically.
+
+**Explanation:** Never put access keys in environment variables or images.
+
+**Example:** ECS task role allows `secretsmanager:GetSecretValue` for one secret ARN.
+
+**Say it like this:** "Workloads get roles, not keys, so credentials rotate automatically and can't leak from config."
+
+---
+
+**Q29. What is a NAT gateway, and why does it cost money?**
+
+**Short answer:** It lets private subnet resources reach the internet; AWS charges per hour and per GB processed.
+
+**Explanation:** Use VPC endpoints for S3 and other AWS services to avoid NAT data charges.
+
+**Example:** An S3 gateway endpoint cut NAT costs for recording downloads.
+
+**Say it like this:** "NAT data charges add up quietly; VPC endpoints for S3 are an easy saving."
+
+---
+
+**Q30. How do you monitor AWS infrastructure?**
+
+**Short answer:** CloudWatch metrics, logs and alarms, plus Prometheus/Grafana for app metrics, CloudTrail for API audit, and cost alerts.
+
+**Explanation:** Alarm on user-facing symptoms and resource saturation.
+
+**Example:** Alarm on ALB 5xx rate, RDS CPU and free storage, and queue age.
+
+**Say it like this:** "CloudWatch covers the infrastructure, CloudTrail covers who changed what, and app metrics go to Grafana."
+
+---
+
+**Q31. What is AWS WAF?**
+
+**Short answer:** A web application firewall on CloudFront, ALB or API Gateway that blocks common attacks, bad bots and abusive IPs, with rate-based rules.
+
+**Explanation:** Managed rule sets cover OWASP basics.
+
+**Example:** Rate-based rule on `/auth/login` at 100 requests per 5 minutes per IP.
+
+**Say it like this:** "WAF stops obvious attacks at the edge before they reach the application."
+
+---
+
+## 🚀 More CI/CD
+
+**Q32. What is trunk-based development?**
+
+**Short answer:** Everyone merges small changes to the main branch frequently, using feature flags for unfinished work.
+
+**Explanation:** Reduces merge conflicts and enables continuous delivery.
+
+**Example:** Pull requests open for less than a day, merged behind a flag.
+
+**Say it like this:** "Small, frequent merges behind flags keep main always releasable."
+
+---
+
+**Q33. How do you build once and deploy to many environments?**
+
+**Short answer:** Build one immutable image per commit, tag it with the commit SHA, and promote the same image from staging to production with different config.
+
+**Explanation:** Rebuilding per environment risks differences.
+
+**Example:** `api:3f2a1c9` deployed to staging, then the same tag to production after approval.
+
+**Say it like this:** "What we tested in staging is exactly what runs in production: same image, different config."
+
+---
+
+**Q34. What are preview environments?**
+
+**Short answer:** Temporary environments created per pull request for testing and review, destroyed on merge.
+
+**Explanation:** Useful for frontend and API changes reviewed by product teams.
+
+**Example:** Each PR gets `pr-123.preview.example.com` with a seeded database.
+
+**Say it like this:** "Preview environments let reviewers try a change before it merges."
+
+---
+
+**Q35. How do you secure the CI/CD pipeline itself?**
+
+**Short answer:** Least-privilege tokens, OIDC to cloud, pinned action versions (by SHA), protected branches, required reviews, and secrets scoped to environments.
+
+**Explanation:** The pipeline can deploy to production, so it's a high-value target.
+
+**Example:** `uses: actions/checkout@<full-sha>` instead of a floating tag.
+
+**Say it like this:** "The pipeline has production power, so it gets the same least-privilege treatment as production."
+
+---
+
+## 🧩 More Scenarios
+
+**Q36. A container keeps restarting in production. How do you debug it?**
+
+**Short answer:** Check exit codes and logs, health check failures, OOM kills, missing config or secrets, and recent changes.
+
+**Explanation:** Exit code 137 usually means OOM-killed.
+
+**Example:** A new env variable name wasn't set in production, so startup validation failed.
+
+**Say it like this:** "Exit code and the last log lines usually explain it: OOM, failed config validation, or a failing health check."
+
+---
+
+**Q37. The AWS bill jumped 40% this month. How do you investigate?**
+
+**Short answer:** Cost Explorer by service and tag, look for new resources, data transfer and NAT charges, oversized instances and unattached volumes.
+
+**Explanation:** Tagging by team and feature makes this fast.
+
+**Example:** A debug log level sent gigabytes to CloudWatch Logs.
+
+**Say it like this:** "Cost Explorer by tag finds the culprit quickly; it's often logs, data transfer or something left running."
+
+---
+
+**Q38. A deployment succeeded, but users still get the old frontend. Why?**
+
+**Short answer:** CDN or browser caching of `index.html`, or the service worker serving cached assets.
+
+**Explanation:** Cache hashed assets forever but `index.html` with `no-cache`; invalidate the CDN on deploy.
+
+**Example:** `aws cloudfront create-invalidation --paths /index.html`.
+
+**Say it like this:** "Hashed assets can be cached forever, but the entry HTML must always be revalidated."
+
+---
+
 ## 🧩 Scenario-Based
 
-**Q17. A deploy caused errors in production. What do you do?**
+**Q39. A deploy caused errors in production. What do you do?**
 
 **Short answer:** Roll back first (previous image or task definition), confirm recovery, then investigate with logs and metrics, and add a test or check that would have caught it.
 
@@ -311,7 +583,7 @@ jobs:
 
 ---
 
-**Q18. Builds take 25 minutes. How do you speed them up?**
+**Q40. Builds take 25 minutes. How do you speed them up?**
 
 **Short answer:** Cache dependencies and Docker layers, run jobs in parallel, run only affected tests in monorepos, and use bigger runners for heavy steps.
 
@@ -325,7 +597,7 @@ jobs:
 
 ## 🎯 From Your Resume
 
-**Q19. "Walk me through the AWS infrastructure you designed for self-hosted LiveKit."**
+**Q41. "Walk me through the AWS infrastructure you designed for self-hosted LiveKit."**
 
 **Short answer:** Dockerised LiveKit on EC2 across AZs with host networking, Redis (ElastiCache) for routing, an ALB for WSS signalling, TURN on 443, autoscaling on CPU and participants, CloudFront for static assets, Prometheus and Grafana for monitoring, and CI/CD that builds images and does draining deploys.
 
@@ -337,7 +609,7 @@ jobs:
 
 ---
 
-**Q20. "What shell scripts have you written?"**
+**Q42. "What shell scripts have you written?"**
 
 **Short answer:** Describe real ones: deploy helpers, database backup and restore, log extraction, environment setup. [Use your real examples.]
 

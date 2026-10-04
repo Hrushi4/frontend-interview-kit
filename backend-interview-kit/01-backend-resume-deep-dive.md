@@ -280,9 +280,155 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 ---
 
+## 🔁 More Deep-Dive Follow-Ups
+
+**Q19. "What was the hardest backend bug you've fixed?"**
+
+**Short answer:** Pick a real one and tell it as symptom → investigation → root cause → fix → prevention. [For example: duplicate scores from Celery redelivery, a cross-tenant leak, or reconnect failures on hospital networks.]
+
+**Explanation:** Interviewers judge your debugging method more than the bug itself.
+
+**Example:** "Some calls had two AI scores. Logs showed the same task ran twice because the visibility timeout was shorter than long transcriptions. We made results unique per call and prompt version and raised the timeout."
+
+**Say it like this:** "The hardest one was duplicate AI scores. I traced one call through the logs, found the broker redelivering long-running tasks, and fixed it twice over: a longer visibility timeout and idempotent writes, so it can't happen even if redelivery does."
+
+---
+
+**Q20. "How did you decide between Node and Python for different parts of your systems?"**
+
+**Short answer:** Python for the AI pipeline because of LangChain, OpenAI SDKs and the existing FastAPI backend; Node and NestJS where the team and real-time tooling were JavaScript-first.
+
+**Explanation:** Show that choices followed ecosystem and team, not preference.
+
+**Example:** "LangChain and the data tooling are strongest in Python; LiveKit's server SDKs are available in both, so we used what matched each service."
+
+**Say it like this:** "I pick the language by ecosystem and team. The AI work lived in Python because the libraries are best there; JavaScript services stayed in Node so the team could share types."
+
+---
+
+**Q21. "What would you change if you rebuilt the scoring pipeline today?"**
+
+**Short answer:** Clear per-stage queues with metrics, an outbox for notifications, results keyed by prompt version, an eval suite in CI, and streaming transcription to cut latency. [Adjust to what's actually missing.]
+
+**Explanation:** Self-critique shows seniority.
+
+**Example:** "We'd add evals as a CI gate so prompt changes can't silently reduce accuracy."
+
+**Say it like this:** "I'd make it more observable per stage, make prompt changes testable with evals in CI, and stream transcription to cut the 45-second latency."
+
+---
+
+**Q22. "How did you handle schema changes in a live multi-tenant database?"**
+
+**Short answer:** Backward-compatible migrations with expand-and-contract, concurrent index creation, lock timeouts, and deploying migrations before code. [Describe your real practice.]
+
+**Explanation:** Mention one real migration if you can.
+
+**Example:** "Adding a version column to scorecards for optimistic locking: added nullable, backfilled, then made it NOT NULL."
+
+**Say it like this:** "Every migration works with both the old and new code, and heavy changes are done in steps so a live tenant never notices."
+
+---
+
+**Q23. "How did you make sure the SSE compliance chat couldn't leak data across tenants?"**
+
+**Short answer:** Retrieval queries filter by the authenticated user's tenant and role in the database, the tenant comes only from the token, and tests assert cross-tenant queries return nothing.
+
+**Explanation:** Prompt instructions are never the security boundary.
+
+**Example:** `WHERE tenant_id = :tenant_id AND agent_id = ANY(:allowed_agents)` in the retrieval query.
+
+**Say it like this:** "The model only sees what the query returns, and the query is filtered by tenant and role, so there's nothing to leak."
+
+---
+
+**Q24. "What would you monitor for the LiveKit infrastructure on day one?"**
+
+**Short answer:** Join success rate and join latency, reconnect success, node CPU and bandwidth, participants and rooms per node, packet loss, TURN usage and errors.
+
+**Explanation:** Tie each metric to an alert and an action.
+
+**Example:** Alert when join success drops below 98% over 10 minutes.
+
+**Say it like this:** "Day one is about what users feel, joins and reconnects, plus node saturation so we scale before calls degrade."
+
+---
+
+**Q25. "How did you collaborate with backend and DevOps engineers?"**
+
+**Short answer:** Shared design docs, clear ownership boundaries, pairing on security fixes, and agreeing API contracts through OpenAPI. [Use real examples.]
+
+**Explanation:** Full-stack seniors bridge teams.
+
+**Example:** "I paired with the backend developer on the first permission fixes, then they applied the pattern across the remaining routes."
+
+**Say it like this:** "I write the design down, agree who owns what, and pair on the first instance of any new pattern so the rest of the team can repeat it."
+
+---
+
+**Q26. "What's a backend decision you made that you'd reverse?"**
+
+**Short answer:** Choose a real, honest one with a lesson. [For example: starting with MongoDB for relational, report-heavy data, or using one Redis for both cache and broker.]
+
+**Explanation:** Explain why it seemed right then and what changed your mind.
+
+**Example:** "Sharing one Redis for caching and Celery meant cache evictions could drop jobs; we split them."
+
+**Say it like this:** "We shared one Redis for cache and jobs to keep things simple, then saw evictions affect jobs. Now I separate stores with different durability needs from the start."
+
+---
+
+**Q27. "How do you estimate backend work?"**
+
+**Short answer:** Break it into API, data model, migrations, background work, tests and deployment; spike unknowns like third-party APIs; give ranges and update early.
+
+**Explanation:** Integrations and data migrations are the usual surprises.
+
+**Example:** "The Twilio integration got a one-day spike before estimating, because webhook behaviour wasn't fully documented."
+
+**Say it like this:** "I estimate by layer and spike anything external first, because integrations are where estimates go wrong."
+
+---
+
+**Q28. "How would you onboard onto an unfamiliar backend codebase?"**
+
+**Short answer:** Run it locally, read the data model and main request flows, trace one request end to end, read recent incidents, and ship a small fix in the first week.
+
+**Explanation:** Shows learning speed and ownership.
+
+**Example:** "First I map the entities and the busiest endpoints, then follow one request through logs and code."
+
+**Say it like this:** "Data model first, then one request traced end to end, then a small change shipped, which teaches me the deploy path too."
+
+---
+
+**Q29. "What does production ownership mean to you?"**
+
+**Short answer:** Building with observability, alerts and runbooks from the start, being on call for what you ship, and fixing root causes after incidents.
+
+**Explanation:** Seniors are trusted with production.
+
+**Example:** "Every new service ships with a dashboard, alerts with runbook links, and graceful shutdown."
+
+**Say it like this:** "If I build it, I make sure we can see it, alert on it and fix it at 2 a.m., and I take part in that on-call."
+
+---
+
+**Q30. "How do you keep backend skills current when your main role is frontend-heavy?"**
+
+**Short answer:** Owning the backend parts of features end to end, reading postmortems and design docs, small side projects, and pairing with backend engineers.
+
+**Explanation:** Be honest and specific.
+
+**Example:** "I took ownership of the permission layer and the LiveKit infrastructure design instead of handing them off."
+
+**Say it like this:** "I volunteer for the backend side of hard problems, like security and infrastructure, so my backend depth grows with real responsibility."
+
+---
+
 ## 🧱 Skills Section Probes
 
-**Q19. "Node.js: what blocks the event loop?"**
+**Q31. "Node.js: what blocks the event loop?"**
 
 **Short answer:** Synchronous CPU-heavy work: big JSON parsing, sync crypto, `fs.*Sync`, catastrophic regexes, long loops. (See 02 — Node.js.)
 
@@ -294,7 +440,7 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 ---
 
-**Q20. "PostgreSQL: how do you speed up a slow query?"**
+**Q32. "PostgreSQL: how do you speed up a slow query?"**
 
 **Short answer:** `EXPLAIN ANALYZE`, add or fix indexes to match filters and sort, reduce data scanned, and pre-aggregate for dashboards. (See 07 — PostgreSQL.)
 
@@ -306,7 +452,7 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 ---
 
-**Q21. "Redis: what did you use it for?"**
+**Q33. "Redis: what did you use it for?"**
 
 **Short answer:** Celery broker, LiveKit room routing, and caching. [Your real uses.] (See 09 — Redis.)
 
@@ -318,7 +464,7 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 ---
 
-**Q22. "Docker and AWS: what have you actually run?"**
+**Q34. "Docker and AWS: what have you actually run?"**
 
 **Short answer:** Name real services: [EC2 for LiveKit, ECS or Docker Compose for APIs, S3 for recordings, RDS, ElastiCache, CloudFront], with Docker images built in GitHub Actions.
 
@@ -330,7 +476,7 @@ async def get_session(sid: UUID, user = Depends(require("sessions:read")), db = 
 
 ---
 
-**Q23. "Grafana and Prometheus: which dashboards and alerts did you create?"**
+**Q35. "Grafana and Prometheus: which dashboards and alerts did you create?"**
 
 **Short answer:** Name real ones: LiveKit node CPU, bandwidth, participants, packet loss; pipeline queue age and failure rate. (See 15 — Observability.)
 

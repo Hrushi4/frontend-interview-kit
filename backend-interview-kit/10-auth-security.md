@@ -257,9 +257,293 @@ if not call: raise HTTPException(404)
 
 ---
 
+## 🟢 More Basics
+
+**Q16. What is the difference between encoding, encryption and hashing?**
+
+**Short answer:** Encoding changes format and is reversible by anyone (Base64); encryption is reversible only with a key; hashing is one-way.
+
+**Explanation:** JWT payloads are encoded, not encrypted. Passwords are hashed. PHI at rest is encrypted.
+
+**Example:** `base64("abc")` anyone can decode; AES-GCM needs the key; Argon2 can't be reversed.
+
+**Say it like this:** "Encoding is for transport, encryption is for secrecy, hashing is for verification. Mixing them up causes real breaches."
+
+---
+
+**Q17. What is MFA, and which factors are strongest?**
+
+**Short answer:** Multi-factor authentication combines something you know, have or are; phishing-resistant factors like passkeys (WebAuthn) and hardware keys are strongest, SMS is weakest.
+
+**Explanation:** TOTP apps are a good middle ground.
+
+**Example:** Admins required to use passkeys or TOTP; SMS only as recovery.
+
+**Say it like this:** "MFA blocks most account takeovers; passkeys are best because they can't be phished."
+
+---
+
+**Q18. What are HTTPS and TLS, briefly?**
+
+**Short answer:** TLS encrypts and authenticates the connection using certificates; HTTPS is HTTP over TLS.
+
+**Explanation:** Use TLS 1.2+, HSTS, and terminate at the load balancer or end-to-end for sensitive data.
+
+**Example:** ALB terminates TLS with an ACM certificate; internal traffic re-encrypted for PHI services.
+
+**Say it like this:** "TLS everywhere, HSTS on, and for health data I keep it encrypted inside the network too."
+
+---
+
+**Q19. What is CORS, and does it protect your API?**
+
+**Short answer:** A browser mechanism that lets servers allow other origins to read responses; it doesn't protect against non-browser clients.
+
+**Explanation:** Authentication and authorisation are the real protection.
+
+**Example:** `curl` ignores CORS completely.
+
+**Say it like this:** "CORS controls which websites can read our responses in a browser; it's not access control."
+
+---
+
+**Q20. What is the principle of least privilege?**
+
+**Short answer:** Give every user, service and key only the access it needs, for only as long as it needs it.
+
+**Explanation:** Limits the blast radius of a compromise.
+
+**Example:** The reporting service has a read-only database user on reporting views only.
+
+**Say it like this:** "If something is compromised, least privilege decides how bad it gets."
+
+---
+
+**Q21. What should an audit log contain?**
+
+**Short answer:** Who did what, to which resource, when, from where, and the outcome; append-only and tamper-evident.
+
+**Explanation:** Required for PHI access and admin actions.
+
+**Example:** `{ actor: u_42, action: 'view_session', resource: s_9, tenant: t_1, ip, at, result: 'allowed' }`.
+
+**Say it like this:** "Audit logs answer 'who accessed this patient's data and when', so they're append-only and kept separate from app logs."
+
+---
+
+## 🟡 More Intermediate
+
+**Q22. Session cookies vs JWTs for a web app: what do you recommend?**
+
+**Short answer:** For a first-party web app, server sessions in HttpOnly cookies (or a BFF) are simpler and revocable; JWTs fit service-to-service and multiple APIs.
+
+**Explanation:** Many teams combine them: a session for the browser, short-lived JWTs between services.
+
+**Example:** Browser ↔ BFF with a session cookie; BFF ↔ APIs with signed JWTs.
+
+**Say it like this:** "For browsers I prefer sessions, which are easy to revoke; JWTs shine between services."
+
+---
+
+**Q23. What are JWKS and key rotation?**
+
+**Short answer:** A JSON Web Key Set is a published list of public keys; tokens name their key with `kid`, so you can rotate keys by adding a new one and retiring the old.
+
+**Explanation:** Verifiers cache JWKS and refetch on unknown `kid`.
+
+**Example:** `https://auth.example.com/.well-known/jwks.json` with two keys during rotation.
+
+**Say it like this:** "With JWKS, key rotation is just publishing a new key and retiring the old one later."
+
+---
+
+**Q24. What is the difference between OAuth scopes and application permissions?**
+
+**Short answer:** Scopes limit what a token can be used for on behalf of a user; application permissions decide what that user can do inside your system.
+
+**Explanation:** Check both: the token has the scope and the user has the permission.
+
+**Example:** Token scope `scorecards:read` plus user role QA reviewer in tenant 1.
+
+**Say it like this:** "Scopes limit the token, permissions limit the user, and the API checks both."
+
+---
+
+**Q25. How do you implement "log out everywhere"?**
+
+**Short answer:** Revoke all refresh tokens or sessions for the user and increment a token version so outstanding access tokens fail on the next check.
+
+**Explanation:** Short access-token lifetimes bound the remaining exposure.
+
+**Example:** `UPDATE users SET token_version = token_version + 1`; delete their sessions in Redis.
+
+**Say it like this:** "Revoking refresh tokens plus a token version ends every session within minutes."
+
+---
+
+**Q26. How do you validate and sanitise input?**
+
+**Short answer:** Validate types, ranges and formats with schemas at the boundary; sanitise only where output contexts need it (HTML), and encode on output.
+
+**Explanation:** Validation rejects bad data; output encoding prevents injection in each context.
+
+**Example:** Zod/Pydantic for input; DOMPurify for user HTML displayed later.
+
+**Say it like this:** "Validate on the way in, encode on the way out, for the specific context."
+
+---
+
+**Q27. What is SSRF, and how do you prevent it?**
+
+**Short answer:** Server-Side Request Forgery: tricking your server into calling internal URLs (like cloud metadata). Prevent with allowlists, blocking private IP ranges, and IMDSv2.
+
+**Explanation:** Any feature that fetches user-supplied URLs (webhooks, link previews) is at risk.
+
+**Example:** Reject URLs resolving to `169.254.169.254` or `10.0.0.0/8`.
+
+**Say it like this:** "If the server fetches URLs users give it, I allowlist destinations and block internal addresses."
+
+---
+
+**Q28. How do you protect against excessive data exposure?**
+
+**Short answer:** Return only fields the client needs, using response schemas, and never rely on the frontend to hide fields.
+
+**Explanation:** This is OWASP API3 (broken object property-level authorisation).
+
+**Example:** Agent list returns name and ID, not email and phone.
+
+**Say it like this:** "If the frontend hides it, the API shouldn't send it."
+
+---
+
+**Q29. How do you prevent function-level authorisation bugs (admin endpoints)?**
+
+**Short answer:** Deny by default, require explicit permissions on every route, separate admin routes, and test every route with non-admin users.
+
+**Explanation:** Automated checks that every route declares a permission.
+
+**Example:** A test enumerates all routes and fails if one lacks a permission dependency.
+
+**Say it like this:** "Secure by default: a route without an explicit permission fails CI."
+
+---
+
+**Q30. What is encryption at rest vs field-level encryption?**
+
+**Short answer:** At-rest encryption protects disks and backups; field-level encryption protects specific columns even from people with database access.
+
+**Explanation:** Field-level encryption with a KMS key for highly sensitive fields like notes or IDs.
+
+**Example:** `patient_notes` encrypted with an AWS KMS data key; database admins see ciphertext.
+
+**Say it like this:** "Disk encryption protects stolen drives; field encryption protects sensitive values even from insiders."
+
+---
+
+## 🔴 More Advanced
+
+**Q31. How do you design secure password reset?**
+
+**Short answer:** Random single-use tokens with short expiry, stored hashed, sent to the verified email, generic responses, and invalidating sessions after reset.
+
+**Explanation:** Never reveal whether the email exists.
+
+**Example:** Token valid 15 minutes; after use, all refresh tokens revoked.
+
+**Say it like this:** "Reset tokens are single-use, short-lived and hashed, and a reset logs the user out everywhere."
+
+---
+
+**Q32. How do you implement tenant isolation for security, not just correctness?**
+
+**Short answer:** Tenant from the verified token only, enforced in queries and with database RLS, tenant-aware caches and queues, per-tenant encryption keys if required, and isolation tests.
+
+**Explanation:** Defence in depth because one missed filter is a breach.
+
+**Example:** RLS policies plus an integration test suite that attempts cross-tenant reads on every endpoint.
+
+**Say it like this:** "Isolation is enforced in several independent layers, so one mistake isn't enough to leak data."
+
+---
+
+**Q33. How do you secure webhooks you receive?**
+
+**Short answer:** Verify the HMAC signature on the raw body in constant time, check timestamps to block replays, deduplicate event IDs, and use HTTPS.
+
+**Explanation:** Treat the payload as untrusted even after verification.
+
+**Example:** Twilio signature validation using the full URL and parameters.
+
+**Say it like this:** "Signature, timestamp and event ID: verified, fresh and processed once."
+
+---
+
+**Q34. What is threat modelling, and how do you do it?**
+
+**Short answer:** Systematically listing assets, entry points, trust boundaries and threats (STRIDE), then mitigations, before or during design.
+
+**Explanation:** Lightweight versions work in a one-hour session per feature.
+
+**Example:** For the compliance chat: assets (transcripts), threats (prompt injection, cross-tenant retrieval), mitigations (query filtering, output validation).
+
+**Say it like this:** "I ask what we're protecting, who could attack it and how, then design mitigations before writing code."
+
+---
+
+**Q35. How do you handle dependency vulnerabilities?**
+
+**Short answer:** Lockfiles, automated scanning (Dependabot, Snyk, npm audit, pip-audit), triage by exploitability, and regular updates.
+
+**Explanation:** Not every CVE is reachable; prioritise ones in your code paths.
+
+**Example:** Weekly dependency PRs auto-merged when tests pass for patch versions.
+
+**Say it like this:** "Dependencies are scanned continuously and updated often, so patching is routine rather than an emergency."
+
+---
+
+## 🧩 More Scenarios
+
+**Q36. A developer committed an AWS key to GitHub. What do you do?**
+
+**Short answer:** Revoke and rotate the key immediately, check CloudTrail for misuse, remove it from history, and add secret scanning to prevent recurrence.
+
+**Explanation:** Assume it was found within minutes; bots scan public repos constantly.
+
+**Example:** Deactivate the IAM key, then rotate dependent services to role-based credentials.
+
+**Say it like this:** "Rotate first, investigate second, and then make it impossible with secret scanning and role-based credentials."
+
+---
+
+**Q37. A user reports they can see a deleted colleague's data. What's wrong?**
+
+**Short answer:** Access wasn't revoked: cached permissions, long-lived tokens, or data scoped by role but not by active membership.
+
+**Explanation:** Offboarding must revoke sessions and permissions immediately.
+
+**Example:** Deactivated users kept valid refresh tokens; offboarding now revokes them.
+
+**Say it like this:** "Offboarding must end access instantly: sessions, tokens and cached permissions all get revoked."
+
+---
+
+**Q38. Your login endpoint is under a credential-stuffing attack. What do you do right now?**
+
+**Short answer:** Tighten rate limits per IP and account, add a CAPTCHA or proof-of-work challenge, block abusive ranges at the WAF, force resets for compromised accounts, and alert users.
+
+**Explanation:** Monitor success rates of logins to detect compromised accounts.
+
+**Example:** AWS WAF rate-based rule plus bot control on `/auth/login`.
+
+**Say it like this:** "Slow the attacker down at the edge, protect affected accounts, and add MFA to make stolen passwords useless."
+
+---
+
 ## 🏥 Level 4 — Healthcare and PHI
 
-**Q16. What is PHI, and how must a backend protect it?**
+**Q39. What is PHI, and how must a backend protect it?**
 
 **Short answer:** Protected Health Information. Encrypt it in transit and at rest, restrict access by role, audit every access, minimise collection, and keep it out of logs and third parties without agreements.
 
@@ -271,7 +555,7 @@ if not call: raise HTTPException(404)
 
 ---
 
-**Q17. How do you keep PHI out of logs?**
+**Q40. How do you keep PHI out of logs?**
 
 **Short answer:** Structured logging with allowlisted fields, redaction middleware, no request bodies by default, and scrubbing in error trackers.
 
@@ -285,7 +569,7 @@ if not call: raise HTTPException(404)
 
 ## 🧩 Level 5 — Scenario-Based
 
-**Q18. You discover an API where changing an ID in the URL returns another tenant's data. What do you do?**
+**Q41. You discover an API where changing an ID in the URL returns another tenant's data. What do you do?**
 
 **Short answer:** Treat it as an incident: fix the query scope, check logs for exploitation, notify per policy, add tests for every similar endpoint, and add database-level protection like RLS.
 
@@ -297,7 +581,7 @@ if not call: raise HTTPException(404)
 
 ---
 
-**Q19. A JWT signing key may have leaked. What do you do?**
+**Q42. A JWT signing key may have leaked. What do you do?**
 
 **Short answer:** Rotate the key immediately (publish the new key in JWKS, stop accepting the old one), force re-login by revoking refresh tokens, investigate the leak, and review access logs.
 
@@ -311,7 +595,7 @@ if not call: raise HTTPException(404)
 
 ## 🎯 From Your Resume
 
-**Q20. "Walk me through the backend side of your security audit."**
+**Q43. "Walk me through the backend side of your security audit."**
 
 **Short answer:** I mapped roles and data flows, tested every FastAPI endpoint as each role and tenant, reviewed token handling and PHI storage, then fixed issues with permission dependencies, token changes and log scrubbing, each with a regression test.
 
@@ -334,7 +618,7 @@ def get_session(sid: str, user = Depends(require("sessions:read"))): ...
 
 ---
 
-**Q21. "How were JWT and OAuth tokens handled after your fixes?"**
+**Q44. "How were JWT and OAuth tokens handled after your fixes?"**
 
 **Short answer:** Describe your real setup: [short-lived access tokens, rotated refresh tokens in HttpOnly cookies, pinned algorithms, audience checks, revocation on logout].
 

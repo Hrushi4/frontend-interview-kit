@@ -347,6 +347,218 @@ setTimeout(() => process.exit(1), 30_000).unref?.();
 
 ---
 
+## 🟡 More Intermediate Builds
+
+### Q11. Debounced batch writer (collect events, flush in batches)
+
+**Short answer:** Buffer events in memory and flush when the buffer reaches N items or T milliseconds pass, whichever comes first; flush on shutdown too.
+
+**Explanation:** Reduces database or API calls for high-volume events like analytics or audit logs. Handle flush failures by retrying or re-queueing.
+
+**Example:**
+
+```ts
+class BatchWriter<T> {
+  private buf: T[] = []; private timer?: NodeJS.Timeout;
+  constructor(private flushFn: (items: T[]) => Promise<void>, private max = 100, private waitMs = 1000) {}
+  add(item: T) {
+    this.buf.push(item);
+    if (this.buf.length >= this.max) void this.flush();
+    else this.timer ??= setTimeout(() => void this.flush(), this.waitMs);
+  }
+  async flush() {
+    clearTimeout(this.timer); this.timer = undefined;
+    const items = this.buf.splice(0);
+    if (items.length) await this.flushFn(items).catch((e) => { this.buf.unshift(...items); throw e; });
+  }
+}
+```
+
+**Say it like this:** "Flush by size or time, whichever comes first, and put items back if the flush fails, so nothing is lost."
+
+---
+
+### Q12. Pub/sub event bus in memory
+
+**Short answer:** A map from topic to a set of handlers; `subscribe` returns an unsubscribe function; `publish` calls handlers and isolates their errors.
+
+**Explanation:** One failing handler must not stop others. Mention moving to Redis or a broker across processes.
+
+**Example:**
+
+```ts
+class EventBus {
+  private handlers = new Map<string, Set<(p: unknown) => void | Promise<void>>>();
+  subscribe(topic: string, fn: (p: unknown) => void | Promise<void>) {
+    if (!this.handlers.has(topic)) this.handlers.set(topic, new Set());
+    this.handlers.get(topic)!.add(fn);
+    return () => this.handlers.get(topic)!.delete(fn);
+  }
+  async publish(topic: string, payload: unknown) {
+    const results = await Promise.allSettled([...(this.handlers.get(topic) ?? [])].map((h) => h(payload)));
+    results.filter((r) => r.status === 'rejected').forEach((r) => logger.error((r as PromiseRejectedResult).reason));
+  }
+}
+```
+
+**Say it like this:** "Handlers are isolated with allSettled, so one failing subscriber doesn't block the rest."
+
+---
+
+### Q13. Circuit breaker
+
+**Short answer:** Track failures; after N failures, open the circuit and fail fast for a cool-down period; then allow a trial request (half-open) and close on success.
+
+**Explanation:** Protects the system from a failing dependency and gives it time to recover.
+
+**Example:**
+
+```ts
+class CircuitBreaker {
+  private failures = 0; private openedAt = 0; private state: 'closed' | 'open' | 'half' = 'closed';
+  constructor(private threshold = 5, private coolDownMs = 30_000) {}
+  async call<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.state === 'open') {
+      if (Date.now() - this.openedAt < this.coolDownMs) throw new Error('circuit_open');
+      this.state = 'half';
+    }
+    try { const r = await fn(); this.failures = 0; this.state = 'closed'; return r; }
+    catch (e) {
+      if (this.state === 'half' || ++this.failures >= this.threshold) { this.state = 'open'; this.openedAt = Date.now(); }
+      throw e;
+    }
+  }
+}
+```
+
+**Say it like this:** "Closed, open, half-open: after repeated failures we stop calling for a while, then test with one request before trusting it again."
+
+---
+
+### Q14. Simple in-memory key-value store with transactions
+
+**Short answer:** A map plus a stack of transaction layers; `begin` pushes a layer, writes go to the top layer, `rollback` pops it, `commit` merges layers down.
+
+**Explanation:** A common interview problem testing data structure design.
+
+**Example:**
+
+```ts
+class TxStore {
+  private base = new Map<string, string | null>(); private tx: Map<string, string | null>[] = [];
+  get(k: string) { for (let i = this.tx.length - 1; i >= 0; i--) if (this.tx[i].has(k)) return this.tx[i].get(k) ?? null; return this.base.get(k) ?? null; }
+  set(k: string, v: string | null) { (this.tx.at(-1) ?? this.base).set(k, v); }
+  begin() { this.tx.push(new Map()); }
+  rollback() { if (!this.tx.pop()) throw new Error('no transaction'); }
+  commit() { const top = this.tx.pop(); if (!top) throw new Error('no transaction'); for (const [k, v] of top) this.set(k, v); }
+}
+```
+
+**Say it like this:** "Each transaction is a layer on top; reads look from the top down, rollback drops a layer, commit folds it into the one below."
+
+---
+
+## 🔴 More Advanced Builds
+
+### Q15. Job scheduler that runs tasks at specific times
+
+**Short answer:** A min-heap ordered by run time; a loop sleeps until the next task is due, runs it, and reschedules recurring tasks.
+
+**Explanation:** Mention persistence and leader election for production.
+
+**Example:**
+
+```ts
+type Task = { at: number; run: () => Promise<void>; everyMs?: number };
+class Scheduler {
+  private tasks: Task[] = []; private timer?: NodeJS.Timeout;
+  schedule(t: Task) { this.tasks.push(t); this.tasks.sort((a, b) => a.at - b.at); this.arm(); }
+  private arm() {
+    clearTimeout(this.timer);
+    const next = this.tasks[0]; if (!next) return;
+    this.timer = setTimeout(async () => {
+      const t = this.tasks.shift()!;
+      try { await t.run(); } catch (e) { logger.error(e); }
+      if (t.everyMs) this.schedule({ ...t, at: Date.now() + t.everyMs }); else this.arm();
+    }, Math.max(0, next.at - Date.now()));
+  }
+}
+```
+
+**Say it like this:** "Tasks are ordered by due time and one timer always points at the next one. In production I'd swap the array for a heap and persist tasks."
+
+---
+
+### Q16. Paginated export to CSV with streaming
+
+**Short answer:** Stream rows from the database with a cursor, convert to CSV lines with escaping, and pipe to the response with backpressure.
+
+**Explanation:** Memory stays flat regardless of export size.
+
+**Example:**
+
+```ts
+app.get('/exports/calls.csv', async (req, res) => {
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="calls.csv"');
+  const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = db.stream('SELECT id, started_at, score FROM calls WHERE tenant_id = $1 ORDER BY started_at', [req.user.tenantId]);
+  const toCsv = new Transform({ objectMode: true, transform(r, _e, cb) { cb(null, [r.id, r.started_at.toISOString(), r.score].map(esc).join(',') + '\n'); } });
+  res.write('id,started_at,score\n');
+  await pipeline(rows, toCsv, res);
+});
+```
+
+**Say it like this:** "Rows stream from the database through a CSV transform to the client, so a million-row export uses the same memory as ten rows."
+
+---
+
+### Q17. Request coalescing (single-flight)
+
+**Short answer:** If a request for the same key is already in flight, return the same promise instead of starting another.
+
+**Explanation:** Prevents cache stampedes and duplicate downstream calls.
+
+**Example:**
+
+```ts
+const inflight = new Map<string, Promise<unknown>>();
+function singleFlight<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  if (inflight.has(key)) return inflight.get(key) as Promise<T>;
+  const p = fn().finally(() => inflight.delete(key));
+  inflight.set(key, p);
+  return p;
+}
+```
+
+**Say it like this:** "Concurrent requests for the same thing share one call, which stops stampedes when a hot cache key expires."
+
+---
+
+### Q18. Simple permission checker (RBAC with ownership)
+
+**Short answer:** A permission map per role plus ownership rules evaluated in one `can(user, action, resource)` function, used by every endpoint.
+
+**Explanation:** Centralising rules makes them testable as a matrix.
+
+**Example:**
+
+```ts
+const ROLE_PERMS: Record<Role, string[]> = {
+  admin: ['*'], qa: ['calls:read', 'scorecards:write'], agent: ['calls:read:own'],
+};
+function can(user: User, action: string, resource?: { tenantId: string; agentId?: string }) {
+  if (resource && resource.tenantId !== user.tenantId) return false;
+  const perms = ROLE_PERMS[user.role];
+  if (perms.includes('*') || perms.includes(action)) return true;
+  return perms.includes(`${action}:own`) && resource?.agentId === user.id;
+}
+```
+
+**Say it like this:** "One function answers every permission question: tenant first, then role, then ownership, and it's tested as a full matrix."
+
+---
+
 ## ✅ Self-Review Checklist (Say These Out Loud at the End)
 
 - Input is validated and unknown fields are rejected.

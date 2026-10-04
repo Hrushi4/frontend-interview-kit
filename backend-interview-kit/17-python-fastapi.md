@@ -297,9 +297,286 @@ assert client.get(f"/scorecards/{other_tenant_scorecard}").status_code == 404
 
 ---
 
+## 🟢 More Basics
+
+**Q16. What are Python's main data structures and their costs?**
+
+**Short answer:** list (dynamic array: O(1) append, O(n) search), dict (hash map: O(1) lookup), set (hash set: O(1) membership), tuple (immutable sequence).
+
+**Explanation:** Use `collections.deque` for queues and `defaultdict`/`Counter` for grouping and counting.
+
+**Example:** `Counter(c.agent_id for c in calls).most_common(5)`.
+
+**Say it like this:** "dict and set give constant-time lookups, which fixes most accidental O(n²) code."
+
+---
+
+**Q17. What are type hints, and do they affect runtime?**
+
+**Short answer:** Annotations that tools (mypy, pyright) check statically; Python ignores them at runtime, except libraries like Pydantic and FastAPI that read them.
+
+**Explanation:** Run a type checker in CI.
+
+**Example:** `def score(chunks: list[Chunk]) -> ChunkScore: ...`.
+
+**Say it like this:** "Type hints catch bugs in CI, and FastAPI uses them to validate requests at runtime too."
+
+---
+
+**Q18. What are decorators?**
+
+**Short answer:** Functions that wrap other functions to add behaviour (logging, retries, caching, routing).
+
+**Explanation:** Use `functools.wraps` to preserve metadata.
+
+**Example:** `@app.get("/calls")`, `@retry(stop=stop_after_attempt(3))`.
+
+**Say it like this:** "Decorators add behaviour around functions; FastAPI routes and Celery tasks are both decorators."
+
+---
+
+**Q19. What are context managers?**
+
+**Short answer:** Objects used with `with` that set up and clean up resources reliably (files, sessions, locks).
+
+**Explanation:** `async with` for async resources; `contextlib.contextmanager` to write your own.
+
+**Example:** `async with httpx.AsyncClient(timeout=10) as client: ...`.
+
+**Say it like this:** "with guarantees cleanup, even when an exception happens."
+
+---
+
+**Q20. What are generators, and why use them?**
+
+**Short answer:** Functions that `yield` values lazily, one at a time, using little memory.
+
+**Explanation:** Great for streaming large data and SSE responses.
+
+**Example:** `def chunks(transcript, size): for i in range(0, len(transcript), size): yield transcript[i:i+size]`.
+
+**Say it like this:** "Generators process data piece by piece, which keeps memory flat on large inputs."
+
+---
+
+**Q21. How do you manage Python dependencies and environments?**
+
+**Short answer:** Virtual environments with a lockfile, using tools like uv, Poetry or pip-tools, and pinned versions in production images.
+
+**Explanation:** Never install into the system Python.
+
+**Example:** `uv sync --frozen` in the Dockerfile.
+
+**Say it like this:** "Every project has an isolated environment and a lockfile, so installs are reproducible."
+
+---
+
+## 🟡 More Intermediate
+
+**Q22. How does FastAPI handle validation errors?**
+
+**Short answer:** It returns 422 with details of which field failed and why, generated from Pydantic errors.
+
+**Explanation:** Override the handler to match your API's error format.
+
+**Example:** `@app.exception_handler(RequestValidationError)` returning `{ "error": "validation_error", "fields": … }`.
+
+**Say it like this:** "FastAPI validates automatically, and I reshape its 422 to match our standard error format."
+
+---
+
+**Q23. What is the difference between Pydantic v1 and v2?**
+
+**Short answer:** v2 has a Rust core (much faster), `model_validate`/`model_dump` instead of `parse_obj`/`dict`, `ConfigDict`, and stricter behaviour.
+
+**Explanation:** Migration needs code changes but brings big performance gains.
+
+**Example:** `UserOut.model_validate(orm_user)` with `from_attributes=True`.
+
+**Say it like this:** "Pydantic v2 is far faster with a cleaner API; most FastAPI projects should be on it."
+
+---
+
+**Q24. How do you run startup and shutdown logic in FastAPI?**
+
+**Short answer:** A `lifespan` async context manager that creates resources (pools, clients) on startup and closes them on shutdown.
+
+**Explanation:** Replaces the older `on_event` handlers.
+
+**Example:**
+
+```python
+@asynccontextmanager
+async def lifespan(app):
+    app.state.http = httpx.AsyncClient(timeout=10)
+    yield
+    await app.state.http.aclose()
+app = FastAPI(lifespan=lifespan)
+```
+
+**Say it like this:** "Lifespan creates shared clients once and closes them cleanly, so connections aren't leaked."
+
+---
+
+**Q25. What is middleware in FastAPI and Starlette?**
+
+**Short answer:** Code that wraps every request and response: CORS, GZip, request IDs, timing and security headers.
+
+**Explanation:** Pure ASGI middleware is faster than `BaseHTTPMiddleware` for streaming responses.
+
+**Example:** A middleware that adds `x-request-id` and logs request duration.
+
+**Say it like this:** "Middleware handles cross-cutting concerns once, for every route."
+
+---
+
+**Q26. How do you handle authentication with OAuth2 in FastAPI?**
+
+**Short answer:** `OAuth2PasswordBearer` or a custom `HTTPBearer`/cookie dependency extracts the token; a `current_user` dependency verifies it and loads the user.
+
+**Explanation:** Verify signature, expiry, issuer and audience; return 401 with `WWW-Authenticate`.
+
+**Example:** `async def current_user(token: str = Depends(oauth2_scheme)) -> User: ...`.
+
+**Say it like this:** "Auth is a dependency chain: extract the token, verify it, load the user, then check permissions."
+
+---
+
+**Q27. What are Alembic migrations?**
+
+**Short answer:** Versioned database schema changes for SQLAlchemy projects, autogenerated from model changes and reviewed before applying.
+
+**Explanation:** Always review autogenerated migrations; they miss renames and data changes.
+
+**Example:** `alembic revision --autogenerate -m "add version to scorecards"` then `alembic upgrade head` in CI and deploy.
+
+**Say it like this:** "Alembic tracks schema versions; autogenerate is a starting point that I always review."
+
+---
+
+**Q28. What is the difference between `asyncio.gather` and `TaskGroup`?**
+
+**Short answer:** Both run coroutines concurrently; `TaskGroup` (Python 3.11+) cancels the remaining tasks if one fails and raises an `ExceptionGroup`, which is safer.
+
+**Explanation:** Add a semaphore to limit concurrency.
+
+**Example:**
+
+```python
+sem = asyncio.Semaphore(10)
+async def limited(c):
+    async with sem: return await score_chunk(c)
+async with asyncio.TaskGroup() as tg:
+    tasks = [tg.create_task(limited(c)) for c in chunks]
+```
+
+**Say it like this:** "TaskGroup gives structured concurrency, and a semaphore keeps us within the provider's rate limit."
+
+---
+
+**Q29. How do you call blocking code from async code?**
+
+**Short answer:** `await asyncio.to_thread(fn, ...)` or `run_in_threadpool`, so the event loop isn't blocked.
+
+**Explanation:** For CPU-heavy work, use a process pool or Celery.
+
+**Example:** `await asyncio.to_thread(boto3_client.upload_file, path, bucket, key)`.
+
+**Say it like this:** "Blocking calls go to a thread, CPU-heavy work goes to processes, and the event loop stays free."
+
+---
+
+**Q30. What is Celery Beat?**
+
+**Short answer:** Celery's scheduler that sends periodic tasks to the queue on a schedule.
+
+**Explanation:** Run exactly one Beat instance (or use a distributed lock-based scheduler).
+
+**Example:** `"nightly-aggregates": {"task": "reports.aggregate", "schedule": crontab(hour=2, minute=0)}`.
+
+**Say it like this:** "Beat schedules, workers execute, and only one Beat runs so jobs aren't duplicated."
+
+---
+
+## 🔴 More Advanced
+
+**Q31. How do you structure a large FastAPI project?**
+
+**Short answer:** Routers per feature, a service layer for business logic, repositories for data access, Pydantic schemas per feature, and dependencies for shared concerns.
+
+**Explanation:** Keep routes thin, like controllers.
+
+**Example:** `app/features/scorecards/{router.py, service.py, repo.py, schemas.py}`.
+
+**Say it like this:** "Feature folders with thin routers keep the logic testable and the codebase navigable."
+
+---
+
+**Q32. How do you make Celery tasks observable?**
+
+**Short answer:** Structured logs with task ID and correlation ID, metrics (duration, success, retries) via signals or exporters, Flower for live inspection, and traces propagated through headers.
+
+**Explanation:** Alert on failure rate and queue age.
+
+**Example:** `task_prerun`/`task_postrun` signals record durations to Prometheus.
+
+**Say it like this:** "Every task reports duration, outcome and retries, and carries the request's trace ID."
+
+---
+
+**Q33. How do you deploy FastAPI in production?**
+
+**Short answer:** Uvicorn workers (or Gunicorn with Uvicorn workers) in a container behind a load balancer, with health checks, graceful shutdown, structured logs and tuned worker counts.
+
+**Explanation:** Don't use `--reload` in production.
+
+**Example:** `gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 4 --timeout 60`.
+
+**Say it like this:** "Containers running a few Uvicorn workers each, scaled horizontally behind a load balancer."
+
+---
+
+**Q34. How do you protect a LangChain or LLM call path in Python?**
+
+**Short answer:** Timeouts, retries with backoff for rate limits, structured output validated with Pydantic, token limits, prompt versioning, and logging without sensitive content.
+
+**Explanation:** Treat model output as untrusted input.
+
+**Example:** `llm.with_structured_output(ChunkScore).with_retry(stop_after_attempt=3)`.
+
+**Say it like this:** "The LLM is an unreliable external dependency, so it gets timeouts, retries and strict output validation."
+
+---
+
+## 🧩 More Scenarios
+
+**Q35. Celery workers use more and more memory over time. What do you do?**
+
+**Short answer:** Set `worker_max_tasks_per_child` to recycle processes, find the leak with memory profiling, and avoid global caches in tasks.
+
+**Explanation:** Recycling is a safety net, not a fix.
+
+**Example:** Loading a large model per task without releasing it; moved to a module-level singleton.
+
+**Say it like this:** "Recycle workers to stay stable, then profile to find what's holding memory."
+
+---
+
+**Q36. An endpoint is slow only under concurrent load. What could it be in FastAPI?**
+
+**Short answer:** Sync code in async endpoints, a small database pool, thread pool exhaustion for sync endpoints, or lock contention.
+
+**Explanation:** Check pool wait times and event loop lag.
+
+**Example:** Database pool of 5 with 50 concurrent requests → most requests waited for a connection.
+
+**Say it like this:** "Slow only under load means something is shared and saturated: the loop, the pool, or a lock."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q16. "What did you change in the FastAPI backend during the security audit?"**
+**Q37. "What did you change in the FastAPI backend during the security audit?"**
 
 **Short answer:** Permission dependencies on every route, tenant-scoped queries, token verification fixes, separate input and output models to stop data leaks, and PHI scrubbing in logs and Sentry.
 
@@ -311,7 +588,7 @@ assert client.get(f"/scorecards/{other_tenant_scorecard}").status_code == 404
 
 ---
 
-**Q17. "How does LangChain fit into your Celery pipeline?"**
+**Q38. "How does LangChain fit into your Celery pipeline?"**
 
 **Short answer:** Celery tasks call a LangChain chain (prompt with rubric and examples → model → structured output parser) per chunk, then validate the result with Pydantic before saving.
 

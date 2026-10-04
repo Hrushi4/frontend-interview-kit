@@ -21,7 +21,7 @@ const USE_GROUPS = true; // false = one flat list of tabs
 const GROUPS = [
   { title: '1. Your resume', files: ['01'] },
   { title: '2. Node and frameworks', files: ['02', '03', '04', '17'] },
-  { title: '3. APIs and data', files: ['05', '06', '07', '08', '09'] },
+  { title: '3. APIs and data', files: ['05', '06', '07', '08', '09', '20'] },
   { title: '4. Security, testing and observability', files: ['10', '15', '16'] },
   { title: '5. Async, real-time and infrastructure', files: ['11', '12', '14'] },
   { title: '6. Design and coding rounds', files: ['13', '18'] },
@@ -34,7 +34,7 @@ const TAB_NAMES = {
   '09': '09 Redis and Caching', '10': '10 Auth and Security', '11': '11 Queues and Async',
   '12': '12 Real-Time', '13': '13 Backend System Design', '14': '14 Docker, AWS and CI-CD',
   '15': '15 Observability and Performance', '16': '16 Backend Testing', '17': '17 Python and FastAPI',
-  '18': '18 Backend Coding Round', '19': '19 Quick Memory Sheet',
+  '18': '18 Backend Coding Round', '19': '19 Quick Memory Sheet', '20': '20 SQL Practice',
 };
 
 const FILE_HEADING = /^(\d{2}) — /;

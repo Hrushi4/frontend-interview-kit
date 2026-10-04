@@ -2,6 +2,8 @@
 
 The backend companion to the Frontend Interview Kit, built around the backend side of your updated full-stack resume: Node.js, Express.js, NestJS, REST and GraphQL, PostgreSQL, MongoDB and Redis, FastAPI and Celery, the AI scoring pipeline (40,000+ calls a month), real-time video infrastructure (LiveKit on AWS), security (RBAC, JWT/OAuth, PHI), Docker, AWS, GitHub Actions, Sentry, Grafana and Prometheus.
 
+**736 questions across 19 topic files**, every one with all four answer parts.
+
 ## What's in each file
 
 Every topic file has the same two-part structure:
@@ -33,7 +35,7 @@ For behavioural questions, DSA and frontend topics, use the Frontend Interview K
 | 1 | 02 Node.js, 05 REST API Design, 07 PostgreSQL | Asked in almost every backend round |
 | 2 | 13 Backend System Design, 12 Real-Time, 09 Redis | Senior design rounds; your LiveKit and pipeline experience |
 | 2 | 04 NestJS, 03 Express, 17 Python/FastAPI | Frameworks on your resume |
-| 3 | 18 Backend Coding Round, 16 Testing | Live coding rounds |
+| 3 | 18 Backend Coding Round, 20 SQL Practice, 16 Testing | Live coding and SQL rounds |
 | 3 | 06 GraphQL, 08 MongoDB, 14 Docker/AWS/CI-CD, 15 Observability | Skills listed on your resume |
 | Daily | 19 Quick Memory Sheet | 10-minute refresh before any interview |
 
@@ -54,13 +56,14 @@ For behavioural questions, DSA and frontend topics, use the Frontend Interview K
 | 10 | auth-security | Sessions, JWT, OAuth, RBAC, OWASP API risks, PHI |
 | 11 | queues-async | Celery, BullMQ, retries, idempotency, outbox, sagas |
 | 12 | realtime | SSE, WebSocket, scaling sockets, WebRTC/SFU, LiveKit on AWS |
-| 13 | backend-system-design | Framework, concepts and 8 worked designs |
+| 13 | backend-system-design | Framework, concepts and 14 worked designs |
 | 14 | docker-aws-cicd | Containers, core AWS services, pipelines, deployments |
 | 15 | observability-performance | Logs, metrics, traces, SLOs, load testing, bottlenecks |
 | 16 | testing-backend | Unit, integration, contract tests, test data, flaky tests |
 | 17 | python-fastapi | FastAPI, Pydantic, async Python, GIL, Celery |
 | 18 | backend-coding-round | Live builds: LRU cache, CRUD API, rate limiter, job queue, webhooks |
 | 19 | quick-memory-sheet | One cheat sheet per topic |
+| 20 | sql-practice | 25 "write the query" problems on a BpoBox-style schema |
 
 ## Google Docs versions
 

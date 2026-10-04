@@ -6,7 +6,7 @@ For a senior full-stack role, expect at least one backend system design round. Y
 
 - **Part A — Understand the topic:** what the round tests, a step-by-step framework, and the core building blocks, explained simply.
 - **Part B — Concept questions:** Basics → Intermediate → Advanced.
-- **Part C — Worked designs:** full answers to common prompts, each with four parts.
+- **Part C — Worked designs:** 14 full answers to common prompts, each with four parts.
 
 Each answer has a **Short answer** (say this first), an **Explanation**, an **Example**, and a **Say it like this** sample answer.
 
@@ -181,6 +181,228 @@ It's the best signal of seniority: can you design something that works at scale,
 
 ---
 
+## 🟢 More Basics
+
+**Q11. What does a load balancer do, and what algorithms exist?**
+
+**Short answer:** Spreads requests across healthy instances and terminates TLS; algorithms include round robin, least connections, IP hash and weighted.
+
+**Explanation:** Layer 7 (ALB) routes by path or host; layer 4 (NLB) by TCP/UDP.
+
+**Example:** ALB routes `/api` to API services and `/ws` to WebSocket gateways.
+
+**Say it like this:** "Load balancers spread traffic and remove unhealthy instances; L7 for HTTP routing, L4 for raw TCP or UDP."
+
+---
+
+**Q12. What is latency vs throughput vs availability?**
+
+**Short answer:** Latency is time per request, throughput is requests per second, availability is the percentage of time the system works.
+
+**Explanation:** Designs trade them off: batching improves throughput but adds latency.
+
+**Example:** 99.9% availability allows about 43 minutes of downtime a month.
+
+**Say it like this:** "I state targets for all three up front, because they drive different design choices."
+
+---
+
+**Q13. What is a reverse proxy vs an API gateway?**
+
+**Short answer:** A reverse proxy forwards requests to backends (TLS, caching, compression); an API gateway adds API concerns like auth, rate limiting, routing and request transformation.
+
+**Explanation:** Nginx is a reverse proxy; Kong or AWS API Gateway are gateways.
+
+**Example:** AWS API Gateway validates API keys and throttles partners before the backend.
+
+**Say it like this:** "A proxy forwards traffic; a gateway also enforces API policies like auth and rate limits."
+
+---
+
+**Q14. What is object storage, and when do you use it?**
+
+**Short answer:** Storage for files as objects with keys (S3), cheap and highly durable, accessed over HTTP; use it for media, documents, backups and exports.
+
+**Explanation:** Never store large files in the database.
+
+**Example:** Recordings in S3, metadata in Postgres.
+
+**Say it like this:** "Bytes go in object storage, metadata goes in the database."
+
+---
+
+**Q15. How do you estimate storage needs?**
+
+**Short answer:** Items per day × size per item × retention period, plus replication and indexes.
+
+**Explanation:** Show the maths simply.
+
+**Example:** 1,300 calls a day × 5 MB audio × 365 days ≈ 2.4 TB a year of recordings.
+
+**Say it like this:** "I multiply volume, size and retention, and that number decides storage class and cost."
+
+---
+
+**Q16. What is a single point of failure?**
+
+**Short answer:** A component whose failure takes down the whole system; remove them with redundancy and failover.
+
+**Explanation:** Includes people and processes (one person who can deploy).
+
+**Example:** One Redis instance used as the only job broker.
+
+**Say it like this:** "I walk the diagram box by box and ask what happens if it dies."
+
+---
+
+## 🟡 More Intermediate
+
+**Q17. What is consistent hashing?**
+
+**Short answer:** A way of mapping keys to nodes on a hash ring so adding or removing a node only moves a small fraction of keys.
+
+**Explanation:** Used by caches, sharded databases and load balancers.
+
+**Example:** Adding a fifth cache node moves about 20% of keys instead of almost all.
+
+**Say it like this:** "Consistent hashing makes scaling a cluster cheap because most keys stay where they are."
+
+---
+
+**Q18. What is a service mesh, and do you need one?**
+
+**Short answer:** Infrastructure (sidecars like Envoy) that handles service-to-service traffic: mTLS, retries, timeouts, observability.
+
+**Explanation:** Valuable with many services; overkill for a few.
+
+**Example:** Istio or Linkerd for 50 microservices; not for a monolith plus workers.
+
+**Say it like this:** "A mesh pays off with many services; for a handful, libraries and good defaults are enough."
+
+---
+
+**Q19. What is idempotency at the system level?**
+
+**Short answer:** Designing operations so retries anywhere (clients, gateways, queues) don't cause duplicate effects.
+
+**Explanation:** Idempotency keys, upserts and unique constraints across the system.
+
+**Example:** Payment requests carry an idempotency key from the client to the provider.
+
+**Say it like this:** "In distributed systems retries are everywhere, so every write path must tolerate duplicates."
+
+---
+
+**Q20. How do you choose between push and pull for updates?**
+
+**Short answer:** Push (WebSocket, SSE, webhooks) for timely updates with many interested clients; pull (polling) for simplicity or when updates are rare.
+
+**Explanation:** Push adds connection management complexity.
+
+**Example:** Live scoring dashboard uses SSE; nightly report status uses polling.
+
+**Say it like this:** "Push when freshness matters, poll when it doesn't. Simplicity is a feature."
+
+---
+
+**Q21. How do you handle search in a system design?**
+
+**Short answer:** A dedicated search index (OpenSearch, Elasticsearch, Typesense) fed asynchronously from the primary database via events or CDC.
+
+**Explanation:** The index is eventually consistent; the database stays the source of truth.
+
+**Example:** Transcripts indexed after scoring; search queries go to OpenSearch filtered by tenant.
+
+**Say it like this:** "The database is the truth; search is a derived index updated asynchronously."
+
+---
+
+**Q22. What is change data capture (CDC)?**
+
+**Short answer:** Streaming database changes (from the write-ahead log) to other systems, using tools like Debezium or DMS.
+
+**Explanation:** Avoids dual writes for keeping search, caches or warehouses in sync.
+
+**Example:** Postgres changes → Debezium → Kafka → search indexer.
+
+**Say it like this:** "CDC turns database commits into events, so other systems stay in sync without the app writing twice."
+
+---
+
+**Q23. How do you design for disaster recovery?**
+
+**Short answer:** Define RPO (acceptable data loss) and RTO (acceptable downtime), then choose backups, replication and multi-region strategies to meet them, and test regularly.
+
+**Explanation:** Backup-and-restore is cheap but slow; warm standby or active-active cost more.
+
+**Example:** RPO 5 minutes (PITR), RTO 1 hour (infrastructure as code to rebuild in another region).
+
+**Say it like this:** "RPO and RTO drive the design, and a DR plan only counts if we've rehearsed it."
+
+---
+
+**Q24. How do you design a data retention policy into a system?**
+
+**Short answer:** Classify data, set retention per class (legal, business), automate deletion or archiving (partition drops, S3 lifecycle), and handle backups too.
+
+**Explanation:** Healthcare and privacy laws require both keeping and deleting data on schedule.
+
+**Example:** Recordings moved to Glacier after 90 days, deleted after 7 years.
+
+**Say it like this:** "Retention is automated: lifecycle rules and partition drops, not someone remembering to delete."
+
+---
+
+## 🔴 More Advanced
+
+**Q25. What are leader election and consensus used for?**
+
+**Short answer:** Making one node responsible for a task or agreeing on a value across nodes despite failures (Raft, Paxos), via etcd, ZooKeeper or database locks.
+
+**Explanation:** Use managed tools; don't implement consensus yourself.
+
+**Example:** Only the elected scheduler instance enqueues nightly jobs.
+
+**Say it like this:** "When exactly one node must act, I use a proven coordination service, never a homemade algorithm."
+
+---
+
+**Q26. How do you migrate a live system to a new architecture?**
+
+**Short answer:** The strangler fig pattern: route a slice of traffic or features to the new system, run both in parallel, compare results, and grow the slice.
+
+**Explanation:** Use feature flags and shadow traffic to reduce risk.
+
+**Example:** New scoring service receives 5% of calls, results compared with the old one before full switch.
+
+**Say it like this:** "Migrate gradually behind flags and compare outputs; a big-bang cutover is the riskiest option."
+
+---
+
+**Q27. How do you handle multi-region writes?**
+
+**Short answer:** Prefer a single write region with read replicas; if you need multi-region writes, partition data by region or use conflict resolution (last-write-wins, CRDTs) or globally consistent databases.
+
+**Explanation:** Multi-region writes are hard; avoid unless required.
+
+**Example:** Tenants pinned to a home region for data residency.
+
+**Say it like this:** "Pin each tenant's writes to one region whenever possible; true multi-region writes are a last resort."
+
+---
+
+**Q28. How do you design an audit-ready system for healthcare?**
+
+**Short answer:** Encrypted data, least-privilege access, immutable audit logs of every PHI access, retention policies, vendor agreements, and regular access reviews.
+
+**Explanation:** Compliance is a design input, not an afterthought.
+
+**Example:** Audit events streamed to write-once storage (S3 Object Lock).
+
+**Say it like this:** "Compliance requirements become architecture: encryption, access control and tamper-proof audit trails."
+
+---
+
 ## Part C — Worked Designs
 
 ### Design 1. URL shortener
@@ -345,6 +567,113 @@ Client → API (/sessions/:id/token) → LiveKit JWT (room, publish/subscribe gr
 **Example:** `POST /uploads` → presigned URL → client PUTs to S3 → `ObjectCreated` → scan → status `ready`.
 
 **Say it like this:** "Files never pass through the API servers. S3 takes the bytes, events drive processing, and the API only manages metadata and permissions."
+
+---
+
+### Design 9. Distributed job scheduler (cron as a service)
+
+**Short answer:** A jobs table with next run times, scheduler instances that claim due jobs with `FOR UPDATE SKIP LOCKED` (or a leader), enqueue them to workers, and record runs, retries and history.
+
+**Explanation:**
+
+- **Requirements:** cron and one-off schedules, at-least-once execution, no duplicates per run, history, pausing.
+- **Claiming:** due jobs are claimed atomically so two schedulers don't enqueue the same run.
+- **Execution:** workers run jobs with timeouts; results stored per run ID (idempotency).
+- **Scale:** partition jobs by hash across schedulers for very high volume.
+
+**Example:**
+
+```sql
+UPDATE jobs SET next_run_at = next_cron(cron, now()), locked_until = now() + interval '1 min'
+WHERE id IN (SELECT id FROM jobs WHERE next_run_at <= now() ORDER BY next_run_at LIMIT 100 FOR UPDATE SKIP LOCKED)
+RETURNING id;
+```
+
+**Say it like this:** "Schedulers claim due jobs atomically and hand them to workers, so jobs run on time without duplicates even with several schedulers."
+
+---
+
+### Design 10. Audit logging service
+
+**Short answer:** Services emit audit events to a stream; a consumer writes them to append-only storage (a partitioned table plus S3 with Object Lock), with search by actor, resource and time.
+
+**Explanation:**
+
+- **Requirements:** never lose events, tamper-evident, searchable, retained for years.
+- **Durability:** outbox pattern in each service so events aren't lost when publishing fails.
+- **Integrity:** hash chaining or write-once storage.
+- **Access:** only compliance roles can read; reading the audit log is itself audited.
+
+**Example:** `session.viewed { actor, patientSession, tenant, at, ip }` → Kafka → Postgres (monthly partitions) + S3 archive.
+
+**Say it like this:** "Audit events can't be lost or edited, so they go through an outbox to append-only storage, and even reading them is logged."
+
+---
+
+### Design 11. Feature flag service
+
+**Short answer:** Flags and rules stored centrally, evaluated locally in each service from a cached ruleset, updated by streaming or polling, with targeting by tenant, user and percentage.
+
+**Explanation:**
+
+- **Latency:** evaluation must be in-memory, not a network call per check.
+- **Safety:** defaults when the flag service is unreachable; audit log of changes.
+- **Rollouts:** percentage rollouts using a stable hash of user ID.
+
+**Example:** `isEnabled('new-scorecard', { tenantId, userId })` → hash(userId) % 100 < 20.
+
+**Say it like this:** "Flags are evaluated locally from a cached ruleset, so they're fast and still work if the flag service is down."
+
+---
+
+### Design 12. Search for call transcripts
+
+**Short answer:** Transcripts indexed in OpenSearch per tenant (index-per-tenant or filtered alias), updated asynchronously after scoring, with highlighting, filters and permission-aware queries.
+
+**Explanation:**
+
+- **Indexing:** event after transcript saved → indexer job → bulk index.
+- **Isolation:** every query has a tenant filter enforced server-side.
+- **Relevance:** analyzers for speech text, synonyms for domain terms.
+- **Consistency:** search is eventually consistent; link results to the database for authoritative data.
+
+**Example:** `GET /search?q=refund&from=2026-01-01` → OpenSearch query with `tenant_id` filter → highlights with timestamps.
+
+**Say it like this:** "Search is a derived, tenant-filtered index, fed asynchronously, so it can't block scoring or leak data across tenants."
+
+---
+
+### Design 13. Payment and billing for a SaaS
+
+**Short answer:** Use a payment provider (Stripe), store subscriptions and invoices locally, process provider webhooks idempotently, meter usage asynchronously, and reconcile daily.
+
+**Explanation:**
+
+- **Correctness:** idempotency keys on every payment call; webhooks deduplicated by event ID.
+- **Metering:** usage events (calls scored per tenant) aggregated and reported to the provider.
+- **Entitlements:** plan limits checked server-side from local state updated by webhooks.
+
+**Example:** `invoice.paid` webhook → mark subscription active → update tenant entitlements.
+
+**Say it like this:** "The provider moves money; our system tracks entitlements from verified, idempotent webhooks and reconciles daily."
+
+---
+
+### Design 14. API rate-limited partner integration (e.g. telephony provider)
+
+**Short answer:** An integration service that wraps the provider: an outbound queue with a shared rate limiter, retries with backoff, circuit breaking, and webhooks for status updates.
+
+**Explanation:**
+
+- **Inbound:** verified webhooks, deduplicated, enqueued.
+- **Outbound:** concurrency and rate limits matching the provider contract.
+- **Resilience:** circuit breaker opens on repeated failures; work waits in the queue.
+
+**Example:** Twilio recording webhooks in; recording downloads out, limited to N concurrent downloads.
+
+**Say it like this:** "One service owns the partner relationship: it respects their limits, absorbs their outages, and gives the rest of our system a clean interface."
+
+---
 
 ---
 

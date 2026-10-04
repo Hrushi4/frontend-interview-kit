@@ -270,9 +270,269 @@ export default function () { http.get(`${BASE}/api/calls?status=flagged`, { head
 
 ---
 
+## 🟢 More Basics
+
+**Q17. What are log levels, and how do you use them?**
+
+**Short answer:** `debug` for development detail, `info` for normal business events, `warn` for unexpected but handled situations, `error` for failures needing attention, `fatal` for crashes.
+
+**Explanation:** Production usually runs at `info`; too much logging costs money and hides signal.
+
+**Example:** `warn` for a retried LLM call; `error` when it finally fails to human review.
+
+**Say it like this:** "Levels are a contract: errors mean someone should look, info tells the story, debug stays off in production."
+
+---
+
+**Q18. What is a correlation ID?**
+
+**Short answer:** An ID attached to a request and propagated to every log, downstream call and queued job, so you can follow one action end to end.
+
+**Explanation:** Often the trace ID from OpenTelemetry.
+
+**Example:** `x-request-id` copied into job metadata so worker logs link back to the webhook request.
+
+**Say it like this:** "One ID links the request, its jobs and its logs, which turns debugging into a search."
+
+---
+
+**Q19. What are counters, gauges and histograms?**
+
+**Short answer:** Counters only go up (requests total), gauges go up and down (queue depth), histograms record distributions (latency buckets) for percentiles.
+
+**Explanation:** Compute rates from counters with `rate()` in PromQL.
+
+**Example:** `rate(http_requests_total{status=~"5.."}[5m])` for error rate.
+
+**Say it like this:** "Counters for things that happen, gauges for current levels, histograms for latency."
+
+---
+
+**Q20. What is a dashboard for, and what makes a good one?**
+
+**Short answer:** Answering one question at a glance, like "is the API healthy?"; good dashboards show RED metrics, recent deploys and links to logs and traces.
+
+**Explanation:** Avoid walls of unrelated graphs.
+
+**Example:** API dashboard: request rate, error rate, p95/p99 latency per route, deploy markers.
+
+**Say it like this:** "A good dashboard answers one question fast and points to the next place to look."
+
+---
+
+**Q21. What is uptime monitoring?**
+
+**Short answer:** External checks that call your endpoints from outside (synthetic monitoring) and alert if they fail or are slow.
+
+**Explanation:** Catches DNS, certificate and edge failures internal metrics miss.
+
+**Example:** A synthetic check logs in and loads the dashboard every 5 minutes.
+
+**Say it like this:** "Synthetic checks see what users see from outside, including DNS and certificate problems."
+
+---
+
+**Q22. What is the difference between monitoring infrastructure and monitoring the application?**
+
+**Short answer:** Infrastructure monitoring covers CPU, memory, disk and network; application monitoring covers requests, errors, latency and business metrics.
+
+**Explanation:** Users feel application symptoms; infrastructure explains causes.
+
+**Example:** CPU at 90% (infra) explains p99 latency doubling (app).
+
+**Say it like this:** "Application metrics tell me users are hurting; infrastructure metrics often tell me why."
+
+---
+
+## 🟡 More Intermediate
+
+**Q23. What are business metrics, and why monitor them?**
+
+**Short answer:** Metrics of real outcomes (calls scored per hour, sessions started, payments) that catch problems technical metrics miss.
+
+**Explanation:** A silent failure can leave every technical metric green.
+
+**Example:** "Calls scored per hour" dropping to zero while error rate is 0% revealed a stuck webhook.
+
+**Say it like this:** "If business metrics drop while technical ones look fine, something is silently broken."
+
+---
+
+**Q24. How do you instrument a service with OpenTelemetry?**
+
+**Short answer:** Add the SDK with auto-instrumentation for HTTP, database and queue libraries, add custom spans for key steps, and export to a collector.
+
+**Explanation:** Propagate context across queues by putting trace context in message headers.
+
+**Example:** Custom span `llm.score_chunk` with attributes `prompt_version` and `tokens`.
+
+**Say it like this:** "Auto-instrumentation covers the plumbing; I add spans for the business steps that matter."
+
+---
+
+**Q25. How do you do capacity planning?**
+
+**Short answer:** Measure current usage per unit of load, project growth, load test to find limits, and plan headroom (often 30–50%).
+
+**Explanation:** Revisit after big launches.
+
+**Example:** Each API instance handles 400 req/s at p95 < 200 ms; peak projected at 2,000 req/s → 6 instances plus headroom.
+
+**Say it like this:** "I know what one instance can handle from load tests, then plan for expected peak plus headroom."
+
+---
+
+**Q26. How do you profile a Python service?**
+
+**Short answer:** `py-spy` for sampling profiles in production without code changes, `cProfile` locally, and memory tools like `tracemalloc` or `memray`.
+
+**Explanation:** Flame graphs show where CPU goes.
+
+**Example:** `py-spy record -o profile.svg --pid 1234`.
+
+**Say it like this:** "py-spy gives a flame graph from a live process safely, which is my first step for Python CPU issues."
+
+---
+
+**Q27. How do you reduce database load in a slow system?**
+
+**Short answer:** Fix slow queries and indexes, cache hot reads, use read replicas, batch writes, and move reports off the primary.
+
+**Explanation:** Measure which queries cost the most total time first.
+
+**Example:** Caching tenant config removed 30% of all queries.
+
+**Say it like this:** "Find the queries that cost the most in total, then fix, cache or move them."
+
+---
+
+**Q28. What is tail latency, and why does it matter more in microservices?**
+
+**Short answer:** The slowest percent of requests (p99); when a request fans out to many services, one slow dependency makes the whole request slow.
+
+**Explanation:** With 10 parallel calls each with 1% slow, about 10% of requests are slow.
+
+**Example:** Hedged requests or timeouts with fallbacks reduce tail impact.
+
+**Say it like this:** "Fan-out multiplies tail latency, so I watch p99 of every dependency and set tight timeouts."
+
+---
+
+**Q29. How do you track errors across releases?**
+
+**Short answer:** Tag errors and metrics with the release version, mark deploys on dashboards, and compare error rates before and after.
+
+**Explanation:** Sentry's release health shows crash-free sessions per release.
+
+**Example:** Release `api@1.42.0` introduced 3 new issues within an hour.
+
+**Say it like this:** "Every error is tagged with the release, so a bad deploy is obvious within minutes."
+
+---
+
+**Q30. What is log sampling, and when do you use it?**
+
+**Short answer:** Keeping only a fraction of high-volume, low-value logs (or traces) to control cost, while keeping all errors.
+
+**Explanation:** Tail-based sampling keeps slow or failed traces automatically.
+
+**Example:** 1% of successful health-check logs, 100% of errors.
+
+**Say it like this:** "Sample the boring, keep everything that went wrong."
+
+---
+
+## 🔴 More Advanced
+
+**Q31. How do you run a blameless postmortem?**
+
+**Short answer:** Timeline, impact, root causes (often several), what went well, what went badly, and action items with owners, focusing on systems, not individuals.
+
+**Explanation:** Track action items to completion.
+
+**Example:** Root cause: no alert on queue age. Action: add alert and runbook, owner and due date.
+
+**Say it like this:** "Postmortems fix systems, not blame people, and they only matter if the action items get done."
+
+---
+
+**Q32. What is chaos engineering?**
+
+**Short answer:** Deliberately injecting failures (killing instances, adding latency, failing dependencies) to verify the system degrades gracefully.
+
+**Explanation:** Start small in staging, with clear hypotheses.
+
+**Example:** Block the LLM provider in staging and verify jobs queue and the UI shows "pending".
+
+**Say it like this:** "We break things on purpose in controlled ways, so real failures hold no surprises."
+
+---
+
+**Q33. How do you optimise cost and performance together?**
+
+**Short answer:** Measure cost per unit of work (per request, per call scored), right-size resources, cache, batch, and remove waste.
+
+**Explanation:** Performance improvements often reduce cost too.
+
+**Example:** Cost per scored call dropped when we cut prompt tokens and parallelised I/O.
+
+**Say it like this:** "Cost per unit of work is the metric that ties performance and spend together."
+
+---
+
+**Q34. How do you detect and handle memory leaks in production?**
+
+**Short answer:** Watch memory over time per instance; if it only grows, capture heap snapshots (or `memray`), compare, and fix the retaining code; meanwhile, restart before OOM.
+
+**Explanation:** Correlate with deploys to find the change.
+
+**Example:** Heap grew after a release that added per-request listeners.
+
+**Say it like this:** "A sawtooth is normal GC; a steady climb is a leak. Snapshots show what's being retained."
+
+---
+
+## 🧩 More Scenarios
+
+**Q35. Latency doubled right after a deploy, but there are no errors. What do you do?**
+
+**Short answer:** Compare traces before and after, check for new queries, N+1s, missing indexes or extra outbound calls, and roll back if the impact is significant.
+
+**Explanation:** Deploy markers on dashboards make the correlation obvious.
+
+**Example:** A new feature added a permission check that queried the database per item in a list.
+
+**Say it like this:** "Correlate with the deploy, diff the traces, and roll back if users are hurting while I find the cause."
+
+---
+
+**Q36. An alert fires every night at 2 a.m. and resolves itself. What do you do?**
+
+**Short answer:** Investigate the pattern (a batch job, backup, cron), fix the cause or adjust the alert, because noisy alerts train people to ignore pages.
+
+**Explanation:** Every alert should be actionable.
+
+**Example:** Nightly aggregation saturated the database; moved it to a replica.
+
+**Say it like this:** "A recurring self-resolving alert is a real problem or a bad alert, and both need fixing."
+
+---
+
+**Q37. Logs are too expensive. How do you cut costs without losing visibility?**
+
+**Short answer:** Drop or sample noisy logs, lower retention for debug data, move old logs to cheap storage, and use metrics instead of logs for counts.
+
+**Explanation:** Measure which sources produce the most volume.
+
+**Example:** Health-check and successful request logs were 60% of volume.
+
+**Say it like this:** "Count with metrics, investigate with logs, and keep only the logs that answer real questions."
+
+---
+
 ## 🎯 From Your Resume
 
-**Q17. "Which Grafana dashboards and alerts did you set up?"**
+**Q38. "Which Grafana dashboards and alerts did you set up?"**
 
 **Short answer:** Name real ones: for LiveKit, CPU, bandwidth and participants per node, packet loss and room counts; for the pipeline, queue age, job failure rate and per-stage latency. [Use your real ones.]
 
@@ -284,7 +544,7 @@ export default function () { http.get(`${BASE}/api/calls?status=flagged`, { head
 
 ---
 
-**Q18. "How did you measure the 45-second average latency of the scoring pipeline?"**
+**Q39. "How did you measure the 45-second average latency of the scoring pipeline?"**
 
 **Short answer:** From the recording-ready webhook timestamp to the score saved timestamp, averaged over [period], broken down per stage. [Use your real method.]
 
