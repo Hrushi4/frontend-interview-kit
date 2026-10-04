@@ -72,6 +72,14 @@ Question levels:
 
 **Everything in one file:** `google-docs/Frontend-Interview-Kit-ALL.docx` contains all the files in order, each starting on a new page with its own top-level heading. Upload it once, open it with Google Docs, and use **View → Show outline** to jump between files.
 
+**Splitting it into tabs:** Google Docs can't create tabs from an uploaded file, so a small script does it once after upload:
+
+1. Upload `Frontend-Interview-Kit-ALL.docx` and open it with Google Docs (**File → Save as Google Docs** if it opens in Word mode).
+2. **Extensions → Apps Script.** Delete the sample code and paste the whole of `google-docs/split-into-tabs.gs`.
+3. In the left sidebar, click **Services (+)**, choose **Google Docs API**, and click **Add**.
+4. Choose `splitIntoTabs` in the toolbar, click **Run**, and approve the permissions.
+5. Go back to the doc and reload it. Each file is now its own tab, grouped under six section tabs. If the run stops with a time-limit message, click **Run** again; it continues where it stopped.
+
 Every file is also available as its own Word document (`.docx`) in the `google-docs/` folder at the root of the repo. To use one in Google Docs:
 
 1. Open Google Drive → **New → File upload** → choose a `.docx` file from `google-docs/`.
