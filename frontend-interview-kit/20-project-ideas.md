@@ -108,25 +108,48 @@ Right now, "Blood Bank" and "Quiz App" read as college projects next to a senior
 
 ## Part C — Questions Interviewers Ask About Portfolio Projects (with Sample Answers)
 
-The sample answers use **Project 1 (video room kit)**. Adapt them to whichever project you build.
+The sample answers use **Project 1 (video room kit)**. Adapt them to whichever project you build. Each question has a **Short answer**, an **Explanation**, an **Example** and a **Say it like this** sample answer.
 
 ### 🟢 Basic
 
 **Q1. Why did you build this? What problem does it solve?**
 
-**Sample answer:** "Most WebRTC examples stop at 'two people see each other'. Production needs a pre-join device check, graceful reconnection and accessibility, and those are exactly the hard parts I solved at work. I built an open version so other developers have a solid starting point, and so I can show that work publicly without exposing client code."
+**Short answer:** Most WebRTC examples skip the hard production parts; this project solves them openly, based on what I did at work.
+
+**Explanation:** Interviewers want a real motivation and a clear problem, not "to learn React". Link it to your professional experience without exposing client code.
+
+**Example:** Pre-join device checks, graceful reconnection and accessibility, which most demos leave out.
+
+**Say it like this:** "Most WebRTC examples stop at 'two people see each other'. Production needs a pre-join device check, graceful reconnection and accessibility, and those are exactly the hard parts I solved at work. I built an open version so other developers have a solid starting point, and so I can show that work publicly without exposing client code."
 
 ---
 
 **Q2. Walk me through the tech stack and why you chose each piece.**
 
-**Sample answer:** "React with TypeScript for the UI, and LiveKit as the SFU, because it's open source and can be self-hosted with Docker. A tiny Node server issues short-lived room tokens, so keys never reach the browser. I used Vite rather than Next.js, because it's a fully authenticated, real-time app with no SEO needs. Playwright, because it supports fake media devices for testing calls."
+**Short answer:** React with TypeScript, LiveKit as a self-hostable SFU, a tiny Node token server, Vite, and Playwright, each chosen for a specific reason.
+
+**Explanation:** Every choice should have a reason tied to the project's needs, including why you didn't choose the obvious alternative.
+
+**Example:** Vite over Next.js because it's an authenticated real-time app with no SEO needs.
+
+**Say it like this:** "React with TypeScript for the UI, and LiveKit as the SFU, because it's open source and can be self-hosted with Docker. A tiny Node server issues short-lived room tokens, so keys never reach the browser. I used Vite rather than Next.js, because it's a fully authenticated, real-time app with no SEO needs. Playwright, because it supports fake media devices for testing calls."
 
 ---
 
 **Q3. What was the hardest bug, and how did you find it?**
 
-**Sample answer:** "Video tiles flickered black whenever someone joined. Using React DevTools' highlight-updates feature, I saw that every tile was remounting. I was keying tiles by array index, so a new participant shifted the keys. Switching to the participant's SID as the key fixed it. Now I always check key stability when something remounts unexpectedly."
+**Short answer:** Tiles remounting on every join because they were keyed by array index; found with React DevTools and fixed with stable participant IDs.
+
+**Explanation:** Tell it as symptom → investigation → root cause → fix → lesson. The investigation shows how you debug.
+
+**Example:**
+
+```tsx
+// Before: key={i}   → a new participant shifts every key, so tiles remount
+{participants.map((p) => <ParticipantTile key={p.sid} participant={p} />)}
+```
+
+**Say it like this:** "Video tiles flickered black whenever someone joined. Using React DevTools' highlight-updates feature, I saw that every tile was remounting. I was keying tiles by array index, so a new participant shifted the keys. Switching to the participant's SID as the key fixed it. Now I always check key stability when something remounts unexpectedly."
 
 ---
 
@@ -134,31 +157,71 @@ The sample answers use **Project 1 (video room kit)**. Adapt them to whichever p
 
 **Q4. How is state managed? Why that approach?**
 
-**Sample answer:** "The call lifecycle is a reducer-based state machine (idle, checking devices, connecting, connected, reconnecting, failed), because the transitions are complex and impossible states must be impossible. The LiveKit Room object lives in a ref inside a provider, not in state, because it's not serialisable and must never be recreated by a re-render. Audio levels bypass React state entirely and go through a CSS variable updated in requestAnimationFrame."
+**Short answer:** A reducer-based state machine for the call lifecycle, the Room object in a ref, and audio levels outside React entirely.
+
+**Explanation:** Different kinds of state belong in different places: transitions in a reducer, non-serialisable objects in refs, high-frequency values outside React.
+
+**Example:**
+
+```ts
+type CallState = 'idle' | 'checkingDevices' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
+```
+
+**Say it like this:** "The call lifecycle is a reducer-based state machine (idle, checking devices, connecting, connected, reconnecting, failed), because the transitions are complex and impossible states must be impossible. The LiveKit Room object lives in a ref inside a provider, not in state, because it's not serialisable and must never be recreated by a re-render. Audio levels bypass React state entirely and go through a CSS variable updated in requestAnimationFrame."
 
 ---
 
 **Q5. How did you test it? What isn't tested, and why?**
 
-**Sample answer:** "The reducer has unit tests for every transition. Components are tested with React Testing Library, and Playwright runs end-to-end tests with fake camera and mic devices, covering join, mute, leave, and simulated network loss. What isn't automated is real network conditions across different devices. I tested those manually with network throttling and documented the results."
+**Short answer:** Unit tests for every reducer transition, RTL for components, Playwright with fake devices end to end, and manual testing for real network conditions.
+
+**Explanation:** Saying what isn't automated, and why, shows judgement rather than weakness.
+
+**Example:** A Playwright test that joins a room with fake media, mutes, simulates going offline, and checks the reconnecting banner.
+
+**Say it like this:** "The reducer has unit tests for every transition. Components are tested with React Testing Library, and Playwright runs end-to-end tests with fake camera and mic devices, covering join, mute, leave, and simulated network loss. What isn't automated is real network conditions across different devices. I tested those manually with network throttling and documented the results."
 
 ---
 
 **Q6. How did you handle loading, error and empty states?**
 
-**Sample answer:** "Every state in the machine has a UI. Permission denied shows browser-specific steps to fix it. No camera found offers to join audio-only. Connecting shows a spinner after 300 ms. Reconnecting shows a banner without tearing down the video. Failed shows a clear Rejoin button. A room with nobody else in it shows 'Waiting for others to join' instead of an empty grid."
+**Short answer:** Every state in the machine has its own UI, including permission errors, missing devices, reconnecting and an empty room.
+
+**Explanation:** Completeness of states is one of the clearest signs of a production-minded engineer.
+
+**Example:** A 300 ms delay before showing the connecting spinner avoids a flash on fast connections.
+
+**Say it like this:** "Every state in the machine has a UI. Permission denied shows browser-specific steps to fix it. No camera found offers to join audio-only. Connecting shows a spinner after 300 ms. Reconnecting shows a banner without tearing down the video. Failed shows a clear Rejoin button. A room with nobody else in it shows 'Waiting for others to join' instead of an empty grid."
 
 ---
 
 **Q7. How did you make it accessible, and how did you verify it?**
 
-**Sample answer:** "Real buttons with `aria-pressed` for the toggles, labels that change with state ('Unmute microphone'), keyboard shortcuts declared with `aria-keyshortcuts`, and a polite live region announcing joins, leaves and reconnects. I verified it with axe in the Playwright tests, a keyboard-only pass, and NVDA and VoiceOver on the main flows."
+**Short answer:** Real toggle buttons with `aria-pressed`, state-based labels, declared shortcuts and a live region, verified with axe, keyboard testing and screen readers.
+
+**Explanation:** Cover both what you built and how you verified it, since automated tools catch only part of the issues.
+
+**Example:**
+
+```tsx
+<button aria-pressed={muted} aria-keyshortcuts="M" onClick={toggleMic}>
+  {muted ? 'Unmute microphone' : 'Mute microphone'}
+</button>
+```
+
+**Say it like this:** "Real buttons with `aria-pressed` for the toggles, labels that change with state ('Unmute microphone'), keyboard shortcuts declared with `aria-keyshortcuts`, and a polite live region announcing joins, leaves and reconnects. I verified it with axe in the Playwright tests, a keyboard-only pass, and NVDA and VoiceOver on the main flows."
 
 ---
 
 **Q8. How is it deployed? What happens on a bad deploy?**
 
-**Sample answer:** "The frontend is static on a CDN with hashed assets, so a rollback just means pointing back to the previous build. The token server and LiveKit run as Docker containers. CI runs lint, typecheck, tests and the Playwright suite before deploying, and a smoke test after deploying checks that a test room can be joined."
+**Short answer:** A static frontend on a CDN with instant rollback, Docker containers for the server parts, and CI checks plus a post-deploy smoke test.
+
+**Explanation:** Show that you've thought about failure, not just the happy path.
+
+**Example:** The smoke test creates a room and checks that a fake participant can join.
+
+**Say it like this:** "The frontend is static on a CDN with hashed assets, so a rollback just means pointing back to the previous build. The token server and LiveKit run as Docker containers. CI runs lint, typecheck, tests and the Playwright suite before deploying, and a smoke test after deploying checks that a test room can be joined."
 
 ---
 
@@ -166,31 +229,71 @@ The sample answers use **Project 1 (video room kit)**. Adapt them to whichever p
 
 **Q9. What would break first at 100x users, and how would you fix it?**
 
-**Sample answer:** "A single LiveKit node's CPU and bandwidth. I'd scale horizontally with multiple SFU nodes and Redis for room routing, autoscale on CPU and participant count, and add TURN servers in more regions. On the client, I'd make sure adaptive stream and dynacast are on, and limit the number of visible video tiles."
+**Short answer:** A single LiveKit node's CPU and bandwidth; scale horizontally with Redis routing, autoscaling and regional TURN, and reduce client load.
+
+**Explanation:** Identify the bottleneck first, then the fix, on both server and client.
+
+**Example:** Adaptive stream and dynacast mean clients only receive the resolution they actually display.
+
+**Say it like this:** "A single LiveKit node's CPU and bandwidth. I'd scale horizontally with multiple SFU nodes and Redis for room routing, autoscale on CPU and participant count, and add TURN servers in more regions. On the client, I'd make sure adaptive stream and dynacast are on, and limit the number of visible video tiles."
 
 ---
 
 **Q10. What trade-offs did you make, and which would you revisit?**
 
-**Sample answer:** "I chose a reducer over XState to keep dependencies small. As the number of states grows, I'd revisit that, because XState's visualiser and guards would help. I also skipped end-to-end encryption to keep it simple. For a healthcare use case, I'd add it."
+**Short answer:** A reducer instead of XState, and no end-to-end encryption, both reasonable now but worth revisiting as the project grows or for healthcare.
+
+**Explanation:** Naming trade-offs and their triggers for change is a strong senior signal.
+
+**Example:** Trigger for XState: more than about eight states or nested states like screen sharing during reconnection.
+
+**Say it like this:** "I chose a reducer over XState to keep dependencies small. As the number of states grows, I'd revisit that, because XState's visualiser and guards would help. I also skipped end-to-end encryption to keep it simple. For a healthcare use case, I'd add it."
 
 ---
 
 **Q11. How did you measure performance? What did you optimise, and by how much?**
 
-**Sample answer:** "I measured join time with User Timing marks, from clicking Join to the first remote frame. Moving the token fetch and SDK loading onto the pre-join screen took it from [X seconds] to [Y seconds] on a throttled connection. Lighthouse covers the static parts, and the README has the numbers."
+**Short answer:** Join time with User Timing marks, improved by moving the token fetch and SDK loading to the pre-join screen, with the numbers in the README.
+
+**Explanation:** Always give the metric, the method, the change and the before and after.
+
+**Example:**
+
+```ts
+performance.mark('join-click');
+// ...on first remote frame:
+performance.measure('join', 'join-click');
+```
+
+**Say it like this:** "I measured join time with User Timing marks, from clicking Join to the first remote frame. Moving the token fetch and SDK loading onto the pre-join screen took it from [X seconds] to [Y seconds] on a throttled connection. Lighthouse covers the static parts, and the README has the numbers."
 
 ---
 
 **Q12. What are the security risks, and how did you mitigate them?**
 
-**Sample answer:** "Token handling is the main risk. Tokens are created on the server with a short expiry and minimal grants, and room names are random IDs. The app sets a CSP that only allows connections to the API and the LiveKit host. Chat messages render as text only, never as HTML, so XSS through chat isn't possible."
+**Short answer:** Token handling is the main risk: short-lived, minimal server-issued tokens, random room names, a strict CSP, and chat rendered as text.
+
+**Explanation:** Name the biggest risk first, then each mitigation.
+
+**Example:**
+
+```text
+Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.example.com wss://livekit.example.com
+```
+
+**Say it like this:** "Token handling is the main risk. Tokens are created on the server with a short expiry and minimal grants, and room names are random IDs. The app sets a CSP that only allows connections to the API and the LiveKit host. Chat messages render as text only, never as HTML, so XSS through chat isn't possible."
 
 ---
 
 **Q13. If a team of five took this over, what would you document or refactor first?**
 
-**Sample answer:** "I'd document the state machine with a diagram and a short architecture decision record explaining why the Room object lives outside React state, because that's the non-obvious part. I'd add a runbook for the LiveKit server. Then I'd split the call screen into feature folders so several people can work on it without conflicts."
+**Short answer:** Document the state machine and the non-obvious decisions, add a runbook, then split the code into feature folders.
+
+**Explanation:** This tests whether you think about other people working on your code.
+
+**Example:** An ADR titled "Why the Room object lives outside React state".
+
+**Say it like this:** "I'd document the state machine with a diagram and a short architecture decision record explaining why the Room object lives outside React state, because that's the non-obvious part. I'd add a runbook for the LiveKit server. Then I'd split the call screen into feature folders so several people can work on it without conflicts."
 
 ---
 
