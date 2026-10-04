@@ -25,6 +25,8 @@ Question levels:
 
 **Anything in [square brackets]** in a sample answer is a placeholder for your real detail. Replace it with the true fact, or remove it. Never say a number you can't explain.
 
+**Backend too:** for backend and full-stack rounds, see the companion Backend Interview Kit in `backend-interview-kit/`.
+
 ## Priority order for you (senior, 4+ years)
 
 | Week | Files | Why |
