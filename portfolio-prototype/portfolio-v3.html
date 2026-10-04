@@ -262,14 +262,14 @@ dl.results dd { margin: 4px 0 0; }
             </svg>
           </div>
           <div class="work-text">
-            <h3 id="w1">InterpretIQ</h3>
+            <h3 id="w1">Medical interpretation video platform</h3>
             <p class="small muted role">Frontend architecture lead · Arcitech · 2026</p>
             <p class="sum">An access-gated, WCAG-compliant PWA that connects patients and providers with medical interpreters over live video.</p>
             <ul>
               <li>150 concurrent sessions with 99% reconnect success.</li>
               <li>Calls join in under 5 seconds.</li>
             </ul>
-            <a class="more" href="#/work/interpretiq">Read the case study</a>
+            <a class="more" href="#/work/medical-video">Read the case study</a>
           </div>
         </article>
 
@@ -282,7 +282,7 @@ dl.results dd { margin: 4px 0 0; }
             </svg>
           </div>
           <div class="work-text">
-            <h3 id="w2">BpoBox: AI scoring for call-centre quality</h3>
+            <h3 id="w2">AI quality platform for call centres</h3>
             <p class="small muted role">Frontend architecture owner · Arcitech · 2026</p>
             <p class="sum">A multi-tenant QA platform for 5 tenants and 1,500 users, with role-based portals, scorecards and AI scoring of recorded calls.</p>
             <ul>
@@ -324,7 +324,7 @@ dl.results dd { margin: 4px 0 0; }
       <div class="section-head"><h2 id="expH">Experience</h2></div>
       <div class="section-body">
         <ol class="rows">
-          <li><span class="when mono">2026 – now</span><div><h4>Senior Software Engineer, Arcitech</h4><p>Frontend architecture for InterpretIQ and BpoBox, the security audit, and AI call scoring.</p></div></li>
+          <li><span class="when mono">2026 – now</span><div><h4>Senior Software Engineer, Arcitech</h4><p>Frontend architecture for a healthcare video platform and an AI call-centre QA platform, a security audit, and AI call scoring.</p></div></li>
           <li><span class="when mono">2023 – 2025</span><div><h4>Software Engineer, Arcitech</h4><p>AI interview platform, frontend lead on a Revit design-compliance checker, and an AI education platform.</p></div></li>
           <li><span class="when mono">2022 – 2023</span><div><h4>Software Engineer, LTIMindtree</h4><p>Account, booking and profile features, plus headless widgets, for a major North American airline.</p></div></li>
           <li><span class="when mono">2022</span><div><h4>Full-Stack Developer, Slaylink</h4><p>A creator and brand community app in Next.js, NestJS, GraphQL and MongoDB.</p></div></li>
@@ -370,26 +370,27 @@ dl.results dd { margin: 4px 0 0; }
 </div>
 
 <!-- ============ CASE STUDY ============ -->
-<div data-page="interpretiq" hidden>
+<div data-page="medvideo" hidden>
   <header class="wrap case-head">
-    <p class="crumb"><a href="#/work">Work</a> / InterpretIQ</p>
-    <h1 tabindex="-1">InterpretIQ</h1>
+    <p class="crumb"><a href="#/work">Work</a> / Medical interpretation video platform</p>
+    <h1 tabindex="-1">Medical interpretation video platform</h1>
     <p class="lede">An access-gated, WCAG-compliant PWA that connects patients and providers with medical interpreters over live video.</p>
     <dl class="meta">
       <div><dt>Role</dt><dd>Frontend architecture lead</dd></div>
-      <div><dt>Company</dt><dd>Arcitech</dd></div>
+      <div><dt>Company</dt><dd>Arcitech, for a healthcare client</dd></div>
       <div><dt>Period</dt><dd>2026 – present</dd></div>
       <div><dt>Stack</dt><dd>React 19, TypeScript, Redux, LiveKit, FastAPI, AWS</dd></div>
     </dl>
+    <p class="small muted" style="margin-top:24px;max-width:68ch">This case study is written within a non-disclosure agreement. Client and product names, real screenshots and internal details are left out or generalised. I'm happy to go deeper in conversation, within those limits.</p>
   </header>
 
   <div class="wrap grid case-body">
     <article class="case-main">
       <section class="cs" id="context" aria-labelledby="h-context">
         <h2 id="h-context">Context</h2>
-        <p class="measure">InterpretIQ lets patients and healthcare providers talk through a medical interpreter on a live video call. If a call drops, a consultation stops until everyone is back, so reliability matters more than features.</p>
+        <p class="measure">The platform lets patients and healthcare providers talk through a medical interpreter on a live video call. If a call drops, a consultation stops until everyone is back, so reliability matters more than features.</p>
         <p class="measure">The app is access-gated, runs as a PWA, and must meet WCAG accessibility requirements.</p>
-        <div class="todo"><b>TODO</b>Add one sentence on who uses it (for example, which kinds of clinics) and roughly how many calls it handles, if you can share that.</div>
+        <div class="todo"><b>TODO</b>Check this description against your NDA. Keep it at this level of detail: no client name, no user counts and no internal dates.</div>
       </section>
 
       <section class="cs" id="role" aria-labelledby="h-role">
@@ -410,7 +411,7 @@ dl.results dd { margin: 4px 0 0; }
 
       <section class="cs" id="decisions" aria-labelledby="h-decisions">
         <h2 id="h-decisions">Key decisions</h2>
-        <div class="todo"><b>TODO</b>These three are drafted from your résumé and common LiveKit practice. Confirm each one, or replace it with what you actually decided.</div>
+        <div class="todo"><b>TODO</b>These three are drafted from your résumé and common LiveKit practice. Confirm each one, or replace it with what you actually decided. Describe approaches and trade-offs, not proprietary code or configuration.</div>
         <div class="decision">
           <h3>1. Keep the video room out of React state</h3>
           <dl>
@@ -453,7 +454,7 @@ dl.results dd { margin: 4px 0 0; }
         <li><a href="#architecture">Architecture</a></li>
         <li><a href="#results">Results</a></li>
         <li><a href="#differently">What I'd do differently</a></li>
-        <li><a href="#screens">Screens</a></li>
+        <li><a href="#screens">Interface</a></li>
       </ol>
     </nav></div>
 
@@ -473,7 +474,7 @@ dl.results dd { margin: 4px 0 0; }
           </div>
         </div>
       </div>
-      <div class="todo"><b>TODO</b>Component descriptions are drafts. Check each one against the real system, and add anything missing, such as a CDN or monitoring.</div>
+      <div class="todo"><b>TODO</b>Component descriptions are drafts. Keep them to standard, publicly known building blocks. Leave out internal service names, hostnames, configuration and anything specific to the client's setup.</div>
     </div>
 
     <article class="case-main">
@@ -493,10 +494,11 @@ dl.results dd { margin: 4px 0 0; }
       </section>
 
       <section class="cs" id="screens" aria-labelledby="h-screens">
-        <h2 id="h-screens">Screens</h2>
+        <h2 id="h-screens">Interface</h2>
+        <p class="measure" style="margin-bottom:16px">These are recreations with sample data, not the production interface.</p>
         <div class="shots">
-          <figure class="shot"><div class="frame">TODO: pre-join screen with device check</div><figcaption>Pre-join screen. Patient details blurred.</figcaption></figure>
-          <figure class="shot"><div class="frame">TODO: in-call view during reconnection</div><figcaption>In-call view with the reconnecting notice. Patient details blurred.</figcaption></figure>
+          <figure class="shot"><div class="frame">TODO: recreate the pre-join pattern (device check, join button) with sample data, for example in Figma</div><figcaption>Pre-join pattern, recreated with sample data.</figcaption></figure>
+          <figure class="shot"><div class="frame">TODO: recreate the reconnecting state with sample data; no real branding or layout details</div><figcaption>Reconnecting state, recreated with sample data.</figcaption></figure>
         </div>
       </section>
 
@@ -543,8 +545,8 @@ dl.results dd { margin: 4px 0 0; }
     else b.textContent = 'Select the address to copy';
   }));
 
-  /* hash routes: #/ home, #/<section> home section, #/work/interpretiq, #/resume */
-  const pages = { home: 'Hrushikesh Chavan', interpretiq: 'InterpretIQ case study · Hrushikesh Chavan', resume: 'Résumé · Hrushikesh Chavan' };
+  /* hash routes: #/ home, #/<section> home section, #/work/medical-video, #/resume */
+  const pages = { home: 'Hrushikesh Chavan', medvideo: 'Medical interpretation video platform · Hrushikesh Chavan', resume: 'Résumé · Hrushikesh Chavan' };
   let first = true;
   function route() {
     const h = location.hash;
@@ -552,14 +554,14 @@ dl.results dd { margin: 4px 0 0; }
       const el = document.getElementById(h.slice(1)); if (el) el.scrollIntoView(); return;
     }
     const path = h.slice(2);
-    const page = path === 'work/interpretiq' ? 'interpretiq' : path === 'resume' ? 'resume' : 'home';
+    const page = path === 'work/medical-video' ? 'medvideo' : path === 'resume' ? 'resume' : 'home';
     $$('[data-page]').forEach((p) => (p.hidden = p.dataset.page !== page));
     document.title = pages[page];
-    $$('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === (page === 'interpretiq' ? 'work' : page === 'resume' ? 'resume' : path)));
+    $$('[data-nav]').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === (page === 'medvideo' ? 'work' : page === 'resume' ? 'resume' : path)));
     $$('[data-nav]').forEach((a) => a.hasAttribute('aria-current') && a.setAttribute('aria-current', 'page'));
     if (page === 'home' && path) { const el = document.getElementById(path); if (el) { el.scrollIntoView(); if (!first) el.querySelector('h2')?.setAttribute('tabindex', '-1'), el.querySelector('h2')?.focus({ preventScroll: true }); } }
     else { window.scrollTo(0, 0); if (!first) $(`[data-page="${page}"] h1`)?.focus({ preventScroll: true }); }
-    if (page === 'interpretiq') window.dispatchEvent(new Event('case:shown'));
+    if (page === 'medvideo') window.dispatchEvent(new Event('case:shown'));
     first = false;
   }
   addEventListener('hashchange', route); route();

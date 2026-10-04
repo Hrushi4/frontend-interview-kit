@@ -6,7 +6,7 @@ Things you must supply (the prompt tells the agent to leave clearly marked slots
 
 - A headshot: plain background, natural light, square, at least 800 × 800 px.
 - Your résumé PDF, without your phone number if the site is public.
-- Two or three real screenshots per project. Blur any patient, customer or tenant data.
+- Because of your NDA: no real screenshots. Recreate 2–3 key screens per project with sample data (for example in Figma), and confirm which résumé numbers you are allowed to publish.
 - Your measurement details: how each number on your résumé was measured, and over what period.
 
 ---
@@ -76,14 +76,14 @@ GitHub Actions, Sentry, Grafana, Prometheus.
    - Intro: name, one plain sentence about what I do, and two links (Résumé PDF and
      Email). Include a small headshot (slot: /public/me.jpg, with a neutral
      placeholder until supplied).
-   - Selected work: 3 project rows (InterpretIQ, BpoBox AI scoring, Security and
-     infrastructure audit). Each row has a title, one-line summary, my role, 2 key
-     results, a screenshot or diagram thumbnail, and a link to its case study.
+   - Selected work: 3 project rows (Medical interpretation video platform, AI quality
+     platform for call centres, Security and infrastructure audit). Each row has a title, one-line summary, my role, 2 key
+     results, a diagram thumbnail, and a link to its case study.
    - Experience: a compact list of company, title, dates and one line each.
    - Skills: plain grouped text, no logo wall.
    - Short "About": 3 to 4 sentences in first person. Include mentoring.
    - Contact: email (visible text plus a copy button), GitHub, LinkedIn.
-2. Case study pages (/work/interpretiq, /work/bpobox, /work/security-audit),
+2. Case study pages (/work/medical-video, /work/call-centre-qa, /work/security-audit),
    using this exact structure:
    - Context: the product, the users, and why it matters.
    - My role: what I owned versus what the team did. Be precise.
@@ -93,11 +93,28 @@ GitHub Actions, Sentry, Grafana, Prometheus.
    - Architecture: one clear diagram.
    - Results: each number with a one-line note on how it was measured.
    - What I'd do differently.
-   Leave clearly marked TODO slots for screenshots and measurement notes; never
+   Leave clearly marked TODO slots for recreated interface images and measurement notes; never
    invent them.
 3. /resume: an embedded or linked PDF download.
 4. Optional: /notes, an index ready for short engineering write-ups (start empty
    or with one draft I provide).
+
+# 3a. NDA rules (I have signed a non-disclosure agreement)
+
+- Do not use client or internal product names. Use descriptive names:
+  "Medical interpretation video platform" (instead of InterpretIQ) and
+  "AI quality platform for call centres" (instead of BpoBox). Use these in URLs,
+  page titles, image file names and code identifiers too.
+- No real screenshots, logos, branding, internal URLs, hostnames, config or code.
+  Interface images must be recreations with sample data, captioned as such.
+- Describe approaches, decisions and trade-offs at the level of public, standard
+  building blocks (React, LiveKit, TURN, Redis, FastAPI, Postgres). Nothing
+  specific to the client's setup.
+- Use only the numbers already on my résumé, and only if I confirm they are
+  cleared. No user counts, revenue, client lists or dates beyond the year.
+- Add one line to each case study: "Written within a non-disclosure agreement.
+  Client and product names, screenshots and internal details are left out or
+  generalised."
 
 # 4. Visual design: restrained, editorial, professional
 
@@ -125,7 +142,7 @@ Layout:
 # 5. Three.js: one purposeful use, not decoration
 
 Use Three.js in exactly ONE place, where it explains my work:
-- An "architecture explorer" on the InterpretIQ case study: a calm, isometric 3D
+- An "architecture explorer" on the medical video platform case study: a calm, isometric 3D
   diagram of the system: Browser/PWA → LiveKit SFU (AWS) → TURN relay → Redis →
   FastAPI → Postgres.
 - Monochrome boxes with thin edges; the accent colour only on the selected part.
@@ -218,12 +235,12 @@ Ordered by value for interviews. Build the first five; add the others when you h
    - A one-line "how measured" note under each one builds trust and stops the first follow-up question.
 
 3. **One real diagram per project.**
-   - For example, the InterpretIQ call flow, the BpoBox scoring pipeline, or the authorisation model.
+   - For example, the video call flow, the AI scoring pipeline, or the authorisation model, drawn with standard components only (NDA).
    - Real diagrams separate engineers from template sites. Draw them in Excalidraw or as SVG, not as stock art.
 
-4. **Real screenshots, with sensitive data blurred.**
-   - Proof you shipped the work.
-   - Blur patient names, tenants and call content, and add a caption saying so. That shows care with PHI, which matters for your healthcare work.
+4. **Recreated interface images instead of screenshots (NDA).**
+   - Real screenshots would break your NDA, so recreate the key patterns (pre-join check, reconnecting state, scorecard) with sample data and label them as recreations.
+   - Being open about the NDA reads as professional. Interviewers respect "I can explain the approach but not share the code".
 
 5. **A plain intro with the résumé one click away.**
    - Recruiters scan; the PDF and email must be visible without scrolling.
@@ -241,13 +258,13 @@ Ordered by value for interviews. Build the first five; add the others when you h
    - "Making LLM output safe to store"
    - Each one shows depth, ranks on Google for your name, and doubles as interview preparation.
 
-8. **A small open-source piece.**
+8. **A small open-source piece (your best answer to the NDA).**
    - For example, an accessible video-call control bar, or a React hook for reconnection state.
    - Your company code is private, so a public repo is proof of how you write code.
 
 9. **An accessibility note.**
    - One short section on how the site meets WCAG: keyboard use, contrast and reduced motion.
-   - It's rare in portfolios, and directly backs up your InterpretIQ claim.
+   - It's rare in portfolios, and directly backs up your accessibility work on the healthcare platform.
 
 ### Nice to have
 
